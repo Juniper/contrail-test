@@ -1,4 +1,3 @@
-from builtins import str
 import fixtures
 from vnc_api.vnc_api import NoIdError
 from kubernetes.client.rest import ApiException

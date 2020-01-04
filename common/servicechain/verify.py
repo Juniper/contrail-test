@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import sys
 from time import sleep
@@ -99,7 +98,7 @@ class VerifySvcChain(ConfigSvcChain):
                             self.logger.info('Multi Svc chains, 1 route deleted via svc0, Route %s exists via svc1 is %s routes %s' % (
                                 dst_vm.vm_ip, left_ri_ecmp-1, dst_vm_ip))
                             dst_vm_ip = False
-                    import pprint; pprint.pprint(dst_vm_ip); print("Route is \n\n")
+                    import pprint; pprint.pprint(dst_vm_ip); print "Route is \n\n"
                 result = True
                 if dst_vm_ip:
                     self.logger.error(
@@ -327,7 +326,6 @@ class VerifySvcChain(ConfigSvcChain):
         right_vm_fixture = ret_dict.get('right_vm_fixture')
         st_fixture = ret_dict.get('st_fixture')
         si_fixture = ret_dict.get('si_fixture')
-        evpn = ret_dict.get('evpn')
 
         assert st_fixture.verify_on_setup(), 'ST Verification failed'
         # SVM would have been up in config_svc_chain() itself
@@ -335,21 +333,11 @@ class VerifySvcChain(ConfigSvcChain):
         assert si_fixture.verify_on_setup(wait_for_vms=False), \
             ('SI Verification failed')
 
-        if not evpn:
-            result, msg = self.validate_vn(left_vn_fq_name)
-            assert result, msg
-            right_vn = True if st_fixture.service_mode == 'in-network-nat' else False
-            result, msg = self.validate_vn(right_vn_fq_name, right_vn=right_vn)
-            assert result, msg
-        else:
-            left_lr_child_vn_fq_name = ret_dict.get('left_lr_child_vn_fixture').vn_fq_name
-            result, msg = self.validate_vn(left_lr_child_vn_fq_name,
-                                           right_vn=True)
-            assert result, msg
-            right_lr_child_vn_fq_name = ret_dict.get('right_lr_child_vn_fixture').vn_fq_name
-            result, msg = self.validate_vn(right_lr_child_vn_fq_name,
-                                           right_vn=True)
-            assert result, msg
+        result, msg = self.validate_vn(left_vn_fq_name)
+        assert result, msg
+        right_vn = True if st_fixture.service_mode == 'in-network-nat' else False
+        result, msg = self.validate_vn(right_vn_fq_name, right_vn=right_vn)
+        assert result, msg
 
         result, msg = self.validate_svc_action(
             left_vn_fq_name, si_fixture, right_vm_fixture, src='left')
@@ -375,7 +363,7 @@ class VerifySvcChain(ConfigSvcChain):
             svm_name = svm.vm_name
             host = self.inputs.host_data[svm.vm_node_ip]
             #tapintf = self.get_svm_tapintf(svm_name)
-            tapintf = list(svm.tap_intf.values())[0]['name']
+            tapintf = svm.tap_intf.values()[0]['name']
             session = ssh(host['host_ip'], host['username'], host['password'])
             pcap_vm = self.inputs.pcap_on_vm
             pcap = self.start_tcpdump(session, tapintf, pcap_on_vm=pcap_vm)

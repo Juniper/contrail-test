@@ -22,12 +22,15 @@ import fixtures
 import test
 
 class AnalyticsTestSanity(base.AnalyticsBaseTest):
-    isolation = False
 
     @classmethod
     def setUpClass(cls):
         super(AnalyticsTestSanity, cls).setUpClass()
     
+    def runTest(self):
+        pass
+    #end runTest
+
     @preposttest_wrapper
     def test_redis_stunnel_provision(self):
         ''' Test verify redis & stunnel services
@@ -276,7 +279,7 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
         except Exception as e:
             self.logger.exception("Got exception as %s"%(e))
 
-        for vmobj in list(vm_fixture.vm_obj_dict.values()):
+        for vmobj in vm_fixture.vm_obj_dict.values():
             vm_host_ip=vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
@@ -293,14 +296,14 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
         return True
 
 class AnalyticsTestSanity3(base.AnalyticsBaseTest):
-    isolation = False
+
     @classmethod
     def setUpClass(cls):
         super(AnalyticsTestSanity3, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(AnalyticsTestSanity3, cls).tearDownClass()
+    
+    def runTest(self):
+        pass
+    #end runTest
 
     @test.attr(type=['sanity', 'vcenter', 'vcenter_compute'])
     @preposttest_wrapper

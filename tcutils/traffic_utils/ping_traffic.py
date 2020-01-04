@@ -1,4 +1,3 @@
-from builtins import object
 import re
 import string
 import logging
@@ -6,7 +5,7 @@ from tcutils.util import get_random_name, retry, is_v6
 
 result_file = '/tmp/ping'
 
-class Ping(object):
+class Ping:
     ''' Helper to generate ping traffic
 
         Mandatory args:
@@ -24,23 +23,25 @@ class Ping(object):
     def __init__(self,
         sender_vm_fixture,
         host,
+        *args,
+        **kwargs
         ):
         self.logger = sender_vm_fixture.logger
         self.sender_vm_fixture = sender_vm_fixture
         self.host = host
+        self.args_string = self.get_cmd_args(**kwargs)
         self.rnd_str = get_random_name()
         self.log_file = result_file + '_' + self.rnd_str + '.log'
         self.result_file = result_file + '_' + self.rnd_str + '.result'
-        self.pid_file = '/tmp/ping_%s.pid' %(self.rnd_str)
         self.ping_cmd = 'ping'
+        self.pid_file = '/tmp/ping_%s.pid' %(self.rnd_str)
         if is_v6(self.host):
             self.ping_cmd = 'ping6'
 
-    def start(self, wait=False, **kwargs):
+    def start(self, wait=True):
         '''
         if c is not passed as argument to ping, 'wait' must be False
         '''
-        self.args_string = self.get_cmd_args(**kwargs)
         cmd = '%s %s %s 2>%s 1>%s' % (self.ping_cmd, self.args_string,
             self.host, self.log_file, self.result_file)
         self.logger.info('Starting %s on %s, args: %s' % (self.ping_cmd,
@@ -103,7 +104,7 @@ class Ping(object):
             result_data['sent'] = reg_result.group(1)
             result_data['received'] = reg_result.group(2)
             result_data['loss'] = reg_result.group(3)
-        if 'None' in  list(result_data.values()):
+        if 'None' in  result_data.values():
             self.logger.warn('Parsing of ping had problems. Got stats: %s'
                 'Please check debug logs'  %(result_data))
             self.logger.debug(result_content)
@@ -174,7 +175,7 @@ class Ping(object):
                 result_data['rtt_mdev'] = rtt_result.group(4)
             else:
                 result_data['rtt_mdev'] = 'N/A'
-        if None in list(result_data.values()):
+        if None in result_data.values():
             self.logger.warn('Parsing of ping had problems. Got stats: %s'
                 'Please check debug logs'  %(result_data))
             self.logger.debug(result_content)
@@ -190,7 +191,7 @@ class Ping(object):
             All values are string or boolean
         '''
         ret_val = ''
-        for (k,v) in list(kwargs.items()):
+        for (k,v) in kwargs.items():
             key = '-%s' % (k)
             if type(v) == bool:
                 if v:
@@ -207,7 +208,7 @@ class Ping(object):
         result = self.sender_vm_fixture.run_cmd_on_vm(
             cmds=['kill -2 `cat %s`' %(self.pid_file)],
             raw=True)
-        status = list(result.values())[0]
+        status = result.values()[0]
         if result.succeeded:
             self.logger.debug('ping is active on %s, PID: %s' % (
                               self.sender_vm_fixture,

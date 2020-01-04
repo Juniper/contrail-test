@@ -1,4 +1,3 @@
-from builtins import str
 import test_v1
 import os
 import re
@@ -108,13 +107,7 @@ class RPBase(test_v1.BaseTestCase_v1):
         rp.set_routing_policy_entries(obj_1)
         if config_dicts['sub_from'] == 'service-chain':
             obj_11 = RoutingPolicyServiceInstanceType()
-            if config_dicts.has_key('si_rp_interface_type') :
-               if 'left_vn' in config_dicts['si_rp_interface_type']:
-                  obj_11.set_left_sequence('1')
-               if 'right_vn' in config_dicts['si_rp_interface_type']:
-                  obj_11.set_right_sequence('1')
-            else:
-               obj_11.set_left_sequence('1')
+            obj_11.set_left_sequence('1') 
             rp.add_service_instance(config_dicts['si_fixture'].si_obj, obj_11)
 
         self.vnc_lib.routing_policy_create(rp)

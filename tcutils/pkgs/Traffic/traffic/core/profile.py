@@ -1,10 +1,7 @@
 """Module holding various stream profiles.
 """
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-from pickle import dumps, loads
+from cPickle import dumps, loads
 
 try:
     # Running from the source repo "test".

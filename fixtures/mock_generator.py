@@ -1,7 +1,3 @@
-from __future__ import division
-from builtins import str
-from builtins import range
-from past.utils import old_div
 import fixtures
 from tcutils.util import *
 from contrail_fixtures import *
@@ -30,8 +26,8 @@ class MockGeneratorFixture(fixtures.Fixture):
     def setUp(self):
         super(MockGeneratorFixture, self).setUp()
         ncomputes = len(self.inputs.compute_ips)
-        ngens_per_host = old_div(self.num_generators, ncomputes)
-        nprocess_per_host = old_div(ngens_per_host, self.MAX_GENERATORS_PER_PROCESS)
+        ngens_per_host = self.num_generators / ncomputes
+        nprocess_per_host = ngens_per_host / self.MAX_GENERATORS_PER_PROCESS
         if ngens_per_host % self.MAX_GENERATORS_PER_PROCESS:
             nprocess_per_host = nprocess_per_host + 1
         for host_ip in self.inputs.compute_ips:

@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 from time import sleep
 from vn_test import *
 from vm_test import *
@@ -23,7 +21,7 @@ import ipaddress
 class Evpnt6base(BaseFabricTest):
 
     def setUp(self):
-        for device, device_dict in list(self.inputs.physical_routers_data.items()):
+        for device, device_dict in self.inputs.physical_routers_data.items():
             if 'crb_mcast_gw' in (device_dict.get('rb_roles') or []) \
                and device_dict['role'] == 'spine':
                 self.rb_roles[device] = ['CRB-MCAST-Gateway',
@@ -41,7 +39,7 @@ class Evpnt6base(BaseFabricTest):
         if result:
             msg = 'Need devices with crb_mcast_gw and erb_ucast_gw rb_roles'
             mcast_gw = ucast_gw = False
-            for device_dict in list(self.inputs.physical_routers_data.values()):
+            for device_dict in self.inputs.physical_routers_data.values():
                 if 'crb_mcast_gw' in (device_dict.get('rb_roles') or []) \
                    and device_dict['role'] == 'spine':
                     mcast_gw = True
@@ -69,7 +67,7 @@ class Evpnt6base(BaseFabricTest):
         '''
 
         # Send IGMPv3 membership reports from multicast receivers
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             for rcvr in stream['rcvrs']:
                 result = self.send_igmp_reportv2(vm_fixtures[rcvr], igmp)
         return True
@@ -156,12 +154,12 @@ class Evpnt6base(BaseFabricTest):
         # As IGMP report is sent from these receivers, entries should be present
         # in agent
         result = True
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             for rcvr in stream['rcvrs']:
 
                 ## Verifying IGMP report details in VM's VRF at agent
                 compute_node_ip = vm_fixtures[rcvr].vm_node_ip
-                vrf_id = list(vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values())[0]
+                vrf_id = vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values()[0]
                 result = result & self.verify_igmp_report(vm_fixtures[rcvr],
                                     vrf_id, igmp, expectation=True)
 
@@ -175,13 +173,13 @@ class Evpnt6base(BaseFabricTest):
         # Verify IGMPv3 membership at agent
         # As IGMP report is not sent from these receivers, entries should
         # not be present in agent
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             for rcvr in stream['non_rcvrs']:
 
 
                 # Verifying IGMP report details in VM's VRF at agent
                 compute_node_ip = vm_fixtures[rcvr].vm_node_ip
-                vrf_id = list(vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values())[0]
+                vrf_id = vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values()[0]
                 result = result & self.verify_igmp_report(vm_fixtures[rcvr],
                                 vrf_id, igmp, expectation=False)
                 if result:
@@ -265,7 +263,7 @@ for i in range(0,$numgrp):
         '''
 
         result = True
-        tap_intf = list(vm_fixture.tap_intf.values())[0]['name']
+        tap_intf = vm_fixture.tap_intf.values()[0]['name']
         compute_node_ip = vm_fixture.vm_node_ip
         num_of_grp_records = igmp.get('numgrp', 1)
         for record in range(num_of_grp_records):
@@ -302,7 +300,7 @@ for i in range(0,$numgrp):
         pcap = {}
 
         # Start tcpdump on receivers and non receivers
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             src_ip = stream['source']
             dst_ip = stream['maddr']
             net = stream['mnet']
@@ -334,7 +332,7 @@ for i in range(0,$numgrp):
 
         # Send Multicast Traffic
 
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             src = stream['src'][0]
             self._generate_multicast_trafficv2(vm_fixtures[src], maddr=stream['maddr'], count=stream['count'], interface=interface)
         return True
@@ -376,7 +374,7 @@ for i in range(0,$numgrp):
         # Verify Multicast Traffic on receivers. Incase, IGMPv3 exclude is sent
         # multicast data traffic should not receive on the receivers. Only
         # IGMPv3 include should receive multicast data traffic.
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             maddr_traffic = stream['maddr']
             for rcvr in stream['rcvrs']:
                 exp_count = stream['pcount'] * stream['count']
@@ -385,7 +383,7 @@ for i in range(0,$numgrp):
                                      exp_count=exp_count, grep_string="UDP")
         # Verify Multicast Traffic on non receivers, traffic should not reach
         # these
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             for rcvr in stream['non_rcvrs']:
 
                 result = result & verify_tcpdump_count(self, session[rcvr], pcap[rcvr],
@@ -460,7 +458,7 @@ for i in range(0,$numgrp):
 
         ctrl_node = vm_fixtures['vm1'].get_control_nodes()[0]
 
-        for stream in list(traffic.values()):
+        for stream in traffic.values():
             if stream['rcvrs'] == []:
                 result = self.verify_evpn_routes(6,vxlan_id,ctrl_node,vm_fixtures, igmp, expectation=False)
             else:
@@ -599,28 +597,64 @@ for i in range(0,$numgrp):
                 assert result, "Error in verifying multicast data traffic on all receivers"
         return result
 
-    def disable_snooping(self, prouters):
+
+
+    def disable_snooping(self):
+
+        tors_info_list = self.get_available_devices('tor')
+        tor_params = tors_info_list[0]
+        mgmt_ip=tor_params['mgmt_ip']
+
         cmd = []
         cmd.append('deactivate protocols igmp-snooping')
         cmd.append('deactivate groups __contrail_overlay_evpn_ucast_gateway__ protocols igmp-snooping')
-        for prouter in prouters:
-            prouter.netconf.config(stmts=cmd, timeout=120)
 
-    def enable_snooping(self, prouters):
+        mx_handle = NetconfConnection(host = mgmt_ip)
+        mx_handle.connect()
+        time.sleep(30)
+        cli_output = mx_handle.config(stmts = cmd, timeout = 120)
+        time.sleep(30)
+        mx_handle.disconnect()
+
+    def enable_snooping(self):
+
+        tors_info_list = self.get_available_devices('tor')
+        tor_params = tors_info_list[0]
+        mgmt_ip=tor_params['mgmt_ip']
+
         cmd = []
         cmd.append('activate protocols igmp-snooping')
         cmd.append('activate groups __contrail_overlay_evpn_ucast_gateway__ protocols igmp-snooping')
-        for prouter in prouters:
-            prouter.netconf.config(stmts=cmd, timeout=120)
+        mx_handle = NetconfConnection(host = mgmt_ip)
+        mx_handle.connect()
+        time.sleep(30)
+        cli_output = mx_handle.config(stmts = cmd, timeout = 120)
+        time.sleep(30)
+        mx_handle.disconnect()
     
+
+
+    def get_available_devices(self, device_type,role='leaf'):
+        ''' device_type is one of router/tor
+        '''
+        available = []
+        for (device, device_dict) in self.inputs.physical_routers_data.iteritems():
+            if (device_dict['type'] == device_type) and (device_dict['role'] == role):
+                available.append(device_dict)
+        return available
+    # end get_available_devices
+
     def configure_igmp_on_vmi(self,vmi,flag):
         '''
             Configure IGMP on VMI:
         '''
+
         vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=vmi)
         vmi_obj.set_igmp_enable(flag)
         self.vnc_h.virtual_machine_interface_update(vmi_obj)
         return True
+
+
 
 class Evpnt6TopologyBase(Evpnt6base):
 
@@ -684,14 +718,6 @@ class Evpnt6TopologyBase(Evpnt6base):
 
 class Evpnt6MultiVnBase(Evpnt6base):
 
-    def is_test_applicable(self):
-        result, msg = super(Evpnt6base, self).is_test_applicable()
-        if result:
-            msg = 'Need atleast 3 compute nodes'
-            if len(self.connections.orch.get_hosts()) > 2:
-                return True, None
-        return False, msg
-
     def configure_evpn_mvn_topology(self,vxlan,vn_count):
         ''' Configure vxlan_id explicitly with vn's forwarding mode as l2 and send traffic between vm's using this interface and check traffic is coming with
             configured vxlan_id
@@ -706,7 +732,7 @@ class Evpnt6MultiVnBase(Evpnt6base):
         self.vxlan_id = vxlan
         bms =self.get_bms_nodes(rb_role='erb_ucast_gw')
         
-        vn_ip = str('5.1.1.0', "utf-8")
+        vn_ip = unicode('5.1.1.0', "utf-8")
         vn_ip = ipaddress.ip_address(vn_ip)
         vm_fixtures = {}
         for i in range(1,vn_count):

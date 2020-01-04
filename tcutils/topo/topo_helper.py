@@ -1,8 +1,7 @@
 ''' Take logical topology object and provide methods to extend/derive data from user topology to help verifications '''
 
 
-from builtins import object
-class topology_helper(object):
+class topology_helper ():
 
     def __init__(self, topology_obj):
         self.topo_dict = topology_obj.__dict__
@@ -22,7 +21,7 @@ class topology_helper(object):
 
     def get_vmc_list(self):
         vn_vm_l = self.topo_dict['vn_of_vm']
-        for key, value in vn_vm_l.items():
+        for key, value in vn_vm_l.iteritems():
             self.vmc_list.append(key)
         return self.vmc_list
 
@@ -45,7 +44,7 @@ class topology_helper(object):
         vn_vm_l = self.topo_dict['vn_of_vm']
         for vn in self.vnet_list:
             self.vm_of_vn[vn] = []
-        for k, v in list(vn_vm_l.items()):
+        for k, v in vn_vm_l.items():
             self.vm_of_vn[v].append(k)
         return self.vm_of_vn
 

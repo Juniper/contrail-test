@@ -1,6 +1,5 @@
 """Helper module to start/stop traffic.
 """
-from builtins import object
 import re
 from time import sleep
 

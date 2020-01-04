@@ -1,8 +1,4 @@
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import object
-import configparser
+import ConfigParser
 import logging
 import logging.config
 import logging.handlers
@@ -44,7 +40,7 @@ def getLogger(name='unknown',**kwargs):
         _loggers[name].setUp()
     return _loggers[name].logger
 
-class ContrailLogger(object):
+class ContrailLogger:
     def __init__(self, name, log_to_console=True, max_message_size=None):
         self.name = name
         self.logger = logging.getLogger(name or LOG_KEY)

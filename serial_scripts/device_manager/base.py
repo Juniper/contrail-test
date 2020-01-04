@@ -1,6 +1,3 @@
-from builtins import str
-from builtins import next
-from builtins import range
 import test_v1
 from common.device_connection import NetconfConnection
 import physical_device_fixture
@@ -66,8 +63,8 @@ class BaseDM(VerifySecGroup):
             if self.inputs.use_devicemanager_for_md5:
                 j = 0
                 self.mx_handle = {}
-                for i in range(len(list(self.inputs.dm_mx.values()))):
-                    router_params = list(self.inputs.dm_mx.values())[i]
+                for i in range(len(self.inputs.dm_mx.values())):
+                    router_params = self.inputs.dm_mx.values()[i]
                     if router_params['model'] == 'mx':
                         self.phy_router_fixture[j] = self.useFixture(PhysicalRouterFixture(
                             router_params['name'], router_params['control_ip'],
@@ -156,8 +153,8 @@ class BaseDM(VerifySecGroup):
         assert self.vm3_fixture.ping_with_certainty(lo_ip), 'Ping to lo0 ip not passing'
 
     def remove_iptable_config(self):
-        for i in range(len(list(self.inputs.physical_routers_data.values()))):
-            router_params = list(self.inputs.physical_routers_data.values())[i]
+        for i in range(len(self.inputs.physical_routers_data.values())):
+            router_params = self.inputs.physical_routers_data.values()[i]
 
             cmd = '/sbin/iptables -D OUTPUT -d %s -j DROP' % router_params['mgmt_ip']
             for node in self.inputs.cfgm_ips:
@@ -166,7 +163,7 @@ class BaseDM(VerifySecGroup):
     def get_output_from_node(self, cmd):
         i = 0
         self.output_from_mx = {}
-        for dev_handle in list(self.mx_handle.values()):
+        for dev_handle in self.mx_handle.values():
             self.output_from_mx[i] = dev_handle.handle.cli(cmd)
             i += 1
 
@@ -180,18 +177,18 @@ class BaseDM(VerifySecGroup):
 
     def delete_vn_from_devices(self):
 
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             dev_fixture.delete_virtual_network(str(self.vn1_fixture.uuid))
             dev_fixture.delete_virtual_network(str(self.vn2_fixture.uuid))
 
     def delete_physical_devices(self):
 
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             dev_fixture.delete_device()
 
     def unbind_dev_from_router(self):
 
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             bgp_fq_name = ['default-domain', 'default-project','ip-fabric', '__default__', str(dev_fixture.name)]
             bgp_router = self.vnc_lib.bgp_router_read(fq_name=bgp_fq_name)
             dev_fixture.unbind_bgp_router(bgp_router)
@@ -217,7 +214,7 @@ class BaseDM(VerifySecGroup):
         assert self.op, "DM config on %s not removed. Check the MX" % self.bad_mx
 
     def remove_nc_config(self):
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             physical_dev = self.vnc_lib.physical_router_read(id = dev_fixture.phy_device.uuid)
             physical_dev.set_physical_router_vnc_managed(False)
             physical_dev._pending_field_updates
@@ -225,7 +222,7 @@ class BaseDM(VerifySecGroup):
 
     def add_nc_config(self):
 
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             physical_dev = self.vnc_lib.physical_router_read(id = dev_fixture.phy_device.uuid)
             physical_dev.set_physical_router_vnc_managed(True)
             physical_dev._pending_field_updates
@@ -233,22 +230,22 @@ class BaseDM(VerifySecGroup):
 
     def bind_dev_to_router(self):
 
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             bgp_fq_name = ['default-domain', 'default-project','ip-fabric', '__default__', str(dev_fixture.name)]
             bgp_router = self.vnc_lib.bgp_router_read(fq_name=bgp_fq_name)
             dev_fixture.add_bgp_router(bgp_router)
 
     def add_vn_to_device(self):
 
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             dev_fixture.add_virtual_network(str(self.vn1_fixture.uuid))
             dev_fixture.add_virtual_network(str(self.vn2_fixture.uuid))
 
     def change_vtep(self):
 
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             physical_dev = self.vnc_lib.physical_router_read(id = dev_fixture.phy_device.uuid)
-            physical_dev.set_physical_router_dataplane_ip(str('10.20.30.40'))
+            physical_dev.set_physical_router_dataplane_ip(unicode('10.20.30.40'))
             physical_dev._pending_field_updates
             self.vnc_lib.physical_router_update(physical_dev)
 
@@ -371,11 +368,11 @@ class BaseDM(VerifySecGroup):
         generator = iter_iprange('111.1.1.0', '111.255.255.0', step=256)
         for i in range(1,2000):
             vn_scale_name = "test_%s_vn" % i
-            vn_scale_net = (str(next(generator))+str('/24')).split()
+            vn_scale_net = (str(generator.next())+str('/24')).split()
             vn_scale_fixture = self.useFixture(VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections, option='contrail',
                 vn_name=vn_scale_name, inputs=self.inputs, subnets=vn_scale_net, router_external=True))
             #assert vn_scale_fixture.verify_on_setup()
-            for dev_fixture in list(self.phy_router_fixture.values()):
+            for dev_fixture in self.phy_router_fixture.values():
                 dev_fixture.add_virtual_network(str(vn_scale_fixture.uuid))
 

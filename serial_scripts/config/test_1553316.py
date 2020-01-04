@@ -29,7 +29,7 @@ class Test1553316(BaseNeutronTest):
         super(Test1553316, cls).tearDownClass()
 
     def is_test_applicable(self):
-        if not list(self.inputs.dm_mx.values()):
+        if not self.inputs.dm_mx.values():
            return (False, 'Physical routers data needs to be set in testbed.py to run this script')
         if len(self.inputs.ext_routers) < 1:            
             return (False, 'Atleast 1 mx is needed')
@@ -45,7 +45,7 @@ class Test1553316(BaseNeutronTest):
         """
         Description: Verify v6 config is pushed to mx 
         """
-        router_params = list(self.inputs.dm_mx.values())[0]
+        router_params = self.inputs.dm_mx.values()[0]
         self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
                             router_params['name'], router_params['control_ip'],
                             model=router_params['model'],

@@ -1,6 +1,3 @@
-from __future__ import print_function
-from builtins import str
-from builtins import range
 import sys
 import os
 import fixtures
@@ -255,7 +252,7 @@ class trafficTestFixture(fixtures.Fixture):
             # and not due to stats file update issue [where file update takes
             # sometime to reflect changes]
             if ret['status'] == True:
-                print("breaking loop in %s attempts" % j)
+                print "breaking loop in %s attempts" % j
                 break
             else:
                 time.sleep(3)   # sleep and poll again..

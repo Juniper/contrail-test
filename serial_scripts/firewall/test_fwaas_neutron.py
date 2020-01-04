@@ -31,7 +31,7 @@ class TestFwaasBasic(BaseFirewallTest):
             for vm in ['web', 'logic', 'db']:
                 cls.vms[vn+'_'+vm] = cls.create_only_vm(vn_fixture=cls.vns[vn])
         cls.policys['hr_eng'] = cls.setup_only_policy_between_vns(cls.vns['hr'], cls.vns['eng'])
-        assert cls.check_vms_active(iter(cls.vms.values()), do_assert=False)
+        assert cls.check_vms_active(cls.vms.itervalues(), do_assert=False)
 
 #    @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -55,11 +55,11 @@ class TestFwaasBasic(BaseFirewallTest):
             source={'subnet': self.get_ip_address(self.vms['hr_logic'])},
             destination={'subnet': self.get_ip_address(self.vms['hr_db'])},
             protocol='udp', sports=('35300', ), dports=('8008', ))
-        rules = list([{'uuid': x.uuid} for x in [icmp_fwr, tcp_fwr, udp_fwr]])
+        rules = list(map(lambda x: {'uuid': x.uuid}, [icmp_fwr, tcp_fwr, udp_fwr]))
         fwp = self.create_fw_policy(rules=rules)
-        fwg = self.create_fw_group(vm_fixtures=list(self.vms.values()),
+        fwg = self.create_fw_group(vm_fixtures=self.vms.values(),
                                    ingress_policy=fwp, egress_policy=fwp)
-        assert self.check_vms_booted(iter(self.vms.values()), do_assert=False)
+        assert self.check_vms_booted(self.vms.itervalues(), do_assert=False)
 
         self._verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
             self.vms['hr_db'], sport=35300, dport=8008)

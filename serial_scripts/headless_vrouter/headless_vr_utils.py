@@ -49,7 +49,7 @@ def get_flow_index_list(self, src_vm, dest_vm):
                 src_vm.vm_node_ip]['password'],container='agent')
         result.split('\r\n')
         output = result.replace('<=>',' ').split(' ')
-        output = [_f for _f in output if _f] 
+        output = filter(None,output) 
     except Exception as e:
         self.logger.exception(
             "Got exception at get_flow_index_list as %s" %

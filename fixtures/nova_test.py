@@ -1,9 +1,3 @@
-from __future__ import print_function
-from builtins import map
-from builtins import next
-from builtins import str
-from builtins import zip
-from builtins import object
 import os
 from common.openstack_libs import nova_client as mynovaclient
 from common.openstack_libs import nova_exception as novaException
@@ -72,7 +66,7 @@ class NovaHelper(object):
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
         self.hypervisor_type = os.environ.get('HYPERVISOR_TYPE') \
-                                if 'HYPERVISOR_TYPE' in os.environ \
+                                if os.environ.has_key('HYPERVISOR_TYPE') \
                                 else None
         self._nova_services_list = None
         self.hosts_list = []
@@ -134,7 +128,7 @@ class NovaHelper(object):
         # Populate hosts_dict
         self.logger.debug('Hosts: %s' %(self.hosts_dict))
 
-        if zone and self.hosts_dict and zone in self.hosts_dict:
+        if zone and self.hosts_dict and self.hosts_dict.has_key(zone):
             return self.hosts_dict[zone][:]
         else:
             return self.hosts_list
@@ -160,8 +154,8 @@ class NovaHelper(object):
             zones = self.obj.availability_zones.list()
         except novaException.Forbidden:
             zones = self.admin_obj.obj.availability_zones.list()
-        zones = [x for x in zones if x.zoneName != 'internal']
-        return [x.zoneName for x in zones]
+        zones = filter(lambda x: x.zoneName != 'internal', zones)
+        return map(lambda x: x.zoneName, zones)
 
     def get_handle(self):
         return self.obj
@@ -251,8 +245,6 @@ class NovaHelper(object):
 
 
     def get_vm_if_present(self, vm_name=None, project_id=None, vm_id=None):
-        if vm_id:
-            return self.get_vm_by_id(vm_id)
         try:
             vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
         except novaException.Forbidden:
@@ -265,7 +257,7 @@ class NovaHelper(object):
         for vm in vm_list:
             if project_id and vm.tenant_id != self.strip(project_id):
                 continue
-            if (vm_name and vm.name == vm_name):
+            if (vm_name and vm.name == vm_name) or (vm_id and vm.id == vm_id):
                 return vm
         return None
     # end get_vm_if_present
@@ -290,11 +282,11 @@ class NovaHelper(object):
                                     vcpus=flavor_info['vcpus'],
                                     ram=flavor_info['ram'],
                                     disk=flavor_info['disk'])
-                if 'server_type' in flavor_info:
+                if flavor_info.has_key('server_type'):
                    flavor_obj.set_keys({"server_type":flavor_info["server_type"]})
-                if 'arch' in flavor_info:
+                if flavor_info.has_key('arch'):
                    flavor_obj.set_keys({"arch":flavor_info["arch"]})
-                if 'capabilities' in flavor_info:
+                if flavor_info.has_key('capabilities'):
                    capabilities = flavor_info['capabilities']
                    capability = capabilities.split("=")
                    flavor_obj.set_keys({capability[0]:capability[1]})
@@ -309,7 +301,7 @@ class NovaHelper(object):
                 except novaException.Forbidden:
                     flavor = self.admin_obj.obj.flavors.find(name=name)
                 flavor.set_keys({'hw:mem_page_size': 'any'})
-        except Exception as e:
+        except Exception, e:
             self.logger.exception('Exception adding flavor %s' % (name))
             raise e
     # end _install_flavor
@@ -335,7 +327,7 @@ class NovaHelper(object):
         params = self._parse_image_params(image_info['params'])
         image = image_info['name']
         image_type = image_info['type']
-        if 'kernel_image' in image_info:
+        if image_info.has_key('kernel_image'):
            kernel_id  = self.get_image(image_info['kernel_image'])['id']
            ramdisk_id = self.get_image(image_info['ramdisk_image'])['id']
            params['kernel_id'] = kernel_id
@@ -346,6 +338,19 @@ class NovaHelper(object):
             build_path = '%s/%s' % (location, image)
         else:
             build_path = 'http://%s/%s/%s' % (webserver, location, image)
+
+        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [START]
+        #Can remove this when above bug is fixed
+        if image_type == 'docker':
+            for host in self.hosts_dict['nova/docker']:
+                username = self.inputs.host_data[host]['username']
+                password = self.inputs.host_data[host]['password']
+                ip = self.inputs.host_data[host]['host_ip']
+                with settings(
+                    host_string='%s@%s' % (username, ip),
+                        password=password, warn_only=True, abort_on_prompts=False):
+                    self.load_docker_image_on_host(build_path)
+        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [END]
 
         username = self.inputs.host_data[self.openstack_ip]['username']
         password = self.inputs.host_data[self.openstack_ip]['password']
@@ -381,6 +386,19 @@ class NovaHelper(object):
             local('mkdir -p %s'%folder)
             self.execute_cmd_with_proxy("wget %s -O %s" % (image_url, filename), do_local=do_local)
             return filename
+
+    def load_docker_image_on_host(self, build_path):
+        run('pwd')
+        image_abs_path = self.download_image(build_path)
+        # Add the image to docker
+        if '.gz' in image_abs_path:
+            image_gz = os.path.basename(image_abs_path)
+            image_tar = image_gz.split('.gz')[0]
+            self.execute_cmd_with_proxy("gunzip -f /tmp/%s" % image_gz)
+        else:
+            image_tar = os.path.basename(image_abs_path)
+
+        self.execute_cmd_with_proxy("docker load -i /tmp/%s" % image_tar)
 
     def get_image_account(self, image_name):
         '''
@@ -476,9 +494,11 @@ class NovaHelper(object):
     def get_nova_services(self, **kwargs):
         try:
             nova_services = self.obj.services.list(**kwargs)
-            nova_services = [x for x in nova_services if x.state != 'down' and x.status != 'disabled']
+            nova_services = filter(lambda x: x.state != 'down' and x.status != 'disabled',
+                   nova_services)
             if self.zone:
-                nova_services = [x for x in nova_services if x.zone == 'internal' or x.zone == self.zone]
+                nova_services = filter(lambda x: x.zone == 'internal' or x.zone == self.zone,
+                       nova_services)
             self.logger.debug('Services list from nova: %s' %
                              nova_services)
             return nova_services
@@ -504,17 +524,17 @@ class NovaHelper(object):
                     self.username, self.password,
                     self.project_name, self.auth_url, self.region_name))
         services_info = services_info.split('\r\n')
-        get_rows = lambda row: list(map(str.strip, [_f for _f in row.split('|') if _f]))
+        get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
         columns = services_info[1].split('|')
-        columns = list(map(str.strip, [_f for _f in columns if _f]))
-        columns = list(map(str.lower, columns))
-        columns_no_binary = list(map(str.lower, columns))
+        columns = map(str.strip, filter(None, columns))
+        columns = map(str.lower, columns)
+        columns_no_binary = map(str.lower, columns)
         columns_no_binary.remove('binary')
-        rows = list(map(get_rows, services_info[3:-1]))
+        rows = map(get_rows, services_info[3:-1])
         nova_class = type('NovaService', (object,), {})
         for row in rows:
-            datadict = dict(list(zip(columns, row)))
-            for fk, fv in list(kwargs.items()):
+            datadict = dict(zip(columns, row))
+            for fk, fv in kwargs.items():
                 if datadict[fk] != fv:
                     break
                 else:
@@ -522,7 +542,7 @@ class NovaHelper(object):
                        datadict['state'] == 'down':
                         break
                     service_obj = nova_class()
-                    for key, value in list(datadict.items()):
+                    for key, value in datadict.items():
                         setattr(service_obj, key, value)
 
                     # Append the service into the list.
@@ -585,6 +605,7 @@ class NovaHelper(object):
         else:
             zone, node_name = self.lb_node_zone(zone)
 
+        image_name = self.get_image_name_for_zone(image_name=image_name, zone=zone)
         image = self.get_image(image_name=image_name)
         if not flavor:
             flavor = self.get_default_image_flavor(image_name=image_name)
@@ -637,7 +658,7 @@ class NovaHelper(object):
         with timeout(seconds=wait_time):
             try:
                 vm_obj.get()
-            except TimeoutError as e:
+            except TimeoutError, e:
                 self.logger.error('Timed out while getting VM %s detail' % (
                     vm_obj.name))
     # end get_vm_obj
@@ -653,12 +674,12 @@ class NovaHelper(object):
             else:
                 return True
         except novaException.ClientException:
-            print('Fatal Nova Exception')
+            print 'Fatal Nova Exception'
             self.logger.exception('Exception while getting vm detail')
             return False
     # end def
 
-    @retry(tries=10, delay=5)
+    @retry(tries=1, delay=60)
     def _get_vm_ip(self, vm_obj, vn_name=None):
         ''' Returns a list of IPs for the VM in VN.
 
@@ -666,10 +687,10 @@ class NovaHelper(object):
         vm_ip_dict = self.get_vm_ip_dict(vm_obj)
         if not vn_name:
             address = list()
-            for ips in vm_ip_dict.values():
+            for ips in vm_ip_dict.itervalues():
                 address.extend(ips)
             return (True, address)
-        if vn_name in list(vm_ip_dict.keys()) and vm_ip_dict[vn_name]:
+        if vn_name in vm_ip_dict.keys() and vm_ip_dict[vn_name]:
             return (True, vm_ip_dict[vn_name])
         self.logger.error('VM does not seem to have got an IP in VN %s' % (vn_name))
         return (False, [])
@@ -682,7 +703,7 @@ class NovaHelper(object):
         ''' Returns a dict of all IPs with key being VN name '''
         vm_obj.get()
         ip_dict={}
-        for key,value in vm_obj.addresses.items():
+        for key,value in vm_obj.addresses.iteritems():
             ip_dict[key] = list()
             for dct in value:
                 ip_dict[key].append(dct['addr'])
@@ -732,9 +753,10 @@ class NovaHelper(object):
             if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname'] is not None:
                 if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
                     == hypervisor.hypervisor_hostname:
-                    if hypervisor.hypervisor_type == 'QEMU':
+                    if hypervisor.hypervisor_type == 'QEMU' or \
+                        hypervisor.hypervisor_type == 'docker':
                         host_name = vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
-                        return host_name and self.get_host_name(host_name)
+                        return self.get_host_name(host_name)
                     if 'VMware' in hypervisor.hypervisor_type:
                         host_name = vcenter_libs.get_contrail_vm_by_vm_uuid(self.inputs,vm_obj.id)
                         return host_name
@@ -742,8 +764,6 @@ class NovaHelper(object):
                 if vm_obj.__dict__['OS-EXT-STS:vm_state'] == "error":
                     self.logger.error('VM %s has failed to come up' %vm_obj.name)
                     self.logger.error('Fault seen in nova show <vm-uuid> is:  %s' %vm_obj.__dict__['fault'])
-                    assert False, 'Fault seen in nova show %s is:  %s' %(
-                        vm_obj.id, vm_obj.__dict__['fault'])
                 else:
                     self.logger.error('VM %s has failed to come up' %vm_obj.name)
                 self.logger.error('Nova failed to get host of the VM')
@@ -769,9 +789,32 @@ class NovaHelper(object):
         return self._hypervisors
     #end
 
+    def kill_remove_container(self, compute_host_ip, vm_id):
+        get_container_id_cmd = "docker ps -f name=nova-%s | grep 'nova-%s' | cut -d ' ' -f1"\
+                               % (vm_id, vm_id)
+        with settings(
+            host_string='%s@%s' %
+                (self.inputs.host_data[compute_host_ip]['username'],
+                 compute_host_ip),
+            password=self.inputs.host_data[compute_host_ip]['password'],
+            warn_only=True, abort_on_prompts=False):
+                output = run(get_container_id_cmd)
+                if not output:
+                    #if container id not found in docker then return
+                    return
+                container_id = output.split("\n")[-1]
+                run("docker kill %s" % container_id)
+                run("docker rm -f  %s" % container_id)
+
     def delete_vm(self, vm_obj):
         compute_host = self.get_nova_host_of_vm(vm_obj)
         vm_obj.delete()
+        if self.get_compute_node_zone(compute_host) == 'nova/docker':
+            # Workaround for the bug https://bugs.launchpad.net/nova-docker/+bug/1413371
+            # sleep to avoid race condition between docker and vif driver
+            time.sleep(1)
+            self.kill_remove_container(compute_host,
+                                       vm_obj.id)
     # end _delete_vm
 
     def get_key_file(self):
@@ -816,7 +859,7 @@ class NovaHelper(object):
         return self.wait_till_vm_status(vm_obj, 'ACTIVE')
     # end wait_till_vm_is_active
 
-    @retry(tries=30, delay=5)
+    @retry(tries=60, delay=5)
     def wait_till_vm_status(self, vm_obj, status='ACTIVE'):
         try:
             vm_obj.get()
@@ -844,7 +887,7 @@ class NovaHelper(object):
             for hyper in self.obj.hypervisors.list():
                 if hyper.hypervisor_hostname == getattr(vm_obj,
                      'OS-EXT-SRV-ATTR:hypervisor_hostname') and ((u'VMware' in
-                         hyper.hypervisor_type) ):
+                         hyper.hypervisor_type) or (u'docker' in hyper.hypervisor_type)):
                    # can't get console logs for VM in VMware nodes
                    # https://bugs.launchpad.net/nova/+bug/1199754
                    return self.wait_till_vm_is_active(vm_obj)
@@ -910,10 +953,19 @@ class NovaHelper(object):
             if node_name in self.hosts_dict[zone]:
                 return zone
 
+    def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
+        image_info = self.images_info[image_name]
+        if zone == 'nova/docker':
+            return image_info['name_docker']
+        else:
+            return image_name
+
     def lb_node_zone(self, zone=None):
         if zone or self.hypervisor_type:
             if (not zone) and self.hypervisor_type:
-                if self.hypervisor_type == 'qemu':
+                if self.hypervisor_type == 'docker':
+                    zone = 'nova/docker'
+                elif self.hypervisor_type == 'qemu':
                     zone = 'nova'
                 else:
                     self.logger.warn("Test on hypervisor type %s not supported yet, \

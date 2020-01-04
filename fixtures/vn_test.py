@@ -1,6 +1,3 @@
-from __future__ import print_function
-from builtins import str
-from builtins import range
 import fixtures
 from ipam_test import *
 from project_test import *
@@ -268,7 +265,8 @@ class VNFixture(fixtures.Fixture):
 
     def _parse_subnets(self):
         # If the list is just having cidrs
-        if self.vn_subnets and type(self.vn_subnets[0]) is not dict:
+        if self.vn_subnets and (type(self.vn_subnets[0]) is str or
+                                type(self.vn_subnets[0]) is unicode):
             self.vn_subnets = [{'cidr': x} for x in self.vn_subnets]
     # end _parse_subnets
 
@@ -1059,7 +1057,7 @@ class VNFixture(fixtures.Fixture):
                               ' Skipping VN cleanup check in vrouter')
             return True
         for compute_ip in compute_ips:
-            if not compute_ip in list(self.vrf_ids.keys()):
+            if not compute_ip in self.vrf_ids.keys():
                 continue
             inspect_h = self.agent_inspect[compute_ip]
             vrf_id = self.vrf_ids[compute_ip]
@@ -1282,7 +1280,7 @@ class VNFixture(fixtures.Fixture):
         # Get the valid peer VN list for route exchange from calling code as it needs
         # to be looked from outside of VN fixture...
         dst_vn_name_list = self.policy_peer_vns
-        print("VN list for RT import is %s" % dst_vn_name_list)
+        print "VN list for RT import is %s" % dst_vn_name_list
 
         # Get the RT for each VN found in policy list
         if dst_vn_name_list:
@@ -1405,12 +1403,12 @@ class VNFixture(fixtures.Fixture):
         self.delete()
         super(VNFixture, self).cleanUp()
 
-    @retry(delay=2, tries=25)
+    @retry(delay=5, tries=12)
     def _delete_vn(self):
         if (self.option == 'contrail'):
             try:
                 self.vnc_lib_h.virtual_network_delete(id=self.uuid)
-            except RefsExistError as e:
+            except RefsExistError,e:
                 self.logger.debug('RefsExistError %s while deleting VN %s..'
                     'Will retry' %(e, self.vn_name))
                 return False
@@ -1862,7 +1860,7 @@ class VNFixture(fixtures.Fixture):
         try:
             return self.vnc_lib_h.virtual_network_ip_alloc(self.api_vn_obj,
                                                            count=count)
-        except RefsExistError as e:
+        except RefsExistError,e:
             self.logger.debug('No IP available to allocate in VN %s' %(
                 self.vn_name))
             return None
@@ -2082,7 +2080,7 @@ class MultipleVNFixture(fixtures.Fixture):
             network = '%s/%s'%(net, reqd_plen)
 
         subnets = list(IPNetwork(network).subnet(plen))
-        return [subnet.__str__() for subnet in subnets[:]]
+        return map(lambda subnet: subnet.__str__(), subnets[:])
 
     def _find_subnets(self):
         if not self.vn_name_net:
@@ -2096,7 +2094,7 @@ class MultipleVNFixture(fixtures.Fixture):
                 self._vn_subnets.update({'vn%s' % (i + 1): subnets[:]})
                 self.random_networks.extend(subnets)
             return
-        for vn_name, net in list(self.vn_name_net.items()):
+        for vn_name, net in self.vn_name_net.items():
             if type(net) is list:
                 self._vn_subnets.update({vn_name: net})
             else:
@@ -2105,7 +2103,7 @@ class MultipleVNFixture(fixtures.Fixture):
     def setUp(self):
         super(MultipleVNFixture, self).setUp()
         self._vn_fixtures = []
-        for vn_name, subnets in list(self._vn_subnets.items()):
+        for vn_name, subnets in self._vn_subnets.items():
             vn_fixture = self.useFixture(VNFixture(inputs=self.inputs,
                                                    connections=self.connections,
                                                    project_name=self.project_name,
@@ -2123,5 +2121,5 @@ class MultipleVNFixture(fixtures.Fixture):
         return self._vn_subnets
 
     def get_all_fixture_obj(self):
-        return [(name_fixture[0], name_fixture[1].obj) for name_fixture in self._vn_fixtures]
+        return map(lambda (name, fixture): (name, fixture.obj), self._vn_fixtures)
 

@@ -3,7 +3,6 @@
 # Copyright (c) 2014 Juniper Networks, Inc. All rights reserved.
 #
 
-from builtins import object
 import argparse
 import json
 import re

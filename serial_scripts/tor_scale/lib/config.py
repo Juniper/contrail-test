@@ -1,8 +1,4 @@
 ''' This module provides utils for setting up scale config'''
-from __future__ import division
-from builtins import str
-from builtins import object
-from past.utils import old_div
 import copy
 import argparse
 import random
@@ -136,7 +132,7 @@ class ConfigScale(object):
     def get_tor_info(self, tor_id):
         tor_id = tor_id.replace("TOR", "")
         tor_dict = self.inputs.tor_agent_data
-        for (k,v) in list(tor_dict.items()):
+        for (k,v) in tor_dict.items():
             for item in v:
                 if item['tor_id'] == tor_id:
                     tor_obj = self.vnc_lib.physical_router_read(
@@ -193,7 +189,7 @@ class ConfigScale(object):
         lif_per_pif = int(scale_dict[tor_id].get('lif_num', None))
         pif_num = len(self.get_physical_port_list(scale_dict, tor_id))
         vn_num = int(scale_dict[tor_id].get('vn_number', None))
-        lif_per_vn = old_div(lif_per_pif * pif_num, vn_num)
+        lif_per_vn = lif_per_pif * pif_num / vn_num
         return lif_per_vn
 
     def get_vxlan_id(self, scale_dict, tor_id, itr):

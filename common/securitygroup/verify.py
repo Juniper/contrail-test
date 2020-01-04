@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import os
 import sys
 from time import sleep
@@ -493,8 +491,8 @@ class VerifySecGroup(BaseVrouterTest):
                 nh=nh,
                 sip=src_vm_fix.vm_ip,
                 dip=dst_vm_fix.vm_ip,
-                sport=str(sport),
-                dport=str(dport),
+                sport=unicode(sport),
+                dport=unicode(dport),
                 protocol=proto)
             count += 1
             sleep(0.5)

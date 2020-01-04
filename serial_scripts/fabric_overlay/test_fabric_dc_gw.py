@@ -10,7 +10,7 @@ class TestFabricDcGw(BaseFabricTest):
         result, msg = super(TestFabricDcGw, self).is_test_applicable()
         if result:
             msg = 'No device with dc_gw rb_role in the provided fabric topology'
-            for device_dict in list(self.inputs.physical_routers_data.values()):
+            for device_dict in self.inputs.physical_routers_data.values():
                 if 'dc_gw' in (device_dict.get('rb_roles') or []):
                     break
             else:
@@ -21,7 +21,7 @@ class TestFabricDcGw(BaseFabricTest):
         return False, msg
 
     def setUp(self):
-        for device, device_dict in list(self.inputs.physical_routers_data.items()):
+        for device, device_dict in self.inputs.physical_routers_data.items():
             if 'dc_gw' in (device_dict.get('rb_roles') or []):
                 if device_dict['role'] == 'spine':
                     self.rb_roles[device] = ['DC-Gateway', 'Route-Reflector']
@@ -48,7 +48,7 @@ class TestFabricDcGw(BaseFabricTest):
                 self.addCleanup(spine.delete_virtual_network, public_vn.uuid)
         vm = self.create_vm(vn_fixture=private_vn, image_name='cirros')
 
-        for bms in list(self.inputs.bms_data.keys()):
+        for bms in self.inputs.bms_data.keys():
             bms_fixture = self.create_bms(bms_name=bms, vn_fixture=private_vn)
             bms_fixtures.append(bms_fixture)
             fip_ips[bms_fixture.port_fixture.uuid], fip_id = \

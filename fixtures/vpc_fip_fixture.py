@@ -109,7 +109,7 @@ class VPCFIPFixture(fixtures.Fixture):
         foundIp = False
 
         for ip in out:
-            ip = [_f for _f in ip.split(' ') if _f]
+            ip = filter(None, ip.split(' '))
             if len(ip) == 0:
                 continue
             if ip[0] == floating_ip:

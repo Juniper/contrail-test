@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -7,22 +5,17 @@ from __future__ import division
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
-from past.utils import old_div
 import fixtures
 from tcutils.util import *
 import logging as LOG
 import re
 import json
-import urllib.request, urllib.error, urllib.parse
+import urllib2
 import requests
 import time
 import datetime
 import threading
-import queue
+import Queue
 from subprocess import Popen, PIPE
 import shlex
 import pprint
@@ -179,7 +172,7 @@ class AnalyticsVerification(fixtures.Fixture):
             return False
         return True
 
-#    @retry_for_value(delay=2, tries=5)
+    @retry_for_value(delay=2, tries=5)
     def get_ops_generator_from_ops_introspect(self, collector, generator, moduleid, node_type, instanceid):
         obj = self.ops_inspect[collector].get_ops_generator(
             generator=generator, moduleid=moduleid, node_type=node_type, instanceid=instanceid)
@@ -204,7 +197,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_generator_connection_to_collector(self):
         '''Verify the collector connection with different modules'''
 
-        for k,v in list(GENERATORS.items()):
+        for k,v in GENERATORS.items():
             if (k == 'Compute'):
                 for name in self.inputs.compute_names:
                     for elem in v:
@@ -221,6 +214,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         assert  self.verify_connection_status(
                                 name,elem,k) 
             if (k == 'Config'):
+                
                 for name in self.inputs.cfgm_names:
                     result = False
                     for elem in v:
@@ -234,7 +228,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         assert self.verify_connection_status(
                                 name,elem,k) 
 
-    @retry(delay=2, tries=2)
+    @retry(delay=5, tries=4)
     def verify_connection_status(self, generator, moduleid, node_type, instanceid='0'):
         '''Verify if connection status with collector and generator:node_type:moduleid:instance
             is established
@@ -242,21 +236,23 @@ class AnalyticsVerification(fixtures.Fixture):
 
         self.g = generator
         self.m = moduleid
-        collector_ip = self.inputs.collector_ips[0]
-        self.logger.debug("Verifying through opserver in %s" %
-                         (collector_ip))
-        status = self.get_connection_status(
-            collector_ip, self.g, self.m, node_type, instanceid)
-        if (status == 'Established'):
-            self.logger.info("Validated that %s:%s:%s:%s is connected to \
-                collector %s" %(self.g, node_type, self.m, instanceid, 
-                collector_ip))
-            return True
-        else:
-            self.logger.warn(
-                "%s:%s:%s:%s is NOT connected to collector %s" %
-                (self.g, node_type, self.m, instanceid, collector_ip))
-            return False
+        result = True
+        for collector_ip in self.inputs.collector_ips:
+            self.logger.debug("Verifying through opserver in %s" %
+                             (collector_ip))
+            status = self.get_connection_status(
+                collector_ip, self.g, self.m, node_type, instanceid)
+            if (status == 'Established'):
+                self.logger.info("Validated that %s:%s:%s:%s is connected to \
+                    collector %s" %(self.g, node_type, self.m, instanceid, 
+                    collector_ip))
+                result = result & True
+            else:
+                self.logger.warn(
+                    "%s:%s:%s:%s is NOT connected to collector %s" %
+                    (self.g, node_type, self.m, instanceid, collector_ip))
+                result = result & False
+        return result
 
     def get_collector_of_gen(self, collector, gen, module, node_type, instance='0'):
         '''Gets the collector node of a generator
@@ -321,108 +317,132 @@ class AnalyticsVerification(fixtures.Fixture):
   #  @retry(delay=5, tries=1)
     def verify_collector_uve(self):
         '''Verify that all generators are connected to collector'''
+        result = True
+
         # Verify module-ids correctly shown in the  collector uve for respective generators
-        # verify module-id for bgp node in collector uve - should be
-        # 'Contrail-Control'
+         # verify module-id for bgp node in collector uve - should be
+         # 'Contrail-Control'
         for ip in self.inputs.bgp_ips:
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortControl'])
         for ip in self.inputs.cfgm_ips:
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortApiServer'])
+        result = False
         for ip in self.inputs.cfgm_ips:
-            if self.verify_collector_connection_introspect(ip, http_introspect_ports['HttpPortSchemaTransformer']):
-                break
-        else:
-            assert False, 'Schema not connected to collector'
+            if not self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer']):
+                continue
+            else:
+                result = result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSchemaTransformer'])
+        assert result
+
         for ip in self.inputs.cfgm_ips:
-            if self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSvcMonitor']):
-                break
-        else:
-            assert False, 'Svc Monitor not connector to collector'
+            result = result or self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortSvcMonitor'])
+        assert result
         for ip in self.inputs.collector_ips:
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortOpserver'])
         for ip in self.inputs.collector_ips:
             assert self.verify_collector_connection_introspect(ip,http_introspect_ports['HttpPortQueryEngine'])
-        expected_module_id = ['contrail-control', 'contrail-dns']
-        expected_node_type = 'Control'
-        expected_instance_id = '0'
-        for bgp_host in self.bgp_hosts:
-            for module in expected_module_id:
+        for ip in self.inputs.collector_ips:
+            self.logger.debug("Verifying through opserver in %s" % (ip))
+            expected_module_id = ['contrail-control', 'contrail-dns']
+            expected_node_type = 'Control'
+            expected_instance_id = '0'
+            for bgp_host in self.bgp_hosts:
+                for module in expected_module_id:
+                    is_established = self.verify_connection_status(
+                        bgp_host, module, expected_node_type, expected_instance_id)
+                    # collector=self.output['collector_name']
+                    if is_established:
+                    #self.logger.info("%s:%s connected to collector %s"%(bgp_host,module,collector))
+                        result = result and True
+                    else:
+                        result = result and False
+
+            expected_module_id = 'contrail-vrouter-agent'
+            expected_node_type = 'Compute'
+            expected_instance_id = '0'
+            for compute_host in self.compute_hosts:
                 is_established = self.verify_connection_status(
-                    bgp_host, module, expected_node_type, expected_instance_id)
-                if not is_established:
-                    self.logger.error('Unable to find generator for module %s'%module)
-                    return False
-        expected_module_id = 'contrail-vrouter-agent'
-        expected_node_type = 'Compute'
-        expected_instance_id = '0'
-        for compute_host in self.compute_hosts:
-            is_established = self.verify_connection_status(
-                compute_host, expected_module_id, expected_node_type, expected_instance_id)
-            if not is_established:
-                self.logger.error('Unable to find generator for module %s'%expected_module_id)
-                return False
-        # Verifying module_id from ApiServer
-        expected_cfgm_modules = 'contrail-schema'
-        expected_node_type = 'Config'
-        expected_instance_id = '0'
-        for cfgm_node in self.inputs.cfgm_names:
-            is_established = self.verify_connection_status(
-                cfgm_node, expected_cfgm_modules, expected_node_type, expected_instance_id)
-            if is_established:
-                break
-        else:
-            self.logger.error('Unable to find generator for module %s'%expected_cfgm_modules)
-            return False
-        #Verifying for ServiceMonitor
-        expected_cfgm_modules = 'contrail-svc-monitor'
-        expected_node_type = 'Config'
-        expected_instance_id = '0'
-        for cfgm_node in self.inputs.cfgm_names:
-            is_established = self.verify_connection_status(
-                cfgm_node, expected_cfgm_modules, expected_node_type, expected_instance_id)
-            if is_established:
-                break
-        else:
-            self.logger.error('Unable to find generator for module %s'%expected_cfgm_modules)
-            return False
-        # Verifying module_id  ApiServer
-        expected_apiserver_module = 'contrail-api'
-        expected_apiserver_instances = self.get_module_instances(
-            expected_apiserver_module)
-        expected_node_type = 'Config'
-        for cfgm_node in self.inputs.cfgm_names:
-            for inst in expected_apiserver_instances:
-                is_established = self.verify_connection_status(
-                    cfgm_node, expected_apiserver_module, expected_node_type, inst)
+                    compute_host, expected_module_id, expected_node_type, expected_instance_id)
+                # collector=self.output['collector_name']
                 if is_established:
+                    result = result and True
+                else:
+                    result = result and False
+            # Verifying module_id from ApiServer
+            expected_cfgm_modules = 'contrail-schema'
+            expected_node_type = 'Config'
+            expected_instance_id = '0'
+            for cfgm_node in self.inputs.cfgm_names:
+                result1 = True
+                is_established = self.verify_connection_status(
+                    cfgm_node, expected_cfgm_modules, expected_node_type, expected_instance_id)
+                if is_established:
+                    # collector=self.output['collector_name']
+                    result1 = result1 and True
                     break
-            else:
-                self.logger.error('Unable to find generator for module %s'%expected_apiserver_module)
-                return False
-        # Verifying module_id Contrail-Analytics-Api
-        expected_opserver_module = 'contrail-analytics-api'
-        expected_opserver_instances = self.get_module_instances(
-            expected_opserver_module)
-        expected_node_type = 'Analytics'
-        for c_host in self.inputs.collector_names:
-            for inst in expected_opserver_instances:
+                else:
+                    result1 = result1 and False
+            result = result and result1
+            #Verifying for ServiceMonitor
+            expected_cfgm_modules = 'contrail-svc-monitor'
+            expected_node_type = 'Config'
+            expected_instance_id = '0'
+            for cfgm_node in self.inputs.cfgm_names:
+                result1 = True
                 is_established = self.verify_connection_status(
-                    c_host, expected_opserver_module, expected_node_type, inst)
-                if not is_established:
-                    self.logger.error('Unable to find generator for module %s'%expected_opserver_module)
-                    return False
-        # Verifying collector:moduleid
-        expected_collector_module = ['contrail-collector', 'contrail-query-engine']
-        expected_node_type = ['Analytics', 'Database']
-        expected_instance_id = '0'
-        for c_host in self.inputs.collector_names:
-            for module in range(len(expected_collector_module)):
-                is_established = self.verify_connection_status(
-                    c_host, expected_collector_module[module], expected_node_type[module], expected_instance_id)
-                if not is_established:
-                    self.logger.error('Unable to find generator for module %s'%expected_collector_module)
-                    return False
-        return True
+                    cfgm_node, expected_cfgm_modules, expected_node_type, expected_instance_id)
+                if is_established:
+                    # collector=self.output['collector_name']
+                    resulti1 = result1 and True
+                    break
+                else:
+                    result1 = result1 and False
+            result = result and result1
+            # Verifying module_id  ApiServer
+            expected_apiserver_module = 'Contrail-Api'
+            expected_apiserver_instances = self.get_module_instances(
+                expected_apiserver_module)
+            expected_node_type = 'Config'
+            # expected_cfgm_modules=['Contrail-Schema','contrail-svc-monitor']
+            for cfgm_node in self.inputs.cfgm_names:
+                for inst in expected_apiserver_instances:
+                    result1 = True
+                    is_established = self.verify_connection_status(
+                        cfgm_node, expected_apiserver_module, expected_node_type, inst)
+                    if is_established:
+                        result1 = result1 and True
+                        break
+                    else:
+                        result = result and False
+                result = result1 and result
+            # Verifying module_id Contrail-Analytics-Api
+            expected_opserver_module = 'Contrail-Analytics-Api'
+            expected_opserver_instances = self.get_module_instances(
+                expected_opserver_module)
+            expected_node_type = 'Analytics'
+            for c_host in self.inputs.collector_names:
+                for inst in expected_opserver_instances:
+                    is_established = self.verify_connection_status(
+                        c_host, expected_opserver_module, expected_node_type, inst)
+                    if is_established:
+                        # collector=self.output['collector_name']
+                        result = result and True
+                    else:
+                        result = result and False
+            # Verifying collector:moduleid
+            expected_collector_module = ['contrail-collector', 'contrail-query-engine']
+            expected_node_type = ['Analytics', 'Database']
+            expected_instance_id = '0'
+            for c_host in self.inputs.collector_names:
+                for module in range(len(expected_collector_module)):
+                    is_established = self.verify_connection_status(
+                        c_host, expected_collector_module[module], expected_node_type[module], expected_instance_id)
+                    # collector=self.output['collector_name']
+                    if is_established:
+                        result = result and True
+                    else:
+                        result = result and False
+        return result
 
     @retry(delay=3, tries=15)
     def verify_hrefs_to_all_uves_of_a_given_uve_type(self):
@@ -822,7 +842,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 return False
             expected_tiers = ['UveVirtualNetworkAgent',
                               'UveVirtualNetworkConfig']
-            tiers = list(self.ops_vnoutput.keys())
+            tiers = self.ops_vnoutput.keys()
             missing_tier = set(expected_tiers) - set(tiers)
             if not missing_tier:
                 self.logger.info(
@@ -1389,7 +1409,7 @@ class AnalyticsVerification(fixtures.Fixture):
         for ip in self.inputs.collector_ips:
             self.logger.debug("Verifying through opserver in %s" % (ip))
             self.ops_vm_output = self.ops_inspect[ip].get_ops_vm(vm=uuid)
-            key_list = list(self.ops_vm_output.keys())
+            key_list = self.ops_vm_output.keys()
             # expect_lst=['UveVirtualMachineConfig','UveVirtualMachineAgent']
             expect_lst = ['UveVirtualMachineAgent']
             diff_key = set(expect_lst) ^ set(key_list)
@@ -1529,43 +1549,43 @@ class AnalyticsVerification(fixtures.Fixture):
         '''Verifies the xmpp and bgp peer count in bgp-router uve'''
 
         result = True
-        ip = self.inputs.collector_ip
-        self.logger.info("Verifying through opserver in %s" % (ip))
-        count_agents_dct = self.get_bgp_router_uve_count_xmpp_peer(ip)
-        total_agent_connections = 0
-        count_bgp_nodes_dct = self.get_bgp_router_uve_count_bgp_peer(ip)
-        for bgp_host in self.inputs.bgp_names:
-            self.logger.debug("Verifying for %s bgp-router uve " %
-                             (bgp_host))
-            for elem in count_agents_dct:
-                if bgp_host in list(elem.keys()):
-                    total_agent_connections = total_agent_connections + int(elem[bgp_host])
+        for ip in self.inputs.collector_ips:
+            self.logger.info("Verifying through opserver in %s" % (ip))
+            count_agents_dct = self.get_bgp_router_uve_count_xmpp_peer(ip)
+            total_agent_connections = 0
+            count_bgp_nodes_dct = self.get_bgp_router_uve_count_bgp_peer(ip)
+            for bgp_host in self.inputs.bgp_names:
+                self.logger.debug("Verifying for %s bgp-router uve " %
+                                 (bgp_host))
+                for elem in count_agents_dct:
+                    if bgp_host in elem.keys():
+                        total_agent_connections = total_agent_connections + int(elem[bgp_host])
 
-            for elem in count_bgp_nodes_dct:
-                expected_bgp_peers = str(
-                    len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) + len(self.inputs.as4_ext_routers) - 1)
-                if bgp_host in list(elem.keys()):
-                    if (elem[bgp_host] == expected_bgp_peers):
-                        self.logger.info("Bgp peers = %s" %
-                                         (elem[bgp_host]))
-                        result = result and True
-                    else:
-                        self.logger.debug("Bgp peers = %s" %
-                                         (elem[bgp_host]))
-                        self.logger.debug("Expected bgp peers = %s " %
-                                         expected_bgp_peers)
-                        result = result and False
-                    break
-        factor = 1
-        if len(self.inputs.bgp_names) > 1:
-            factor = 2  # Each agent connects to 2 xmpp-servers
-        if total_agent_connections  == len(self.inputs.compute_ips)*factor:
-            self.logger.info("Total xmpp peer connections found = %s" %(total_agent_connections))
-            result = result and True
-        else:
-            self.logger.info("Total xmpp peer connections found = %s " %(total_agent_connections))
-            self.logger.error("Total xmpp peer connections should be = %s " %(len(self.inputs.compute_ips)*factor))
-            result = result and False
+                for elem in count_bgp_nodes_dct:
+                    expected_bgp_peers = str(
+                        len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) - 1)
+                    if bgp_host in elem.keys():
+                        if (elem[bgp_host] == expected_bgp_peers):
+                            self.logger.info("Bgp peers = %s" %
+                                             (elem[bgp_host]))
+                            result = result and True
+                        else:
+                            self.logger.debug("Bgp peers = %s" %
+                                             (elem[bgp_host]))
+                            self.logger.debug("Expected bgp peers = %s " %
+                                             expected_bgp_peers)
+                            result = result and False
+                        break
+            factor = 1
+            if len(self.inputs.bgp_names) > 1:
+                factor = 2  # Each agent connects to 2 xmpp-servers
+            if total_agent_connections  == len(self.inputs.compute_ips)*factor:
+                self.logger.info("Total xmpp peer connections found = %s" %(total_agent_connections))
+                result = result and True
+            else:
+                self.logger.info("Total xmpp peer connections found = %s " %(total_agent_connections))
+                self.logger.error("Total xmpp peer connections should be = %s " %(len(self.inputs.compute_ips)*factor))
+                result = result and False
         return result
 
     @retry(delay=2, tries=14)
@@ -1581,7 +1601,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.logger.debug("Verifying for %s bgp-router uve " %
                                  (bgp_host))
                 for elem in count_agents_dct:
-                    if bgp_host in list(elem.keys()):
+                    if bgp_host in elem.keys():
                         if (elem[bgp_host] >= self.get_bgp_router_uve_count_up_xmpp_peer(ip, bgp_host)):
                             self.logger.debug("xmpp peers = %s" %
                                              (elem[bgp_host]))
@@ -1596,7 +1616,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 expected_bgp_peers = str(
                     len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) - 1)
                 for elem in count_bgp_nodes_dct:
-                    if bgp_host in list(elem.keys()):
+                    if bgp_host in elem.keys():
                         if (elem[bgp_host] >= self.get_bgp_router_uve_count_up_bgp_peer(ip, bgp_host)):
                             self.logger.debug("bgp peers = %s" %
                                              (elem[bgp_host]))
@@ -2412,7 +2432,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
                     soak_timer=15):
                 result = result and False
-        except Exception as e:
+        except Exception, e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
         finally:
             for tagent in tor_agents:
@@ -2487,7 +2507,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         conf_file_backup,container='control')
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
                 result = result and False
-        except Exception as e:
+        except Exception, e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2549,7 +2569,7 @@ class AnalyticsVerification(fixtures.Fixture):
             else:
                 if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
                     result = result and False
-        except Exception as e:
+        except Exception, e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2623,7 +2643,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     self.logger.debug('Printing df -h before file creation: \n %s \n' % (status))
                     if diff:
                         self.logger.info('Creating a file of size %s GB(%s MB) to fill 91 percent of the disk space on %s' %
-                            (str(old_div(mb,1024)), str(mb), role))
+                            (str(mb/1024), str(mb), role))
                         self.inputs.run_cmd_on_server(svc_ip, dd_cmd)
                     else:
                         self.logger.info('Disk usage is already more than 91 percent, disk usage alarm expected')
@@ -2640,7 +2660,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 if not self._verify_alarms_by_type(None, svc_ip, role, alarm_type, multi_instances=False,
                         soak_timer=15):
                     result = result and False
-        except Exception as e:
+        except Exception, e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2796,7 +2816,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.info("Process %s stopped" % (service))
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
                 result = result and False
-        except Exception as e:
+        except Exception, e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2938,7 +2958,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     pprint.pprint(role_alarms)
                     pass
                 role_alarms = None
-        except Exception as e:
+        except Exception, e:
             self.logger.exception('Exception occured while checking for alarms')
             result = result and False
         return result
@@ -3156,7 +3176,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                                 return None
                                         else:
                                             self.logger.info("json operands are null for %s " % (service))
-                                            print(type_alarms)
+                                            print type_alarms
                                             return type_alarms
 
         if not clear:
@@ -3275,7 +3295,7 @@ class AnalyticsVerification(fixtures.Fixture):
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
-        for key in list(exceptions_flags.keys()):
+        for key in exceptions_flags.keys():
             self.uve_verification_flags.append(exceptions_flags[key])
         if 'False' in str(self.uve_verification_flags):
             result = False
@@ -3333,7 +3353,7 @@ class AnalyticsVerification(fixtures.Fixture):
         ret = self.get_all_tables(uve='tables')
         tables = self.get_table_schema(ret)
         for elem in tables:
-            for k, v in list(elem.items()):
+            for k, v in elem.items():
                 if table_name in k:
                     schema = self.get_schema_from_table(v)
                     break
@@ -3343,11 +3363,11 @@ class AnalyticsVerification(fixtures.Fixture):
                 break
         if message_table:
             mduleid = None
-            for k, v in list(message_table.items()):
+            for k, v in message_table.items():
                 for elem in v:
-                    if 'Source' in list(elem.keys()):
+                    if 'Source' in elem.keys():
                         source = elem['Source']
-                    if 'ModuleId' in list(elem.keys()):
+                    if 'ModuleId' in elem.keys():
                         moduleid = elem['ModuleId']
 
         if source and moduleid:
@@ -3410,7 +3430,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         if table_name:
             for elem in tables:
-                for k, v in list(elem.items()):
+                for k, v in elem.items():
                     if table_name in k:
                         schema = self.get_schema_from_table(v)
                         break
@@ -3462,7 +3482,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                      (table_name, res2))
         else:
             for el1 in tables:
-                for k, v in list(el1.items()):
+                for k, v in el1.items():
                     table_name = k.split('/')[-1]
                     if table_name not in skip_tables:
                         pass
@@ -3559,7 +3579,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         if table_name:
             for elem in tables:
-                for k, v in list(elem.items()):
+                for k, v in elem.items():
                     if table_name in k:
                         schema = self.get_schema_from_table(v)
                         schema.remove('T=')
@@ -3585,7 +3605,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         else:
             for el1 in tables:
-                for k, v in list(el1.items()):
+                for k, v in el1.items():
                     table_name = k.split('/')[-1]
                     if 'StatTable' not in table_name:
                         continue
@@ -3658,7 +3678,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def build_parallel_query_to_object_tables(self, table_name=None, start_time=None, end_time='now', skip_tables=[]):
 
         threads = []
-        self.que = queue.Queue()
+        self.que = Queue.Queue()
         if not start_time:
             self.logger.debug("start_time must be passed...")
             return
@@ -3667,7 +3687,7 @@ class AnalyticsVerification(fixtures.Fixture):
         try:
             for el1 in tables:
                 objects = None
-                for k, v in list(el1.items()):
+                for k, v in el1.items():
                     table_name = k.split('/')[-1]
                     if table_name in skip_tables:
                         pass
@@ -3715,7 +3735,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def get_table_schema(self, d):
 
         tables_lst = []
-        for k, v in list(d.items()):
+        for k, v in d.items():
             src_key = None
             mod_key = None
             schema_key = None
@@ -3741,7 +3761,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
             if column_value_key:
                 try:
-                    for elem in list(d[k][column_value_key].keys()):
+                    for elem in d[k][column_value_key].keys():
                         if 'Source' in elem:
                             src_key = '%s/Source' % column_value_key
                         if 'ModuleId' in elem:
@@ -3786,7 +3806,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         result = True
         if isinstance(d, dict):
-            for k, v in list(d.items()):
+            for k, v in d.items():
                 for uve in key_list:
                     if uve in k:
                         self.search_key_in_uve(uve, k, v, value_dct)
@@ -3811,7 +3831,7 @@ class AnalyticsVerification(fixtures.Fixture):
         self.logger.debug("Verifying for %s uve" % (uve))
         for elem in v_dct[uve]:
             if elem not in str(dct):
-                for key in list(exceptions.keys()):
+                for key in exceptions.keys():
                     if exceptions[key] in k:
                         exceptions_flags[key] = exceptions_flags[key] or False 
                         continue
@@ -3819,7 +3839,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         self.logger.warn("%s not in %s uve" % (elem, k))
                         self.uve_verification_flags.append('False')
             else:
-                for key in list(exceptions.keys()):
+                for key in exceptions.keys():
                     if exceptions[key] in k:
                         exceptions_flags[key] = True 
 
@@ -3998,7 +4018,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result and False
         return result
 
-#    @retry(delay=5, tries=4)
+    @retry(delay=5, tries=4)
     def verify_collector_connection_introspect(self,ip,port):
         conn=None
         ops_inspect= VerificationOpsSrvIntrospect(
@@ -4191,7 +4211,7 @@ class AnalyticsVerification(fixtures.Fixture):
             result1 = False                                    
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_config(cfgm)
-            for k,v in list(module_connection_dict.items()):            
+            for k,v in module_connection_dict.items():            
                 result1 = result1 or self.verify_process_status(ops_inspect,\
                                             k)
             assert result1
@@ -4439,7 +4459,7 @@ class AnalyticsVerification(fixtures.Fixture):
             result1 = True                                    
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_collector(collector)
-            for k,v in list(module_connection_dict.items()):
+            for k,v in module_connection_dict.items():
                 result1 = result1 and self.verify_process_status(ops_inspect,\
                                             k)
             assert result1        
@@ -4647,21 +4667,21 @@ class AnalyticsVerification(fixtures.Fixture):
         except Exception as e:
            return None 
     
-    @retry(delay=3, tries=10)
+    @retry(delay=3, tries=20)
     def verify_database_process_running(self,process):
         self.logger.debug('Verifying if db node_mgr running...')
         result = True
-        collector = self.inputs.collector_ip
         try:
-            for db in self.inputs.database_names:
-                self.logger.info("Verifying through collector %s for db node %s"%(collector,db))
-                dct = self.ops_inspect[collector].get_ops_db(db)
-                uve = dct.get_attr('Node','process_info',\
-                        match = ('process_name', process))
-                if (uve[0]['process_state'] == "PROCESS_STATE_RUNNING"):
-                    result = result and True
-                else:
-                    result = result and False
+            for collector in self.inputs.collector_ips:
+                for db in self.inputs.database_names:       
+                    self.logger.info("Verifying through collector %s for db node %s"%(collector,db))
+                    dct = self.ops_inspect[collector].get_ops_db(db)
+                    uve = dct.get_attr('Node','process_info',\
+                            match = ('process_name', process))
+                    if (uve[0]['process_state'] == "PROCESS_STATE_RUNNING"):
+                        result = result and True
+                    else:
+                        result = result and False    
         except Exception as e:
             result = result and False
         finally:
@@ -4712,7 +4732,7 @@ class AnalyticsVerification(fixtures.Fixture):
         found = False
         tables = self.get_table_schema(ret)
         for elem in tables:
-            for k, v in list(elem.items()):
+            for k, v in elem.items():
                 if stat_table in k:
                     schema = self.get_schema_from_table(v)
                     schema.remove('CLASS(T=)')
@@ -4749,6 +4769,6 @@ class AnalyticsVerification(fixtures.Fixture):
 
 if __name__ == '__main__':
 
-    print('Need to add')
+    print 'Need to add'
 
     # end runTest6

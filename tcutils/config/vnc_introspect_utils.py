@@ -1,11 +1,7 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 import logging as LOG
 
 from tcutils.verification_util import *
-from .vnc_api_results import *
+from vnc_api_results import *
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -67,7 +63,7 @@ class VNCApiInspect (VerificationUtilBase):
 
     def try_cache_by_id(self, otype, uuid, refresh):
         if not (refresh or self.get_force_refresh()):
-            for p in list(self._cache[otype].values()):
+            for p in self._cache[otype].values():
                 if p.uuid() == uuid:
                     return p
         return None
@@ -82,7 +78,8 @@ class VNCApiInspect (VerificationUtilBase):
         if not d:
             # cache miss
             bds = self.dict_get('bridge-domains')
-            mybd = [x for x in bds['bridge-domains'] if x['fq_name'][-1] == bd_name]
+            mybd = filter(lambda x: x['fq_name'][-1] == bd_name,
+                           bds['bridge-domains'])
             if mybd:
                 dd = self.dict_get(mybd[-1]['href'])
             # cache set
@@ -102,7 +99,8 @@ class VNCApiInspect (VerificationUtilBase):
             slo = self.dict_get('security-logging-object/%s' % (slo_uuid))
         elif slo_name is not None:
             slos = self.dict_get('security-logging-objects')
-            myslo = [x for x in slos['security-logging-objects'] if x['fq_name'][-1] == slo_name]
+            myslo = filter(lambda x: x['fq_name'][-1] == slo_name,
+                           slos['security-logging-objects'])
             if myslo:
                 slo = self.dict_get(myslo[-1]['href'])
         if slo:
@@ -121,7 +119,8 @@ class VNCApiInspect (VerificationUtilBase):
         if not d:
             # cache miss
             doms = self.dict_get('domains')
-            mydom = [x for x in doms['domains'] if x['fq_name'][-1] == domain]
+            mydom = filter(lambda x: x['fq_name'][-1] == domain,
+                           doms['domains'])
             if mydom:
                 dd = self.dict_get(mydom[-1]['href'])
             # cache set
@@ -165,7 +164,8 @@ class VNCApiInspect (VerificationUtilBase):
             # cache miss
             proj = self.get_cs_project(domain, project, refresh)
             if proj:
-                myipam = [x for x in proj['project']['network_ipams'] if x['to'] == [domain, project, ipam]]
+                myipam = filter(lambda x: x['to'] == [domain, project, ipam],
+                                proj['project']['network_ipams'])
                 if 1 == len(myipam):
                     pp = self.dict_get(myipam[0]['href'])
             if pp:
@@ -280,7 +280,7 @@ class VNCApiInspect (VerificationUtilBase):
         for i in range(len(vn_pol)):
             vn_attach_policy_list[vn_pol[i]['attr']['sequence']
                                   ['major']] = (str(vn_pol[i]['to'][-1]))
-        policy_major_no_list = list(vn_attach_policy_list.keys())
+        policy_major_no_list = vn_attach_policy_list.keys()
         order_policys = sorted(policy_major_no_list)
         for policy in order_policys:
             vn_final_policy_list.append(vn_attach_policy_list[policy])
@@ -415,7 +415,7 @@ class VNCApiInspect (VerificationUtilBase):
         # cache miss
         pp = None
         proj = self.get_cs_project(domain, project, refresh)
-        if proj and 'floating_ip_pool_refs' in proj['project']:
+        if proj and proj['project'].has_key('floating_ip_pool_refs'):
             myfip = proj.fip_list(fip_pool_name)
             if 1 == len(myfip):
                 pp = self.dict_get(myfip[0]['href'])
@@ -916,19 +916,19 @@ if __name__ == '__main__':
     polr = va.get_cs_policy()
     vnr = va.get_cs_vn(project='demo', vn='fe')
     vmvr = va.get_cs_instance_ip_of_vm("becd5f61-c446-4963-af5a-886138ce026f")
-    print(r.project_list(), r.uuid(), r.name(), pr.fq_name(), ir.fq_name())
-    print(polr.fq_name(), vnr.fq_name())
+    print r.project_list(), r.uuid(), r.name(), pr.fq_name(), ir.fq_name()
+    print polr.fq_name(), vnr.fq_name()
     import pprint
     pprint.pprint(vmvr)
     if vmvr:
-        print(polr.fq_name(), vnr.vm_link_list(), vmvr.ip())
+        print polr.fq_name(), vnr.vm_link_list(), vmvr.ip()
     fipr = va.get_cs_floating_ip_of_vm("bae09ef8-fcad-4aae-a36e-0969410daf8e")
     if fipr:
-        print(fipr.ip())
-    print(va.get_cs_routing_instances('3236c96e-38cf-40d9-94dd-7ec5495192f1'))
-    print(va.get_cs_route_targets_of_ri('97e53a4e-0d10-4c88-aec9-0ebb3e4471f6'))
+        print fipr.ip()
+    print va.get_cs_routing_instances('3236c96e-38cf-40d9-94dd-7ec5495192f1')
+    print va.get_cs_route_targets_of_ri('97e53a4e-0d10-4c88-aec9-0ebb3e4471f6')
     va = VNCApiInspect('10.84.11.2')
-    print(va.get_cs_route_targets('6a454d59-aadb-4140-907f-1bd8b378a7ce'))
+    print va.get_cs_route_targets('6a454d59-aadb-4140-907f-1bd8b378a7ce')
     # print va.get_cs_domain ('red-domain'),  va.get_cs_domain ('ted-domain')
     # print va.get_cs_project ('ted-domain', 'ted-eng')
     # print va.get_cs_ipam ('ted-domain', 'ted-eng', 'default-network-ipam')

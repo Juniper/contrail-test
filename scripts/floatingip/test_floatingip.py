@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -7,8 +5,6 @@ from __future__ import absolute_import
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
-from builtins import str
-from builtins import range
 import re
 import os
 from common.openstack_libs import nova_client as mynovaclient
@@ -36,7 +32,7 @@ from testresources import ResourcedTestCase
 import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
-from . import base
+import base
 import test
 from tcutils.util import skip_because
 
@@ -770,8 +766,8 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
         inspect_h1 = self.agent_inspect[vn1_vm1_traffic_fixture.vm_node_ip]
         inspect_h2 = self.agent_inspect[fvn1_vm1_traffic_fixture.vm_node_ip]
         flow_rec1 = None
-        udp_src = str(8000)
-        dpi = str(dpi)
+        udp_src = unicode(8000)
+        dpi = unicode(dpi)
 
         # Verify Ingress Traffic
         self.logger.info('Verifying Ingress Flow Record')
@@ -1002,8 +998,8 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
         inspect_h1 = self.agent_inspect[vn1_vm1_traffic_fixture.vm_node_ip]
         inspect_h2 = self.agent_inspect[fvn1_vm1_traffic_fixture.vm_node_ip]
         flow_rec1 = None
-        udp_src = str(8000)
-        dpi = str(dpi)
+        udp_src = unicode(8000)
+        dpi = unicode(dpi)
 
         # Verify Ingress Traffic
         self.logger.info('Verifying Ingress Flow Record')
@@ -2011,7 +2007,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
-        print(output)
+        print output
         if vm1_fixture.vm_ip in output:
             self.logger.info(
                 'Traffic is going to vm222 static ip is configured correctly')
@@ -2043,7 +2039,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
-        print(output)
+        print output
         if vm1_fixture.vm_ip in output:
             self.logger.error(
                 'Ping is still going to vm222 due to static route added not expected')
@@ -2301,7 +2297,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%\n')
         output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
-        print(output)
+        print output
 
         if vm1_fip in output:
             self.logger.info(
@@ -2322,7 +2318,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
-        print(output)
+        print output
 
         if vm1_fip in output:
             self.logger.error(

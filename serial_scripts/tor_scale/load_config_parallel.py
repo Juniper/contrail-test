@@ -1,11 +1,10 @@
-from builtins import object
 import multiprocessing as mp
 import random
 import string
 from serial_scripts.tor_scale.load_config import ConfigScaleSetup
 
 
-class ParallelScaleSetup(object):
+class ParallelScaleSetup():
 
     def __init__(self):
 
@@ -21,7 +20,7 @@ class ParallelScaleSetup(object):
                 target=config.config_one_tor,
                 args=(
                     config.tor_scale_dict,
-                    tor)) for tor in list(config.tor_scale_dict.keys())]
+                    tor)) for tor in config.tor_scale_dict.keys()]
 
         # Run processes
         for p in processes:

@@ -7,7 +7,7 @@ log = contrail_logging.getLogger(__name__)
 
 def _OpResult_get_list_name(lst):
     sname = ""
-    for sattr in list(lst.keys()):
+    for sattr in lst.keys():
         if sattr[0] not in ['@']:
             sname = sattr
     return sname
@@ -21,7 +21,7 @@ def _OpResultFlatten(inp):
             return Exception('Struct Parse Error')
         ret = {}
         ret[sname] = {}
-        for k, v in list(inp[sname].items()):
+        for k, v in inp[sname].items():
             ret[sname][k] = _OpResultFlatten(v)
         return ret
     elif (inp['@type'] == 'list'):
@@ -38,7 +38,7 @@ def _OpResultFlatten(inp):
                 lst.append(elem)
             else:
                 lst_elem = {}
-                for k, v in list(elem.items()):
+                for k, v in elem.items():
                     lst_elem[k] = _OpResultFlatten(v)
                 lst.append(lst_elem)
         ret[sname] = lst
@@ -72,10 +72,10 @@ def _OpResultListParse(dct, match):
         else:
             dret = {}
             isMatcher = True
-            for k, v in list(elem.items()):
-                if '#text' in v:
+            for k, v in elem.items():
+                if v.has_key('#text'):
                     dret[k] = v["#text"]
-                    if '@aggtype' in v:
+                    if v.has_key('@aggtype'):
                         if v['@aggtype'] == 'listkey':
                             if v['#text'] == match:
                                 isMatch = True
@@ -139,25 +139,25 @@ def _OpResultGet(dct, p1, p2, match=None):
                 for elem in ret1:
                     if isinstance(elem, dict):
                         try:
-                            for k, v in list(elem.items()):
+                            for k, v in elem.items():
                                 if isinstance(match, tuple):
                                     if ((match[0] == k)and (match[1] == v)):
                                         ret2.append(elem)
                                         ret = ret2
                                         return 
                                     elif (isinstance(v, dict)):
-                                        if (match[0] in list(v.keys()) and (match[1] in list(v.values())or (int(match[1]) in list(v.values())))):
+                                        if (match[0] in v.keys() and (match[1] in v.values()or (int(match[1]) in v.values()))):
                                             ret2.append(elem)
                                             ret = ret2
                                     	    return 	
                                     elif (isinstance(v,list)):
                                         for vl in v:
-                                            if ((match[0] in list(vl.keys())) and (match[1] in list(vl.values()))):
+                                            if ((match[0] in vl.keys()) and (match[1] in vl.values())):
                                                 ret2.append(vl)
                                                 ret = ret2
                                                 return
 
-                                    elif (isinstance(v, str)):
+                                    elif (isinstance(v, unicode)):
                                         continue
                                 else:
                                     if(match in v):
@@ -165,7 +165,7 @@ def _OpResultGet(dct, p1, p2, match=None):
                                         ret = ret2
                                         return
                                     elif (isinstance(v, dict)):
-                                        if(match in list(v.values())or int(match) in list(v.values())):
+                                        if(match in v.values()or int(match) in v.values()):
                                             ret2.append(elem)
                                             ret = ret2
                                             return
@@ -177,7 +177,7 @@ def _OpResultGet(dct, p1, p2, match=None):
                             ret = ret2
                             return
             else:
-                for k, v in list(ret1.items()):
+                for k, v in ret1.items():
                     if isinstance(match, tuple):
                         if (match[0] == k and match[1] == v):
                             ret2.append(ret1)

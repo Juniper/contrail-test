@@ -1,4 +1,3 @@
-from builtins import str
 import time
 from tcutils.util import *
 from common.contrail_fabric.base import BaseFabricTest
@@ -12,7 +11,7 @@ class ZtpBaseTest(BaseFabricTest):
         super(ZtpBaseTest, cls).setUpClass()
         cls.netconf_sessions = dict()
         try:
-            for device in list(cls.inputs.physical_routers_data.values()):
+            for device in cls.inputs.physical_routers_data.values():
                 cls.netconf_sessions[device['name']] = cls.get_connection_obj(
                     host=device['console'],
                     username=device['ssh_username'],
@@ -59,7 +58,7 @@ class ZtpBaseTest(BaseFabricTest):
     @classmethod
     def tearDownClass(cls):
         super(ZtpBaseTest, cls).tearDownClass()
-        for device in list(cls.inputs.physical_routers_data.values()):
+        for device in cls.inputs.physical_routers_data.values():
             filepath = '/tmp/'+str(device['name'])+'.conf'
             cls.netconf_sessions[device['name']] = cls.get_connection_obj(
                 host=device['console'],

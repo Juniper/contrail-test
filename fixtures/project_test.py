@@ -64,6 +64,7 @@ class ProjectFixture(fixtures.Fixture):
     # end __init__
 
     def _create_project(self):
+        import pdb;pdb.set_trace()
         if self.auth:
             self.uuid = self.auth.create_project(self.project_name,
                                                  self.orch_domain_name)

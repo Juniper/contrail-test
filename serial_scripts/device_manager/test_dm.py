@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 import test
 import unittest
 from tcutils.wrappers import preposttest_wrapper
@@ -9,7 +6,7 @@ from physical_router_fixture import PhysicalRouterFixture
 from lif_fixture import LogicalInterfaceFixture
 from common import isolated_creds
 from serial_scripts.md5.base import Md5Base
-from .base import BaseDM
+from base import BaseDM
 from common.neutron.base import BaseNeutronTest
 from tcutils.contrail_status_check import *
 import physical_device_fixture
@@ -38,7 +35,7 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
 
     def is_test_applicable(self):
         try:
-            if not list(self.inputs.dm_mx.values()):
+            if not self.inputs.dm_mx.values():
                 return (False, 'dm_mx env present, but no values in it. Please check.')
         except AttributeError:
                 return (False, 'dm_mx env needs to be set in testbed.py to run this script')
@@ -175,8 +172,8 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
 
     @preposttest_wrapper
     def test_break_connectivity_to_mx(self):
-        for i in range(len(list(self.inputs.physical_routers_data.values()))):
-            router_params = list(self.inputs.physical_routers_data.values())[i]
+        for i in range(len(self.inputs.physical_routers_data.values())):
+            router_params = self.inputs.physical_routers_data.values()[i]
 
             cmd = '/sbin/iptables -A OUTPUT -d %s -j DROP' % router_params['mgmt_ip']
             for node in self.inputs.cfgm_ips:
@@ -194,8 +191,8 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         self.send_traffic_between_vms()
         self.addCleanup(self.remove_iptable_config)
 
-        for i in range(len(list(self.inputs.physical_routers_data.values()))):
-            router_params = list(self.inputs.physical_routers_data.values())[i]
+        for i in range(len(self.inputs.physical_routers_data.values())):
+            router_params = self.inputs.physical_routers_data.values()[i]
 
             cmd = '/sbin/iptables -D OUTPUT -d %s -j DROP' % router_params['mgmt_ip']
             for node in self.inputs.cfgm_ips:
@@ -881,7 +878,7 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         assert self.check_tcp_status()
 
         new_port = self.create_port(net_id=self.vn1_fixture.vn_id, mac_address='00:e0:81:cf:5c:00')
-        for dev_fixture in list(self.phy_router_fixture.values()):
+        for dev_fixture in self.phy_router_fixture.values():
             phy_new_port = dev_fixture.add_physical_port('ge-0/0/6')
             logical_new_port = self.useFixture(LogicalInterfaceFixture(name='ge-0/0/6.0', pif_id=phy_new_port.uuid, vlan_id=100,vmi_ids=[new_port['id']], vn_obj=self.vn1_fixture.obj))
         cmd = 'show configuration groups __contrail__ interfaces ge-0/0/6 unit 0 vlan-id'

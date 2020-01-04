@@ -1,4 +1,3 @@
-from builtins import str
 import yaml
 import time
 from common import log_orig as contrail_logging
@@ -39,17 +38,17 @@ class AttributeDict(dict):
     def __deepcopy__(self, memo):
         y = {}
         memo[id(self)] = y
-        for key, value in self.items():
+        for key, value in self.iteritems():
             y[deepcopy(key, memo)] = deepcopy(value, memo)
         return y
 
 def convert_to_attrdict(dct):
     if isinstance(dct, dict):
-        for key, value in dct.items():
+        for key, value in dct.iteritems():
             val = convert_to_attrdict(value)
             if isinstance(val, dict):
                 val = AttributeDict(val)
-            elif isinstance(val, str):
+            elif isinstance(val, unicode):
                 val = str(val)
             del dct[key]
             dct[str(key)] = val
@@ -77,7 +76,6 @@ class Client(api_client.Client):
         self.network_policy_h = dyn_client.resources.get(api_version='v1', kind='NetworkPolicy')
         self.deployment_h = dyn_client.resources.get(api_version='v1', kind='Deployment')
         self.service_h = dyn_client.resources.get(api_version='v1', kind='Service')
-        self.daemonset_h = dyn_client.resources.get(api_version='v1', kind='DaemonSet')
     # end __init__
 
     def get_template(self, obj_type):
@@ -87,7 +85,7 @@ class Client(api_client.Client):
 
     def _replace_key(self, dct):
         if isinstance(dct, dict):
-            for key, value in dct.items():
+            for key, value in dct.iteritems():
                 if key in key_mapping:
                     dct[key_mapping[key]] = self._replace_key(value)
                     del dct[key]

@@ -155,7 +155,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         '''
             Returns the device dict of the ToR 
         '''
-        for (device_name, device_dict) in physical_routers_data.items():
+        for (device_name, device_dict) in physical_routers_data.iteritems():
             if device_name == self.name:
                 return device_dict
     # end get_device_details
@@ -245,7 +245,6 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
                  host=self.mgmt_ip,
                  username=self.ssh_username,
                  password=self.ssh_password)
-            self.addCleanup(self._netconf.disconnect)
         return self._netconf
 
     def get_config(self):

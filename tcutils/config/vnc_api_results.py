@@ -1,4 +1,3 @@
-from __future__ import print_function
 import re
 from tcutils.verification_util import *
 
@@ -49,18 +48,20 @@ class CsDomainResult (Result):
         return self.xpath('domain', 'uuid')
 
     def project_list(self):
-        return [':'.join(x['to']) for x in self.xpath('domain', 'projects')]
+        return map(lambda x: ':'.join(x['to']),
+                   self.xpath('domain', 'projects'))
 
     def project(self, name):
         if not self.xpath('domain', 'projects'):
             return list()
-        return [x for x in self.xpath('domain', 'projects') if x['to'] == [self.name(), name]]
+        return filter(lambda x: x['to'] == [self.name(), name],
+                      self.xpath('domain', 'projects'))
 
     def st_list(self):
         return self.xpath('domain', 'service_templates')
 
     def st(self, st):
-        return [x for x in self.st_list() if x['to'][-1] == st]
+        return filter(lambda x: x['to'][-1] == st, self.st_list())
 
     def vdns_list(self):
         return self.xpath('domain', 'virtual_DNSs')
@@ -68,7 +69,7 @@ class CsDomainResult (Result):
     def vdns(self, vdns_name):
         vdns_li = self.vdns_list()
         if vdns_li:
-            return [x for x in vdns_li if x['to'][-1] == vdns_name]
+            return filter(lambda x: x['to'][-1] == vdns_name, vdns_li)
 
 
 class CsProjectResult (Result):
@@ -144,25 +145,25 @@ class CsProjectResult (Result):
         return self.xpath('project', 'network_policys')
 
     def policy(self, policy):
-        return [x for x in self.policy_list() if x['to'][-1] == policy]
+        return filter(lambda x: x['to'][-1] == policy, self.policy_list())
 
     def vn_list(self):
         return self.xpath('project', 'virtual_networks')
 
     def vn(self, vn):
         if self.vn_list():
-            return [x for x in self.vn_list() if x['to'][-1] == vn]
+            return filter(lambda x: x['to'][-1] == vn, self.vn_list())
         return []
 
     def fip_list(self):
-        if 'floating_ip_pool_refs' in self:
+        if self.has_key('floating_ip_pool_refs'):
             p = self.xpath('project', 'floating_ip_pool_refs')
         else:
             p = []
         return p
 
     def fip(self, fip_fq_name=[]):
-        return [x for x in self.fip_list() if x['to'] == fip_fq_name]
+        return filter(lambda x: x['to'] == fip_fq_name, self.fip_list())
 
     def secgrp_list(self):
         return self.xpath('project', 'security_groups')
@@ -170,7 +171,7 @@ class CsProjectResult (Result):
     def secgrp(self, secgrp):
         secgrp_list = self.secgrp_list()
         if secgrp_list:
-            return [x for x in secgrp_list if x['to'][-1] == secgrp]
+            return filter(lambda x: x['to'][-1] == secgrp, secgrp_list)
 
     def si_list(self):
         return self.xpath('project', 'service_instances')
@@ -178,7 +179,7 @@ class CsProjectResult (Result):
     def si(self, si):
         si_list = self.si_list()
         if si_list:
-            return [x for x in si_list if x['to'][-1] == si]
+            return filter(lambda x: x['to'][-1] == si, si_list)
 
     def alarm_list(self):
         result = self.xpath('project', 'alarms')
@@ -187,7 +188,7 @@ class CsProjectResult (Result):
         return result
 
     def alarm(self,alarm):
-        return [x for x in self.alarm_list() if x['to'][-1] == alarm]
+        return filter(lambda x: x['to'][-1] == alarm, self.alarm_list())
 
 class CsAlarmResult(Result):
 
@@ -408,25 +409,26 @@ class CsVNResult (Result):
         return self.xpath('virtual-network', 'floating_ip_pools')
 
     def fip(self, fip):
-        return [x for x in self.fip_list() if x['to'][-1] == fip]
+        return filter(lambda x: x['to'][-1] == fip, self.fip_list())
 
     def vm_link_list(self):
-        return [self.sub(x['href'], x['to'][0]) for x in self.xpath('virtual-network',
-                              'virtual_machine_interface_back_refs')]
+        return map(lambda x: self.sub(x['href'], x['to'][0]),
+                   self.xpath('virtual-network',
+                              'virtual_machine_interface_back_refs'))
 
     def rts(self):
-        if 'route_target_list' in self.xpath('virtual-network'):
+        if self.xpath('virtual-network').has_key('route_target_list'):
             for rt in self.xpath('virtual-network', 'route_target_list',
                                  'route_target'):
                 yield rt
 
     def ri_links(self):
-        if 'routing_instances' in self.xpath('virtual-network'):
+        if self.xpath('virtual-network').has_key('routing_instances'):
             for ri in self.xpath('virtual-network', 'routing_instances'):
                 yield ri['href']
 
     def ri_refs(self):
-        if 'routing_instances' in self.xpath('virtual-network'):
+        if self.xpath('virtual-network').has_key('routing_instances'):
             for ri in self.xpath('virtual-network', 'routing_instances'):
                 yield ri['to']
 
@@ -467,13 +469,13 @@ class CsRiResult (Result):
     '''
 
     def rt_links(self):
-        if 'route_target_refs' in self.xpath('routing-instance'):
+        if self.xpath('routing-instance').has_key('route_target_refs'):
             for rt in self.xpath('routing-instance', 'route_target_refs'):
                 yield rt['href']
 
     def get_rt(self):
         target = list()
-        if 'route_target_refs' in self.xpath('routing-instance'):
+        if self.xpath('routing-instance').has_key('route_target_refs'):
             for rt in self.xpath('routing-instance', 'route_target_refs'):
                 target.append(rt['to'][0])
         return target
@@ -545,12 +547,14 @@ class CsVmiOfVmResult (Result):
         return links
 
     def fip_link(self):
-        if 'floating_ip_back_refs' in self.xpath('virtual-machine-interface'):
+        if self.xpath('virtual-machine-interface').has_key(
+                'floating_ip_back_refs'):
             return self.xpath('virtual-machine-interface',
                               'floating_ip_back_refs', 0, 'href')
 
     def properties(self, property=None):
-        if 'virtual_machine_interface_properties' in self.xpath('virtual-machine-interface'):
+        if self.xpath('virtual-machine-interface').has_key(
+                'virtual_machine_interface_properties'):
             if property:
                 return self.xpath('virtual-machine-interface',
                               'virtual_machine_interface_properties', property)
@@ -662,7 +666,7 @@ class CsServiceInstanceResult (Result):
 
     def get_vms(self):
         vms = list()
-        if 'virtual_machine_back_refs' in self.xpath('service-instance'):
+        if self.xpath('service-instance').has_key('virtual_machine_back_refs'):
             for vm in self.xpath('service-instance', 'virtual_machine_back_refs'):
                 vms.append(vm['uuid'])
         return vms
@@ -702,7 +706,7 @@ class CsGlobalVrouterConfigResult (Result):
                     link_local_service['ip_fabric_service_port'] = elem[
                         'ip_fabric_service_port']
         except Exception as e:
-            print(e)
+            print e
         finally:
             return link_local_service
 
@@ -712,7 +716,7 @@ class CsLogicalRouterResult(Result):
     '''
     def get_rt(self):
         target = list()
-        if 'route_target_refs' in self.xpath('logical-router'):
+        if self.xpath('logical-router').has_key('route_target_refs'):
             for rt in self.xpath('logical-router', 'route_target_refs'):
                 target.append(rt['to'][0])
         return target
@@ -728,7 +732,7 @@ class CsTableResult(Result):
         CsTableResult access Route table dict
     '''
     def get_route(self):
-        if 'routes' in self.xpath('route-table'):
+        if self.xpath('route-table').has_key('routes'):
             return self.xpath('route-table', 'routes', 'route')
 
     def fq_name(self):

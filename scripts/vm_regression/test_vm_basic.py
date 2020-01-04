@@ -1,6 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-from builtins import str
-from builtins import range
 import traffic_tests
 from vn_test import *
 from vm_test import *
@@ -14,7 +11,7 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from .base import BaseVnVmTest
+from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
 import time
@@ -52,37 +49,71 @@ class TestBasicVMVN(BaseVnVmTest):
                4.Go to the vm and verify if the file with 'hello world ' written saved in /tmp of the vm - fails otherwise
             Maintainer: sandipd@juniper.net
         '''
-        result = False
-        mtries = 3
+
         gvrouter_cfg_obj = self.api_s_inspect.get_global_vrouter_config()
         ln_svc = gvrouter_cfg_obj.get_link_local_service()
-        assert ln_svc, "Metadata NOT configured in global_vrouter_config"
+        if ln_svc:
+            self.logger.info(
+                "Metadata configured in global_vrouter_config as %s" %
+                (str(ln_svc)))
+        else:
+            self.logger.warn(
+                "Metadata NOT configured in global_vrouter_config")
+            result = False
+            assert result
+            return True
 
         text = """#!/bin/sh
 echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                """
-        with open("/tmp/metadata_script.txt", "w") as f:
-            f.write(text)
+        try:
+            with open("/tmp/metadata_script.txt", "w") as f:
+                f.write(text)
+        except Exception as e:
+            self.logger.exception(
+                "Got exception while creating /tmp/metadata_script.txt as %s" % (e))
 
-        vn_fixture = self.create_vn(af='v4')
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-                                     image_name='cirros',
+        img_name = self.inputs.get_ci_image() or 'ubuntu'
+        vn_name = get_random_name('vn2_metadata')
+        vm1_name = get_random_name('vm_in_vn2_metadata')
+        vn_fixture = self.create_vn(vn_name=vn_name, af='v4')
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name=vm1_name,
+                                     image_name=img_name,
                                      userdata='/tmp/metadata_script.txt')
+        assert vm1_fixture.verify_on_setup()
         assert vm1_fixture.wait_till_vm_is_up()
 
-        cmd = 'cat /tmp/output.txt'
-        for i in range(mtries):
+        cmd = 'ls /tmp/'
+        result = False
+        for i in range(3):
+            self.logger.debug("Retry %s" % (i))
             ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
             self.logger.debug("ret : %s" % (ret))
-            output = ret[cmd]
-            if 'Hello World' in output:
-                self.logger.info("metadata_script.txt got executed in the vm")
-                return True
-            else:
-                self.logger.warn("metadata_script.txt did not get executed in the vm")
-                if i+1 < mtries:
-                    time.sleep(2)
+            for elem in ret.values():
+                if 'output.txt' in elem:
+                    result = True
+                    break
+            if result:
+                break
+            time.sleep(2)
+        if not result:
+            self.logger.warn(
+                "metadata_script.txt did not get executed in the vm")
+            self.logger.debug('%s' %vm1_fixture.get_console_output())
+        else:
+            self.logger.debug("Printing the output.txt :")
+            cmd = 'cat /tmp/output.txt'
+            ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
+            self.logger.info("%s" % (ret.values()))
+            for elem in ret.values():
+                if 'Hello World' in elem:
+                    result = True
+                else:
+                    self.logger.warn(
+                        "metadata_script.txt did not get executed in the vm...output.txt does not contain proper output")
+                    result = False
         assert result
+        return True
 
     @test.attr(type=['suite1'])
     @preposttest_wrapper
@@ -133,15 +164,26 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         all-broadcast address.
         Maintainer : ganeshahv@juniper.net
         '''
+        ipam_obj = self.useFixture(
+            IPAMFixture(connections=self.connections, name=get_random_name('ipam1')))
+        assert ipam_obj.verify_on_setup()
+
+        vn1_name = get_random_name('vn030')
+        vn1_subnets = ['31.1.1.0/29', '31.1.2.0/29']
         subnet1 = '31.1.1.0/29'
         subnet2 = '31.1.2.0/29'
         fixed_ip1 = '31.1.1.4'
         fixed_ip2 = '31.1.2.4'
-        vn1_subnets = [subnet1, subnet2]
-
-        ipam_obj = self.create_ipam()
-        vn1_fixture = self.create_vn(vn_subnets=vn1_subnets,
-                                     ipam_fq_name=ipam_obj.fq_name)
+        subnet_objects = []
+        # vn1_subnets=['30.1.1.0/24']
+        vn1_vm1_name = get_random_name('vm1')
+        vn1_vm2_name = get_random_name('vm2')
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets,
+                ipam_fq_name=ipam_obj.fq_name))
+        assert vn1_fixture.verify_on_setup()
 
         subnet_objects = vn1_fixture.get_subnets()
         ports = {}
@@ -154,45 +196,52 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 ports['subnet2'] = vn1_fixture.create_port(vn1_fixture.vn_id,
                     subnet_id=subnet['id'],ip_address=fixed_ip2)
 
-        vm1 = self.create_vm(image_name='cirros', vn_fixture=vn1_fixture,
-                             port_ids=[ports['subnet1']['id']])
-        vm2 = self.create_vm(image_name='cirros', vn_fixture=vn1_fixture,
-                             port_ids=[ports['subnet2']['id']])
-        vm3 = self.create_vm(image_name='cirros', vn_fixture=vn1_fixture)
-        assert ipam_obj.verify_on_setup()
-        assert vn1_fixture.verify_on_setup()
-        assert vm1.wait_till_vm_is_up()
-        assert vm2.wait_till_vm_is_up()
-        assert vm3.wait_till_vm_is_up()
-        assert vm1.ping_to_ip(vm2.vm_ip)
-        assert vm2.ping_to_ip(vm1.vm_ip)
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name, port_ids = [ports['subnet1']['id']]))
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name,port_ids = [ports['subnet2']['id']]))
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
+        assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
         # Geting the VM ips
-        vm1_ip = vm1.vm_ip
-        vm2_ip = vm2.vm_ip
-        vm3_ip = vm3.vm_ip
-        ip_list = [vm1_ip, vm2_ip, vm3_ip]
-
+        vm1_ip = vm1_fixture.vm_ip
+        vm2_ip = vm2_fixture.vm_ip
+        ip_list = [vm1_ip, vm2_ip]
+#       gettig broadcast ip for vm1_ip
         ip_broadcast = get_subnet_broadcast('%s/%s'%(vm1_ip, '29'))
         list_of_ip_to_ping = [ip_broadcast, '224.0.0.1', '255.255.255.255']
+        # passing command to vms so that they respond to subnet broadcast
         cmd_list_to_pass_vm = [
             'echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
 
-        vm1.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
-        vm2.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
-        vm3.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
 
         for dst_ip in list_of_ip_to_ping:
-            ping_output = vm1.ping_to_ip(
-                dst_ip, return_output=True)
+            print 'pinging from %s to %s' % (vm1_ip, dst_ip)
+# pinging from Vm1 to subnet broadcast
+            if self.inputs.is_ci_setup():
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True)
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, other_opt='-b')
             expected_result = ' 0% packet loss'
             assert (expected_result in ping_output)
+# getting count of ping response from each vm
+            string_count_dict = {}
             string_count_dict = get_string_match_count(ip_list, ping_output)
+            print string_count_dict
             if (dst_ip == ip_broadcast):
                 assert (string_count_dict[vm2_ip] == 0)
-                assert (string_count_dict[vm3_ip] > 0)
             if (dst_ip == '224.0.0.1' or dst_ip == '255.255.255.255'):
-                assert (string_count_dict[vm2_ip] > 0)
-                assert (string_count_dict[vm3_ip] > 0)
+                assert (string_count_dict[vm2_ip] > 0) or ('DUP!' in ping_output)
+        return True
     #test_ping_within_vn_two_vms_two_different_subnets
 
     @test.attr(type=[ 'suite1'])
@@ -246,11 +295,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator)
         vn1_fixture.read()
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture,
-            image_name='cirros', vm_name=vn1_vm1_name, orch=self.orchestrator)
+            image_name='ubuntu', vm_name=vn1_vm1_name, orch=self.orchestrator)
         vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
-            image_name='cirros', vm_name=vn1_vm2_name)
+            image_name='ubuntu', vm_name=vn1_vm2_name)
         vm3_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
-            image_name='cirros', vm_name=vn1_vm3_name)
+            image_name='ubuntu', vm_name=vn1_vm3_name)
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm3_fixture.wait_till_vm_is_up()
@@ -285,27 +334,24 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
         result = True
         vn_name = get_random_name('vn2_metadata')
+        vm1_name = get_random_name('nova_client_vm')
         vn_subnets = ['11.1.1.0/24']
         vn_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+        #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
-        vm1_fixture = self.create_vm(vn_ids=[vn_fixture.uuid], image_name='cirros')
+        vm1_fixture = self.create_vm(vn_ids=[vn_fixture.uuid], vm_name=vm1_name)
+        assert vm1_fixture.wait_till_vm_is_active()
 
-        lls_service_name = 'introspect'
-        introspect_port = '8083'
-        service_ip = unicode(self.inputs.bgp_control_ips[0])
-        fabric_service_name = unicode(self.inputs.bgp_names[0])
-        host_new_name = fabric_service_name + '-test'
-        self.orch.vnc_h.add_link_local_service(lls_service_name,
-             '169.254.1.2', '8083', introspect_port,
-             ipfabric_service_dns_name=host_new_name,
-             ipfabric_service_ip=service_ip)
-        self.addCleanup(self.orch.vnc_h.delete_link_local_service,
-                        lls_service_name)
+        fabric_service_name = self.inputs.bgp_names[0]
+        service_ip = self.inputs.bgp_control_ips[0]
         compute_user = self.inputs.host_data[vm1_fixture.vm_node_ip]['username']
         compute_password = self.inputs.host_data[vm1_fixture.vm_node_ip]['password']
+        host_new_name = fabric_service_name + '-test'
+        introspect_port = '8083'
+        lls_service_name = 'introspect'
 
         update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (service_ip,
             host_new_name)
@@ -323,6 +369,12 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         compute_password,
                         container='agent')
 
+        self.orch.vnc_h.add_link_local_service(lls_service_name,
+             '169.254.1.2', '8083', introspect_port,
+             ipfabric_service_dns_name=host_new_name,
+             ipfabric_service_ip=service_ip)
+        self.addCleanup(self.orch.vnc_h.delete_link_local_service,
+                        lls_service_name)
         assert vm1_fixture.wait_till_vm_is_up()
         cmd = 'wget http://169.254.1.2:8083 --spider && echo "Successful"'
 
@@ -334,7 +386,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 if not ret[cmd]:
                     raise Exception('wget of http://169.254.1.2:8083 returned None')
             except Exception as e:
-                time.sleep(3)
+                time.sleep(5)
                 self.logger.exception("Got exception as %s" % (e))
             else:
                 break
@@ -350,4 +402,5 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             result = False
 
         assert result, "Generic Link local verification failed"
+        return True
     # end test_generic_link_local_service

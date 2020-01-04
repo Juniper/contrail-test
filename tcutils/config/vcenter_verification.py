@@ -1,10 +1,8 @@
-from __future__ import print_function
-from builtins import object
 from tcutils.util import retry
 from tcutils.config import vmware_introspect_utils
 from common import log_orig as contrail_logging
 
-class VMWareVerificationLib(object):
+class VMWareVerificationLib:
     '''Clas to hold verification helper functions for vcenter plugin introspect'''
     def __init__(self,inputs,vrouter):
         self.inputs = inputs
@@ -59,11 +57,11 @@ class VMWareVerificationLib(object):
 
 if __name__ == '__main__':
     va =  vmware_introspect_utils.VMWareInspect('10.204.216.183')
-    class Inputs(object):
+    class Inputs:
         def __init__(self):
             self.cfgm_ips = ['10.204.216.7','10.204.216.14','10.204.216.15']
     import pprint
     inputs = Inputs()
     vcenter = VMWareVerificationLib(inputs,'10.204.216.183')
-    print(vcenter.verify_vm_in_vcenter('10.204.216.183','test_vm1'))
+    print vcenter.verify_vm_in_vcenter('10.204.216.183','test_vm1')
 

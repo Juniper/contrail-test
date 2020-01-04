@@ -1,4 +1,3 @@
-from builtins import str
 import test_v1
 import fixtures
 from common import isolated_creds
@@ -38,7 +37,7 @@ class BaseEvpnTest(test_v1.BaseTestCase_v1):
                 'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
                 (config_id))
             configured_encap_list = [
-                str('MPLSoGRE'), str('MPLSoUDP'), str('VXLAN')]
+                unicode('MPLSoGRE'), unicode('MPLSoUDP'), unicode('VXLAN')]
             if existing_encap != configured_encap_list :
                 self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
         elif (encap == 'udp'):
@@ -48,7 +47,7 @@ class BaseEvpnTest(test_v1.BaseTestCase_v1):
                 'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
                 (config_id))
             configured_encap_list = [
-                str('MPLSoUDP'), str('MPLSoGRE'), str('VXLAN')]
+                unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
             if existing_encap != configured_encap_list :
                 self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
         elif (encap == 'vxlan'):
@@ -58,7 +57,7 @@ class BaseEvpnTest(test_v1.BaseTestCase_v1):
                 'Created.UUID is %s. VXLAN is the highest priority encap' %
                 (config_id))
             configured_encap_list = [
-                str('VXLAN'), str('MPLSoUDP'), str('MPLSoGRE')]
+                unicode('VXLAN'), unicode('MPLSoUDP'), unicode('MPLSoGRE')]
             if existing_encap != configured_encap_list :
                 self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
 

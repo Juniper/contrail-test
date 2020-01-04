@@ -105,7 +105,7 @@ class VPCFixture(fixtures.Fixture):
         ).split('\n')
 
         for user in users:
-            user = [k for k in [_f for _f in user.split(' ') if _f] if k != '|']
+            user = [k for k in filter(None, user.split(' ')) if k != '|']
             if user[0] == 'id':
                 user_id = user[1]
                 break
@@ -122,7 +122,7 @@ class VPCFixture(fixtures.Fixture):
         ).split('\n')
 
         for role in roles:
-            role = [k for k in [_f for _f in role.split(' ') if _f] if k != '|']
+            role = [k for k in filter(None, role.split(' ')) if k != '|']
             if role[0] == 'id':
                 role_id = role[1]
                 break
@@ -138,7 +138,7 @@ class VPCFixture(fixtures.Fixture):
                     self.auth_url,tenantName)).split('\n')
 
         for tenant in tenants:
-            tenant = [k for k in [_f for _f in tenant.split(' ') if _f] if k != '|']
+            tenant = [k for k in filter(None, tenant.split(' ')) if k != '|']
             if tenant[0] == 'id':
                 self.tenant_id = tenant[1]
                 break
@@ -172,7 +172,7 @@ class VPCFixture(fixtures.Fixture):
             return False
         verify_vpc_output = self.ec2_base._shell_with_ec2_env(
             'euca-describe-vpcs |grep %s' % (self.vpc_id), True).split('\n')[0].split(' ')
-        verify_vpc_output = [_f for _f in verify_vpc_output if _f]
+        verify_vpc_output = filter(None, verify_vpc_output)
 
         if verify_vpc_output[1] == self.cidr and \
                 verify_vpc_output[0] == self.vpc_id:
@@ -344,7 +344,7 @@ class VPCFixture(fixtures.Fixture):
         foundIp = False
 
         for ip in out:
-            ip = [_f for _f in ip.split(' ') if _f]
+            ip = filter(None, ip.split(' '))
             if ip[0] == self.floating_ip:
                 self.fip_allcation_id = ip[2]
                 foundIp = True
@@ -434,7 +434,7 @@ class VPCFixture(fixtures.Fixture):
             'toPort': '-t',
             'direction': '-d',
         }
-        for key in list(rule.keys()):
+        for key in rule.keys():
             cmd += ' %s %s ' % (acl_strings[key], rule[key])
 
         out = self.ec2_base._shell_with_ec2_env(cmd, True)
@@ -538,7 +538,7 @@ ASSOCIATION     rtbassoc-2f162321       rtb-9bb0e59f    subnet-4dad7f88
         '''
         out = self.ec2_base._shell_with_ec2_env(
             'euca-associate-route-table -s %s %s' % (subnet_id, rtb_id), True).split('\n')
-        line = [_f for _f in out[0].split('\t') if _f]
+        line = filter(None, out[0].split('\t'))
         if line[2] == rtb_id:
             assoc_id = line[1]
             self.logger.info('Route table %s is associated with Subnet %s \
@@ -572,7 +572,7 @@ ASSOCIATION     rtbassoc-2f162321       rtb-9bb0e59f    subnet-4dad7f88
             cmd += '-g %s ' % gw_id
         out = self.ec2_base._shell_with_ec2_env(cmd + '-r %s %s' % (prefix,
                                                                     rtb_id), True).split('\n')
-        line = [_f for _f in out[0].split('\t') if _f]
+        line = filter(None, out[0].split('\t'))
         if line[2] == prefix:
             self.logger.info('Created Route with prefix %s in %s' % (prefix,
                                                                      rtb_id))
@@ -649,7 +649,7 @@ True
     # end delete_security_group
 
     def create_security_group_rule(self, sg_id, rule):
-        if 'source-group' in rule:
+        if rule.has_key('source-group'):
             cidr_group = rule['source-group']
         else:
             cidr_group = rule['cidr']
@@ -661,7 +661,7 @@ True
             'port': '-p',
             'source-group': '-o',
         }
-        for key in list(rule.keys()):
+        for key in rule.keys():
             if not key == 'direction':
                 cmd += ' %s %s ' % (acl_strings[key], rule[key])
         cmd += sg_id
@@ -679,7 +679,7 @@ True
     # end add_security_group_rule
 
     def delete_security_group_rule(self, sg_id, rule):
-        if 'source-group' in rule:
+        if rule.has_key('source-group'):
             cidr_group = rule['source-group']
         else:
             cidr_group = rule['cidr']
@@ -691,7 +691,7 @@ True
             'port': '-p',
             'source-group': '-o',
         }
-        for key in list(rule.keys()):
+        for key in rule.keys():
             if not key == 'direction':
                 cmd += ' %s %s ' % (acl_strings[key], rule[key])
         cmd += sg_id

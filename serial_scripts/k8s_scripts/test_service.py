@@ -38,7 +38,6 @@ class TestService(BaseK8sTest):
             Please make sure BGP multipath and per packer load balancing
             is enabled on the MX
         '''
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         app = 'http_test'
         labels = {'app': app}
         namespace = self.setup_namespace()

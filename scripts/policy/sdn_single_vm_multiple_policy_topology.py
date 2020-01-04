@@ -1,11 +1,8 @@
 '''*******AUTO-GENERATED TOPOLOGY*********'''
-from __future__ import print_function
-from builtins import range
-from builtins import object
 from tcutils.util import get_random_name,get_random_cidr
 
 
-class sdn_single_vm_multiple_policy_config(object):
+class sdn_single_vm_multiple_policy_config ():
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -62,9 +59,9 @@ class sdn_single_vm_multiple_policy_config(object):
         # end __init__
 
 if __name__ == '__main__':
-    print("Currently topology limited to one domain/project..")
-    print("Based on need, can be extended to cover config for multiple domain/projects")
-    print()
+    print "Currently topology limited to one domain/project.."
+    print "Based on need, can be extended to cover config for multiple domain/projects"
+    print
     my_topo = sdn_single_vm_multiple_policy_config(
         domain='default-domain', project='admin')
     x = my_topo.__dict__

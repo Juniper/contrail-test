@@ -1,4 +1,3 @@
-from builtins import str
 from fabric.api import run
 from common.vrouter.base import *
 from tcutils.wrappers import preposttest_wrapper
@@ -55,7 +54,7 @@ class KernelCrashTest(BaseVrouterTest):
             try:
                 sudo('echo c > /proc/sysrq-trigger')
                 assert False, 'Kernel crash not triggered, failing the case'
-            except CommandTimeout as e:
+            except CommandTimeout,e:
                 self.logger.info('Kernel crash triggered, will wait for reboot')
         msg = 'Node %s not up after kernel crash' % (host_string)
         assert wait_for_ssh_on_node(host_string, password, self.logger), msg

@@ -1,8 +1,3 @@
-from __future__ import division
-from builtins import str
-from builtins import range
-from builtins import object
-from past.utils import old_div
 from selenium import webdriver
 from pyvirtualdisplay import Display
 from selenium.webdriver.common.keys import Keys
@@ -36,7 +31,7 @@ def ajax_complete(driver):
 # end ajax_complete
 
 
-class WebuiCommon(object):
+class WebuiCommon:
     count_in = False
 
     def __init__(self, obj):
@@ -307,7 +302,7 @@ class WebuiCommon(object):
             for arg in args:
                 list_obj.append({'key': str(arg), 'value': arg})
         if kargs:
-            for k, v in kargs.items():
+            for k, v in kargs.iteritems():
                 if not isinstance(v, list):
                     v = str(v)
                 if v:
@@ -483,7 +478,7 @@ class WebuiCommon(object):
         count = {}
         for index in range(len(href)):
             project = href[index]['fq_name'][1]
-            if not project in list(count.keys()):
+            if not project in count.keys():
                 count[project] = 1
             else:
                 count[project] += 1
@@ -1019,9 +1014,9 @@ class WebuiCommon(object):
         if memory < 1024:
             offset = 80
             memory = round(memory, 2)
-            memory_range = list(range(
-                int(memory * 100) - offset, int(memory * 100) + offset))
-            memory_range = [x / 100.0 for x in memory_range]
+            memory_range = range(
+                int(memory * 100) - offset, int(memory * 100) + offset)
+            memory_range = map(lambda x: x / 100.0, memory_range)
             for memory in memory_range:
                 if float(memory) == int(memory):
                     memory_list.append(int(memory))
@@ -1030,9 +1025,9 @@ class WebuiCommon(object):
         elif memory / 1024.0 < 1024:
             memory = memory / 1024.0
             memory = round(memory, 2)
-            memory_range = list(range(
-                int(memory * 100) - offset, int(memory * 100) + offset))
-            memory_range = [x / 100.0 for x in memory_range]
+            memory_range = range(
+                int(memory * 100) - offset, int(memory * 100) + offset)
+            memory_range = map(lambda x: x / 100.0, memory_range)
             for memory in memory_range:
                 if isinstance(memory, float) and memory == int(memory):
                     index = memory_range.index(memory)
@@ -1040,10 +1035,10 @@ class WebuiCommon(object):
             memory_list = sorted(set(memory_list))
             memory_list = [str(memory) + ' MB' for memory in memory_range]
         else:
-            memory = round(old_div(memory, 1024), 2)
-            memory_range = list(range(
-                int(memory * 100) - offset, int(memory * 100) + offset))
-            memory_range = [x / 100.0 for x in memory_range]
+            memory = round(memory / 1024, 2)
+            memory_range = range(
+                int(memory * 100) - offset, int(memory * 100) + offset)
+            memory_range = map(lambda x: x / 100.0, memory_range)
             memory_range = [(memory / 1024.0) for memory in memory_range]
             for memory in memory_range:
                 memory_list.append('%.2f' % memory)
@@ -1063,8 +1058,8 @@ class WebuiCommon(object):
                 cpu = float(dictn.get('cpu_info').get('cpu_share'))
         else:
             cpu = dictn.get('cpu_share')
-        cpu_range = list(range(int(cpu * 100) - offset, int(cpu * 100) + offset))
-        cpu_range = [x / 100.0 for x in cpu_range]
+        cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
+        cpu_range = map(lambda x: x / 100.0, cpu_range)
         cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
         return cpu_list
     # end get_cpu_string
@@ -1074,11 +1069,11 @@ class WebuiCommon(object):
         tx_socket_size = size
         analytics_msg_count = dictn.get('ModuleClientState').get(
             'session_stats').get('num_send_msg')
-        analytics_msg_count_list = list(range(
+        analytics_msg_count_list = range(
             int(analytics_msg_count) -
             offset,
             int(analytics_msg_count) +
-            offset))
+            offset)
         analytics_messages_string = [
             str(count) +
             ' [' +
@@ -2708,8 +2703,8 @@ class WebuiCommon(object):
             days_hrs = ' '.join(time_string.split()[:-1]) + ' '
         else:
             days_hrs = None
-        minute_range = list(range(int(time_string.split(
-        )[-1][:-1]) - offset, int(time_string.split()[-1][:-1]) + offset + 1))
+        minute_range = range(int(time_string.split(
+        )[-1][:-1]) - offset, int(time_string.split()[-1][:-1]) + offset + 1)
         if days_hrs is not None:
             if hrs - 1 != 0:
                 hrs = str(hrs - 1) + 'h' + ' '
@@ -2940,7 +2935,7 @@ class WebuiCommon(object):
     # end trim_spl_char
 
     def extract_keyvalue(self, dict_in, list_out):
-        for key, value in list(dict_in.items()):
+        for key, value in dict_in.items():
             if isinstance(value, dict):  # If value itself is dictionary
                 self.extract_keyvalue(value, list_out)
             elif isinstance(value, list):  # If value itself is list
@@ -3004,7 +2999,7 @@ class WebuiCommon(object):
                                     list_webui_index] == list_ops[list_ops_index]):
                                 count += 1
                                 break
-                            elif isinstance(list_webui[list_webui_index], (str, str)) and list_webui[list_webui_index].strip() == list_ops[list_ops_index]:
+                            elif isinstance(list_webui[list_webui_index], (str, unicode)) and list_webui[list_webui_index].strip() == list_ops[list_ops_index]:
                                 count += 1
                                 break
                     if(count == len(list_ops) or count == len(list_webui)):
@@ -3299,7 +3294,7 @@ class WebuiCommon(object):
                                     item_webui_index] == item_ops_value[item_ops_index]):
                                 count += 1
                                 break
-                            elif isinstance(item_webui_value[item_webui_index], (str, str)) and item_webui_value[item_webui_index].strip() == item_ops_value[item_ops_index]:
+                            elif isinstance(item_webui_value[item_webui_index], (str, unicode)) and item_webui_value[item_webui_index].strip() == item_ops_value[item_ops_index]:
                                 count += 1
                                 break
                     if(count == len(item_webui_value)):
@@ -3353,7 +3348,7 @@ class WebuiCommon(object):
     def get_range_string(self, value, offset=50):
         try:
             if int(value) or int(value) == 0:
-                val_range = list(range(int(value) - offset, int(value) + offset))
+                val_range = range(int(value) - offset, int(value) + offset)
                 val_range_list = [str(val) for val in val_range]
                 return val_range_list
         except:
@@ -3367,7 +3362,7 @@ class WebuiCommon(object):
                 for m in range(len(my_list[t]['value'])):
                     my_list[t]['value'][m] = str(
                         my_list[t]['value'][m])
-            elif isinstance(my_list[t]['value'], str):
+            elif isinstance(my_list[t]['value'], unicode):
                 my_list[t]['value'] = str(
                     my_list[t]['value'])
             else:
@@ -4132,8 +4127,8 @@ class WebuiCommon(object):
         try:
             if not br:
                 br = self.browser
-            for key, value in key_values_dict.items():
-                for inner_key, inner_value in value.items():
+            for key, value in key_values_dict.iteritems():
+                for inner_key, inner_value in value.iteritems():
                     self.send_keys(inner_value, inner_key, key, browser=br, clear=True)
         except WebDriverException:
             result = False

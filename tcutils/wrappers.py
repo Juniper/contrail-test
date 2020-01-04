@@ -1,22 +1,18 @@
 """ Module wrrapers that can be used in the tests."""
-from __future__ import print_function
-from __future__ import absolute_import
 
-from future import standard_library
-standard_library.install_aliases()
 import traceback, os, signal
 from functools import wraps
 from testtools.testcase import TestSkipped
 import cgitb
-import io
+import cStringIO
 from datetime import datetime
 from tcutils.util import v4OnlyTestException
 from tcutils.test_lib.contrail_utils import check_xmpp_is_stable
 
-from .cores import *
+from cores import *
 
 def detailed_traceback():
-    buf = io.BytesIO()
+    buf = cStringIO.StringIO()
     cgitb.Hook(format="text", file=buf).handle(sys.exc_info())
     tb_txt = buf.getvalue()
     buf.close()
@@ -91,20 +87,20 @@ def preposttest_wrapper(function):
                 log.info('-' * 80)
                 self.validate_post_upgrade()
         except KeyboardInterrupt:
-            pass
-        except (TestSkipped, v4OnlyTestException) as msg:
+            raise
+        except (TestSkipped, v4OnlyTestException), msg:
             testskip = True
             log.info(msg)
             result = True
             raise
-        except Exception as testfail:
+        except Exception, testfail:
             test_fail_trace = detailed_traceback()
             # Stop the test in the fail state for debugging purpose
             if self.inputs.stop_on_fail:
-                print(test_fail_trace)
-                print("Failure occured; Stopping test for debugging.")
-                import remote_pdb;
-                remote_pdb.set_trace()
+                print test_fail_trace
+                print "Failure occured; Stopping test for debugging."
+                import pdb
+                pdb.set_trace()
         finally:
             cleanupfail = None
             cleanup_trace = ''
@@ -116,7 +112,7 @@ def preposttest_wrapper(function):
                     cleanup(*args, **kwargs)
                 except KeyboardInterrupt:
                     raise
-                except Exception as cleanupfail:
+                except Exception, cleanupfail:
                     #result.addError(self, sys.exc_info())
                     cet, cei, ctb = sys.exc_info()
                     formatted_traceback = ''.join(traceback.format_tb(ctb))
@@ -140,7 +136,7 @@ def preposttest_wrapper(function):
                 errmsg.append("Cleanup failed: %s" % cleanup_trace)
 
             if cores:
-                for node, corelist in list(cores.items()):
+                for node, corelist in cores.items():
                     core_count += len(corelist)
                 # Preserve this msg format, it is used by
                 # tcutils.contrailtestrunner
@@ -148,7 +144,7 @@ def preposttest_wrapper(function):
                 log.error(msg)
                 errmsg.append(msg)
             if crashes:
-                for node, crashlist in list(crashes.items()):
+                for node, crashlist in crashes.items():
                     crash_count += len(crashlist)
                 # Preserve this msg format, it is used by
                 # tcutils.contrailtestrunner
@@ -173,7 +169,7 @@ def preposttest_wrapper(function):
                 log.info("END TEST : %s : FAILED[%s]",
                          function.__name__, test_time)
                 log.info('-' * 80)
-                if 'ci_image' in list(os.environ.keys()):
+                if 'ci_image' in os.environ.keys():
                     os.environ['stop_execution_flag'] = 'set'
                 raise TestFailed("\n ".join(errmsg))
             elif testskip:

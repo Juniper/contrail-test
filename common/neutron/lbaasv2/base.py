@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import test_v1, time
 from lbaasv2_fixture import LBaasV2Fixture
 from tcutils.util import *
@@ -28,15 +26,14 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         vm_fix_list = []
         for num in range(no_of_vm):
             vm_fix = self.create_vm(vn_fixture,
-                image_name='cirros-traffic')
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
             vm_fix_list.append(vm_fix)
-        return (vn_fixture, vm_fix_list)
-    # end  create_vn_and_its_vms
-
-    def start_webservers(self, vm_fixtures):
-        for vm in vm_fixtures:
+        for vm in vm_fix_list:
             assert vm.wait_till_vm_is_up()
             vm.start_webserver(listen_port=80)
+        return (vn_fixture, vm_fix_list)
+
+    # end  create_vn_and_its_vms
 
     def create_sg(self):
         self.sg_allow_tcp = 'sec_group_allow_tcp' + '_' + get_random_name()
@@ -99,11 +96,12 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
             self.logger.error("curl request to the VIP failed, with response %s", result)
             return (False, result[-1])
 
-    @retry(tries=4, delay=5)
+    @retry(tries=3, delay=5)
     def verify_lb_method(self, client_fix, servers_fix, vip_ip, lb_method='ROUND_ROBIN', port=80, https=False):
         '''
         Function to verify the Load balance method, by sending HTTP Traffic
         '''
+
         #Do wget on the VIP ip from the client, Lets do it 3 times
         lb_response1 = set([])
         result = ''

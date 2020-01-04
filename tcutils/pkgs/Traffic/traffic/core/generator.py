@@ -1,9 +1,5 @@
 """Module to send packets.
 """
-from __future__ import division
-from builtins import range
-from builtins import object
-from past.utils import old_div
 import os
 import socket
 import signal
@@ -74,20 +70,20 @@ class CreatePkt(object):
             self.profile.size = 0
         self.payload = self._payload()
         if l2_hdr:
-            log.debug("L2 Header: %s", repr(l2_hdr))
+            log.debug("L2 Header: %s", `l2_hdr`)
             self.pkt = l2_hdr
         if l3_hdr:
-            log.debug("L3 Header: %s", repr(l3_hdr))
+            log.debug("L3 Header: %s", `l3_hdr`)
             if not self.pkt:
                 self.pkt = l3_hdr
             else:
-                self.pkt = old_div(self.pkt, l3_hdr)
+                self.pkt = self.pkt / l3_hdr
         if l4_hdr:
-            log.debug("L4 Header: %s", repr(l4_hdr))
-            self.pkt = old_div(self.pkt, l4_hdr)
+            log.debug("L4 Header: %s", `l4_hdr`)
+            self.pkt = self.pkt / l4_hdr
         if self.payload:
             log.debug("Payload: %s", self.payload)
-            self.pkt = old_div(self.pkt, self.payload)
+            self.pkt = self.pkt / self.payload
 
     def _create_pkts(self):
         pkts = [self.pkt]
@@ -169,13 +165,13 @@ class Generator(Process, GeneratorBase):
     def send_recv(self, pkt, timeout=2):
         # Should wait for the ICMP reply when sending ICMP request.
         # So using scapy's "sr1".
-        log.debug("Sending: %s", repr(pkt))
+        log.debug("Sending: %s", `pkt`)
         proto = self.profile.stream.get_l4_proto()
         if proto == "icmp" or proto == "icmpv6":
             conf.promisc = 1
             p = sr1(pkt, timeout=timeout)
             if p:
-                log.debug("Received: %s", repr(pkt))
+                log.debug("Received: %s", `pkt`)
                 self.recv_count += 1
         else:
             conf.promisc = 0
@@ -228,7 +224,7 @@ class Generator(Process, GeneratorBase):
     def run(self):
         try:
             self._start()
-        except Exception as err:
+        except Exception, err:
             log.warn(traceback.format_exc())
         finally:
             log.info("Total packets sent: %s", self.count)

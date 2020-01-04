@@ -1,4 +1,3 @@
-from builtins import str
 import fixtures
 from vn_test import *
 from project_test import *

@@ -1,7 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 import traffic_tests
 from vn_test import *
 from vm_test import *
@@ -15,7 +11,7 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from .base import BaseVnVmTest
+from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
 import time
@@ -24,7 +20,7 @@ from tcutils.util import get_subnet_broadcast, is_ip_mine, skip_because
 import test
 from tcutils.tcpdump_utils import *
 
-from . import test_vm_basic
+import test_vm_basic
 
 class TestBasicVMVN0(BaseVnVmTest):
 
@@ -400,11 +396,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert vm_fixture.verify_vms_on_setup()
         assert vm_fixture.verify_vns_on_setup()
 
-        for vmobj in list(vm_fixture.vm_obj_dict.values()):
+        for vmobj in vm_fixture.vm_obj_dict.values():
             cmd = 'ls /tmp/'
             result = False
             ret = vmobj.run_cmd_on_vm(cmds = [cmd])
-            for elem in list(ret.values()):
+            for elem in ret.values():
                 if 'output.txt' in elem:
                     result = True
                     break
@@ -414,9 +410,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.debug("Printing the output.txt :")
             cmd = 'cat /tmp/output.txt'
             ret = vmobj.run_cmd_on_vm(cmds = [cmd])
-            self.logger.info("%s" %(list(ret.values())))
+            self.logger.info("%s" %(ret.values()))
             result = False
-            for elem in list(ret.values()):
+            for elem in ret.values():
                 if 'Hello World' in elem:
                     result = True
                     break
@@ -821,7 +817,7 @@ class TestBasicVMVN1(BaseVnVmTest):
             cmd_to_output = ['cat /tmp/out.log']
             vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
             output = vm1_fixture.return_output_cmd_dict[i]
-            print(output)
+            print output
             if 'DF' in output or 'echo reply' not in output:
                 result = False
         return result
@@ -1176,7 +1172,7 @@ class TestBasicVMVN3(BaseVnVmTest):
                     "Status of stop traffic for proto %s and packet size of %sB is %s" %
                     (proto, packet_size, stopStatus[proto]))
             self.logger.info("-" * 80)
-            print(result)
+            print result
             self.logger.info('Sleeping for 10s')
             sleep(10)
         self.assertEqual(result, True, msg)
@@ -1198,8 +1194,28 @@ class TestBasicVMVN4(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN4, cls).tearDownClass()
 
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
+        '''
+        Description:  Test to validate VM creation and deletion.
+        Test steps:
+                1. Create VM in a VN.
+        Pass criteria: Creation and deletion of the VM should go thru fine.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn_fixture = self.create_vn()
+        assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name=get_random_name('vm_add_delete'))
+        assert vm1_fixture.verify_on_setup()
+        return True
+    # end test_traffic_bw_vms_diff_pkt_size_w_chksum
+
+
+    @preposttest_wrapper
     def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
         '''
         Description:  Test to validate TCP, ICMP, UDP traffic of different packet sizes b/w VMs created within a VN and validate UDP checksum.
@@ -1210,17 +1226,42 @@ class TestBasicVMVN4(BaseVnVmTest):
         Maintainer : ganeshahv@juniper.net
         '''
         vn_fixture = self.create_vn()
+        assert vn_fixture.verify_on_setup()
         # Get all compute host
         host_list = self.connections.orch.get_hosts()
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='ubuntu-traffic',
-            node_name=host_list[0])
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='ubuntu-traffic',
-            node_name=host_list[-1])
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                     flavor='contrail_flavor_small',
+                                     image_name='ubuntu-traffic',
+                                     node_name=host_list[0])
+        if len(host_list) > 1:
+            self.logger.info("Multi-Node Setup")
+            vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic',
+                                         node_name=host_list[1])
+        else:
+            self.logger.info("Single-Node Setup")
+            vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic')
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
 
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vm2_fixture.wait_till_vm_is_up()
+        out1 = vm1_fixture.wait_till_vm_is_up()
+        if out1 == False:
+            return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
+        else:
+            self.logger.info('Will install Traffic package on %s' %
+                             vm1_fixture.vm_name)
+            vm1_fixture.install_pkg("Traffic")
+
+        out2 = vm2_fixture.wait_till_vm_is_up()
+        if out2 == False:
+            return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
+        else:
+            self.logger.info('Will install Traffic package on %s' %
+                             vm2_fixture.vm_name)
+            vm2_fixture.install_pkg("Traffic")
 
         result = True
         msg = []
@@ -1234,7 +1275,13 @@ class TestBasicVMVN4(BaseVnVmTest):
         dpi = 9100
         proto = 'udp'
         packet_sizes = [40, 64, 254, 748, 1350]
+        cmd_to_increase_mtu = ['ifconfig eth0 mtu 16436']
         for packet_size in packet_sizes:
+            if packet_size > 1400:
+                self.logger.info('Increasing the MTU of the eth0 of VM')
+                vm1_fixture.run_cmd_on_vm(
+                    cmds=cmd_to_increase_mtu, as_sudo=True)
+                vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
             self.logger.info("-" * 80)
             self.logger.info("PACKET SIZE = %sB" % packet_size)
             self.logger.info("-" * 80)
@@ -1286,7 +1333,7 @@ class TestBasicVMVN4(BaseVnVmTest):
                     "Status of stop traffic for proto %s and packet size of %sB is %s" %
                     (proto, packet_size, stopStatus[proto]))
             self.logger.info("-" * 80)
-            print(result)
+            print result
             sleep(1)
         self.assertEqual(result, True, msg)
 
@@ -1344,7 +1391,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         list_of_ips = vm1_fixture.vm_ips
         cmd = '/sbin/ifconfig -a'
         ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-        for elem in list(ret.values()):
+        for elem in ret.values():
             for ips in list_of_ips:
                 if ips not in elem:
                     self.logger.error(
@@ -1392,7 +1439,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         cmd_to_output = [i]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
-        print(output)
+        print output
         result = True
         if not '100%' in output:
             self.logger.error(
@@ -1405,7 +1452,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         cmd_to_output = [j]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
         output1 = vm1_fixture.return_output_cmd_dict[j]
-        print(output1)
+        print output1
         if not ' 0%' in output1:
             self.logger.error(
                 'Arping to the other VMs address should have passed')
@@ -1638,7 +1685,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         cmd_to_output1 = [j]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output1)
         output1 = vm1_fixture.return_output_cmd_dict[j]
-        print(output1)
+        print output1
 
         for ips in list_of_ips:
             if ips not in output1:
@@ -1927,7 +1974,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_view_output)
 
         output = vm1_fixture.return_output_cmd_dict[i]
-        print(output)
+        print output
         if '10.10.10.10' not in output:
             result = False
         assert vm1_fixture.verify_on_setup()
@@ -2101,7 +2148,7 @@ class TestBasicVMVN6(BaseVnVmTest):
                                 project_name=self.inputs.project_name))
 
 
-        for key,value in overlapping_vns.items():
+        for key,value in overlapping_vns.iteritems():
             try:
                 ovlap_vn_fixture = self.useFixture(VNFixture(
                                             connections=self.connections, 
@@ -2183,7 +2230,8 @@ class TestBasicVMVN6(BaseVnVmTest):
         ipam = vn_fixture.ipam_fq_name
         vn_fixture.create_subnet_af(af=self.inputs.get_af(), ipam_fq_name=ipam)
         vnnow_obj = self.connections.orch.get_vn_obj_if_present(vn_name)
-        subnet_created = list([obj['subnet_cidr'] for obj in vnnow_obj['network']['subnet_ipam']])
+        subnet_created = list(map(lambda obj: obj['subnet_cidr'],
+                              vnnow_obj['network']['subnet_ipam']))
         if set(subnet_created) != set(vn_fixture.get_subnets()):
             self.logger.error('assigned ip block is not allocated to VN')
             result = False
@@ -2229,6 +2277,114 @@ class TestBasicVMVN6(BaseVnVmTest):
 
         return True
     # end test_multiple_vn_vm
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',
+        hypervisor='docker',msg='Bug 1461423:Need privileged access')
+    def test_ping_on_broadcast_multicast_with_frag(self):
+        '''
+        Description: Validate Ping on subnet broadcast,link local multucast,network broadcastwith packet sizes > MTU and see that fragmentation and assembly work fine .
+        Test steps:
+                1. Create multiple VMs.
+                2. Start a ICMP stream to the subnet-broadcast, multicast and all-broadcast address with a packet-size greater than the MTU.
+                3. We should see a packet too big error message.
+                4. Increase the MTU on the interface.
+        Pass criteria: The Traffic should go thru fine without any loss.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn1_name = 'vn30'
+        vn1_subnets = ['30.1.1.0/24']
+        ping_count = '5'
+        vn1_vm1_name = 'vm1'
+        vn1_vm2_name = 'vm2'
+        vn1_vm3_name = 'vm3'
+        vn1_vm4_name = 'vm4'
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
+        assert vn1_fixture.verify_on_setup()
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm1_name))
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name))
+        vm3_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm3_name))
+        vm4_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn1_fixture.obj, vm_name=vn1_vm4_name))
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm3_fixture.wait_till_vm_is_up()
+        assert vm4_fixture.wait_till_vm_is_up()
+
+        # Geting the VM ips
+        vm1_ip = vm1_fixture.vm_ip
+        vm2_ip = vm2_fixture.vm_ip
+        vm3_ip = vm3_fixture.vm_ip
+        vm4_ip = vm4_fixture.vm_ip
+        ip_list = [vm1_ip, vm2_ip, vm3_ip, vm4_ip]
+        list_of_ip_to_ping = ['30.1.1.255', '224.0.0.1', '255.255.255.255']
+        # passing command to vms so that they respond to subnet broadcast
+        cmd_list_to_pass_vm = [
+            'echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
+        vm3_fixture.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
+        vm4_fixture.run_cmd_on_vm(cmds=cmd_list_to_pass_vm, as_sudo=True)
+        for dst_ip in list_of_ip_to_ping:
+            print 'pinging from %s to %s' % (vm1_ip, dst_ip)
+# pinging from Vm1 to subnet broadcast
+            if self.inputs.is_ci_setup():
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000')
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000', other_opt='-b')
+            self.logger.info(
+                'The packet is not fragmanted because of the smaller MTU')
+            expected_result = 'Message too long'
+            assert (expected_result in ping_output)
+
+        self.logger.info('Will change the MTU of the VMs and try again')
+        cmd_to_increase_mtu = ['ifconfig eth0 mtu 9000']
+        vm1_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
+        vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
+        vm3_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
+        vm4_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
+
+        for dst_ip in list_of_ip_to_ping:
+            print 'pinging from %s to %s' % (vm1_ip, dst_ip)
+# pinging from Vm1 to subnet broadcast
+            if self.inputs.is_ci_setup():
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000')
+            else:
+                ping_output = vm1_fixture.ping_to_ip(
+                    dst_ip, return_output=True, count=ping_count,  size='3000', other_opt='-b')
+            expected_result = 'Message too long'
+            assert (expected_result not in ping_output)
+
+# getting count of ping response from each vm
+            string_count_dict = {}
+            string_count_dict = get_string_match_count(ip_list, ping_output)
+            print string_count_dict
+            for k in ip_list:
+                # this is a workaround : ping utility exist as soon as it gets
+                # one response
+                assert (string_count_dict[k] >= (int(ping_count) - 1)) or\
+                       (ping_output.count('DUP') >= (int(ping_count) - 1))
+        return True
+    # end test_ping_on_broadcast_multicast_with_frag
+
 
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
@@ -2438,7 +2594,7 @@ class TestBasicVMVN9(BaseVnVmTest):
             output, pkt_count = stop_tcpdump_for_vm_intf(
                 None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
             output = output[0]
-        print(output)
+        print output
         if '1.2.3.4' in output:
             self.logger.info(
                 'Traffic is going to the tap interface of %s correctly' %
@@ -2748,6 +2904,12 @@ class TestBasicIPv6VMVN6(TestBasicVMVN6):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',
+        hypervisor='docker',msg='Bug 1461423:Need privileged access')
+    def test_ping_on_broadcast_multicast_with_frag(self):
+        super(TestBasicIPv6VMVN6, self).test_ping_on_broadcast_multicast_with_frag()
+
 class TestBasicIPv6VMVN9(TestBasicVMVN9):
 
     @classmethod
@@ -2781,6 +2943,9 @@ class TestBasicVMVNx(BaseVnVmTest):
 
         Maintainer : ganeshahv@juniper.net
         '''
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vn_name = get_random_name('vn222')
         scp_test_file_sizes = ['1303'] if self.inputs.is_ci_setup() else \
                               ['1355', '3000']
         file = 'somefile'
@@ -2789,27 +2954,41 @@ class TestBasicVMVNx(BaseVnVmTest):
         x = 'sync'
         cmd_to_sync = [x]
         create_result = True
-        vn_fixture = self.create_vn(orch=self.orchestrator)
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='ubuntu',
-            orch=self.orchestrator)
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='ubuntu')
+        transfer_result = True
+        vn_fixture = self.create_vn(vn_name=vn_name,orch=self.orchestrator)
+        vn_fixture.read()
+        assert vn_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm1_name,
+                                     flavor='contrail_flavor_small',orch=self.orchestrator)
+        vm2_fixture = self.create_vm(vn_ids=[vn_fixture.uuid],vm_name=vm2_name,
+                                     flavor='contrail_flavor_small')
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         for size in scp_test_file_sizes:
+            self.logger.debug("-" * 80)
             self.logger.debug("FILE SIZE = %sB" % size)
+            self.logger.debug("-" * 80)
+
             self.logger.debug('Transferring the file from %s to %s using scp' %
                              (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            msg = 'File of size %sB not transferred via scp ' % size
             if self.inputs.is_ci_setup() and self.inputs.get_af() == 'v4':
                 if is_ip_mine(vm1_fixture.vm_node_ip):
-                    assert vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size), msg
+                    file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
                 else:
                     self.skipTest('scp_file_transfer_cirros not posible here')
             else:
-                assert vm1_fixture.check_file_transfer(vm2_fixture,
-                                                       size=size)
+                file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
+                                                                   size=size)
+            if file_transfer_result:
+                self.logger.info(
+                    'File of size %sB transferred via scp properly' % size)
+            else:
+                transfer_result = False
+                self.logger.error(
+                    'File of size %sB not transferred via scp ' % size)
+                break
+        assert transfer_result, 'File not transferred via scp '
+        return transfer_result
     # end test_vm_file_trf_scp_tests
 
     @preposttest_wrapper
@@ -2864,7 +3043,7 @@ class TestBasicVMVNx(BaseVnVmTest):
             self.logger.debug('Checking if the file exists on %s'%vm2_name)
             vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file )
             output= vm2_fixture.return_output_cmd_dict[y]
-            print(output)
+            print output
             if size in output:
                 self.logger.info('File of size %sB transferred via tftp properly'%size)
             else:
@@ -2983,8 +3162,8 @@ class TestBasicVMVNx(BaseVnVmTest):
         inspect_h1 = self.agent_inspect[vn1_vm1_fixture.vm_node_ip]
         inspect_h2 = self.agent_inspect[fvn_vm1_fixture.vm_node_ip]
         flow_rec1 = None
-        src_port = str(client_port)
-        dst_port = str(server_port)
+        src_port = unicode(client_port)
+        dst_port = unicode(server_port)
         # Verify Ingress Traffic
         self.logger.info('Verifying Ingress Flow Record')
         vn_fq_name = vn1_vm1_fixture.vn_fq_name

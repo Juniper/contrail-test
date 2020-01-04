@@ -1,11 +1,10 @@
-from __future__ import absolute_import
 #
 # To run tests, you can do 'python -m testtools.run tests'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
 import fixtures
-from .base import BaseHeadlessVrouterTest
+from base import BaseHeadlessVrouterTest
 from tcutils.topo import topo_helper
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
@@ -23,8 +22,8 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from . import headless_vr_utils
-from . import test_headless_vrouter_topo
+import headless_vr_utils
+import test_headless_vrouter_topo
 from compute_node_test import *
 
 class TestHeadlessVrouter(BaseHeadlessVrouterTest):
@@ -94,8 +93,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             topo_objs, config_topo, vm_fip_info = out['data']
 
         # Start Test
-        proj = list(config_topo.keys())
-        vms = list(config_topo[proj[0]]['vm'].keys())
+        proj = config_topo.keys()
+        vms = config_topo[proj[0]]['vm'].keys()
         src_vm = config_topo[proj[0]]['vm'][vms[0]]
         dest_vm = config_topo[proj[0]]['vm'][vms[1]]
         flow_cache_timeout = 180
@@ -323,8 +322,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             topo_objs, config_topo, vm_fip_info = out['data']
 
         # Start Test
-        proj = list(config_topo.keys())
-        vms = list(config_topo[proj[0]]['vm'].keys())
+        proj = config_topo.keys()
+        vms = config_topo[proj[0]]['vm'].keys()
         src_vm = config_topo[proj[0]]['vm'][vms[0]]
         dest_vm = config_topo[proj[0]]['vm'][vms[1]]
         flow_cache_timeout = 180

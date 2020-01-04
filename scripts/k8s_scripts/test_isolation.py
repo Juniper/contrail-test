@@ -278,6 +278,7 @@ class TestCustomIsolation(BaseK8sTest):
             k8s_default_service_vn_name = self.connections.project_name + '-default-service-network'
         else:
             k8s_default_service_vn_name = "k8s-default-service-network"
+        import pdb;pdb.set_trace()
         k8s_default_service_vn_fq_name = [self.connections.domain_name,
                                         self.connections.project_name,
                                         k8s_default_service_vn_name]

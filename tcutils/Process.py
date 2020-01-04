@@ -1,13 +1,8 @@
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
 from multiprocessing import TimeoutError, Pool
-from copyreg import pickle
+from copy_reg import pickle
 import threading
 import marshal
-import _thread
+import thread
 import types
 import sys
 from common import log_orig as logging
@@ -32,9 +27,9 @@ def wrapper(func):
     return inner
 
 def _pickle_method(method):
-    func_name = method.__func__.__name__
-    obj = method.__self__
-    cls = method.__self__.__class__
+    func_name = method.im_func.__name__
+    obj = method.im_self
+    cls = method.im_class
     return _unpickle_method, (func_name, obj, cls)
 def _unpickle_method(func_name, obj, cls):
     for cls in cls.mro():
@@ -50,14 +45,14 @@ pickle(types.MethodType, _pickle_method, _unpickle_method)
 lock = dict()
 def get_lock(key):
     global lock
-    if key not in list(lock.keys()):
+    if key not in lock.keys():
         lock[key] = threading.Lock()
     return lock[key]
 def _pickle_lock(lock):
     return _unpickle_lock, (lock.__hash__(),)
 def _unpickle_lock(key):
     return get_lock(key)
-pickle(_thread.LockType, _pickle_lock, _unpickle_lock)
+pickle(thread.LockType, _pickle_lock, _unpickle_lock)
 
 def _pickle_file(fobj):
     return _unpickle_file, (fobj.name, fobj.mode)
@@ -75,22 +70,22 @@ pickle(types.FileType, _pickle_file, _unpickle_file)
 def _pickle_func(func):
     fn_glob = dict()
     modules = dict()
-    supported_types = [v for k, v in types.__dict__.items()
+    supported_types = [v for k, v in types.__dict__.iteritems()
                        if k.endswith('Type')]
-    for k,v in func.__globals__.items():
+    for k,v in func.func_globals.iteritems():
          if type(v) in supported_types:
              fn_glob[k] = v
          if type(v) == types.ModuleType:
              modules.update({k: v.__name__})
              del fn_glob[k]
-    return _unpickle_func, (marshal.dumps(func.__code__), fn_glob, modules,
-                            func.__name__, func.__defaults__,
-                            func.__closure__, func.__dict__)
+    return _unpickle_func, (marshal.dumps(func.func_code), fn_glob, modules,
+                            func.func_name, func.func_defaults,
+                            func.func_closure, func.func_dict)
 
 def _unpickle_func(code_string, fn_glob, modules, func_name,
                    func_defaults, func_closure, func_dict):
     code = marshal.loads(code_string)
-    for k,v in modules.items():
+    for k,v in modules.iteritems():
          fn_glob.update({k: __import__(v)})
     fn = types.FunctionType(code, fn_glob, func_name,
                       func_defaults, func_closure)
@@ -122,10 +117,10 @@ def multi_process(target, *args, **kwargs):
             res.append(result.get(timeout=timeout))
         except TimeoutError as e:
             LOG.logger.error('Task overrun %d secs and timedout'%timeout)
-            print('Task overrun %d secs and timedout'%timeout)
+            print 'Task overrun %d secs and timedout'%timeout
         except Exception as e:
             LOG.logger.error('Exception in a task: %s %s'%(type(e).__name__, str(e)))
-            print('Exception in a task:', type(e).__name__, str(e))
+            print 'Exception in a task:', type(e).__name__, str(e)
     pool.terminate() # Terminate the pool to delete the task overrun processes
     pool.join()
     if len(res) != n_instances:

@@ -391,10 +391,11 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-control",
                                             self.inputs.bgp_control_ips[0])
-        self.inputs.stop_service("rabbitmq-server",[in_use_server], container='rabbitmq',
-            verify_service=False)
+        self.inputs.stop_service("rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.start_service,
-                        "rabbitmq-server",[in_use_server], 'rabbitmq', False)
+                        "rabbitmq-server",[in_use_server], 'control_control_1')
+        self.addCleanup(self.inputs.verify_service_state, [in_use_server],
+                        "rabbitmq", "control")
         new_in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-control",
                                             self.inputs.bgp_control_ips[0])
@@ -420,10 +421,11 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-dns",
                                             self.inputs.bgp_control_ips[0])
-        self.inputs.stop_service("rabbitmq-server",[in_use_server], container='rabbitmq',
-            verify_service=False)
+        self.inputs.stop_service("rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.start_service,
-                        "rabbitmq-server",[in_use_server], 'rabbitmq', False)
+                        "rabbitmq-server",[in_use_server])
+        self.addCleanup(self.inputs.verify_service_state, [in_use_server],
+                        "rabbitmq", "control")
         new_in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-dns",
                                             self.inputs.bgp_control_ips[0])
@@ -458,27 +460,22 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         in_use_servers, status, ports = self.get_all_in_use_servers("xmpp" ,"agent", 
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
-        self.inputs.stop_service('control', [in_use_servers[0]], container='control')
-        self.sleep(5)
-        self.inputs.start_service('control', [in_use_servers[0]], container='control')
-        new_in_use_servers, status, ports = self.get_all_in_use_servers(
-                                            "xmpp", "agent", "contrail-vrouter-agent",
-                                            self.inputs.compute_control_ips[0])
+        new_in_use_servers, status, ports = self.get_connections_after_server_restart(
+                                            "xmpp", "agent", "contrail-control", 
+                                             "contrail-vrouter-agent", in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "controller")
         if in_use_servers[0] not in new_in_use_servers \
             and all(x == 'Up' for x in status):
             self.logger.info("Connections switched to other Controller")
         else:
             self.logger.error("Connection not switched to new Controller")
             assert False, "Unexpected Connection"
-        ip = self.inputs.compute_control_ips[0]
-        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
-                                self.inputs.host_data[ip]['username'],
-                                self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        servers_in_use, status, ports = self.get_all_in_use_servers("xmpp",
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup("xmpp",
                                         "agent", "contrail-vrouter-agent",
-                                        self.inputs.compute_control_ips[0])
-        if new_in_use_servers != servers_in_use \
-            and all(x == 'Up' for x in status):
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", new_in_use_servers)
+        if connection_updated == True:
             self.logger.info("The client which was affected due to down/up of server "
                             " has successfully taken part in reallocation/load " 
                             " balancing after issuing SIGHUP")
@@ -488,12 +485,10 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                             " issuing SIGHUP")
             assert False, "Unexpected Connection"
         # checking that restarting inactive collector doesnt affect the connections after SIGHUP
-        self.inputs.stop_service('control', [new_in_use_servers[0]], container='control')
-        self.sleep(5)
-        self.inputs.start_service('control', [new_in_use_servers[0]], container='control')
-        in_use_servers_new, status, ports = self.get_all_in_use_servers(
-                                            "xmpp", "agent", "contrail-vrouter-agent",
-                                            self.inputs.compute_control_ips[0])
+        in_use_servers_new, status, ports = self.get_connections_after_server_restart(
+                                            "xmpp", "agent", "contrail-control", 
+                                            "contrail-vrouter-agent", new_in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "controller")
         if servers_in_use == in_use_servers_new \
             and all(x == 'Up' for x in status):
             self.logger.info("Connections still same after restart as restarted server"
@@ -503,15 +498,13 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                               " was not being used by client, connection should not have"
                               " been affected")
             assert False, "Unexpected Connection"
-        ip = self.inputs.compute_control_ips[0]
-        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
-                                self.inputs.host_data[ip]['username'],
-                                self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        servers_in_use, status, ports = self.get_all_in_use_servers(
-                                        "xmpp", "agent", "contrail-vrouter-agent",
-                                        self.inputs.compute_control_ips[0])
-        if servers_in_use == in_use_servers_new \
-            and all(x == 'Up' for x in status):
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup(
+                                        "xmpp",
+                                        "agent", "contrail-vrouter-agent",
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", in_use_servers_new)
+        if connection_updated == False:
             self.logger.info("There is no affect on client which was connected to "
                             "different servers than the server which went down/up")
         else:
@@ -544,27 +537,22 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         in_use_servers, status, ports = self.get_all_in_use_servers("collector" ,"agent", 
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
-        self.inputs.stop_service('collector', [in_use_servers[0]], container='collector')
-        self.sleep(5)
-        self.inputs.start_service('collector', [in_use_servers[0]], container='collector')
-        new_in_use_servers, status, ports = self.get_all_in_use_servers(
-                                            "collector", "agent", "contrail-vrouter-agent",
-                                            self.inputs.compute_control_ips[0])
+        new_in_use_servers, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "agent", "contrail-collector", 
+                                             "contrail-vrouter-agent", in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "analytics")
         if in_use_servers[0] not in new_in_use_servers \
             and all(x == 'Up' for x in status):
             self.logger.info("Connections switched to other Collector")
         else:
             self.logger.error("Connection not switched to new Collector")
             assert False, "Unexpected Connection"
-        ip = self.inputs.compute_control_ips[0]
-        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
-                                self.inputs.host_data[ip]['username'],
-                                self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        servers_in_use, status, ports = self.get_all_in_use_servers("collector",
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup("collector",
                                         "agent", "contrail-vrouter-agent",
-                                        self.inputs.compute_control_ips[0])
-        if new_in_use_servers != servers_in_use \
-            and all(x == 'Up' for x in status):
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", new_in_use_servers)
+        if connection_updated == True:
             self.logger.info("The client which was affected due to down/up of server "
                             " has successfully taken part in reallocation/load " 
                             " balancing after issuing SIGHUP")
@@ -574,12 +562,10 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                             " issuing SIGHUP")
             assert False, "Unexpected Connection"
         # checking that restarting inactive collector doesnt affect the connections after SIGHUP
-        self.inputs.stop_service('collector', [new_in_use_servers[0]], container='collector')
-        self.sleep(5)
-        self.inputs.start_service('collector', [new_in_use_servers[0]], container='collector')
-        in_use_servers_new, status, ports = self.get_all_in_use_servers(
-                                            "collector", "agent", "contrail-vrouter-agent",
-                                            self.inputs.compute_control_ips[0])
+        in_use_servers_new, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "agent", "contrail-collector", 
+                                             "contrail-vrouter-agent", new_in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "analytics")
         if servers_in_use == in_use_servers_new \
             and all(x == 'Up' for x in status):
             self.logger.info("Connections still same after restart as restarted server"
@@ -589,15 +575,13 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                               " was not being used by client, connection should not have"
                               " been affected")
             assert False, "Unexpected Connection"
-        ip = self.inputs.compute_control_ips[0]
-        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
-                                self.inputs.host_data[ip]['username'],
-                                self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        servers_in_use, status, ports = self.get_all_in_use_servers("collector",
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup(
+                                        "collector",
                                         "agent", "contrail-vrouter-agent",
-                                        self.inputs.compute_control_ips[0])
-        if servers_in_use == in_use_servers_new \
-            and all(x == 'Up' for x in status):
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", in_use_servers_new)
+        if connection_updated == False:
             self.logger.info("There is no affect on client which was connected to "
                             "different servers than the server which went down/up")
         else:
@@ -630,27 +614,22 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         in_use_servers, status, ports = self.get_all_in_use_servers("collector" ,"control", 
                                             "contrail-control",
                                             self.inputs.bgp_control_ips[0])
-        self.inputs.stop_service('collector', [in_use_servers[0]], container='collector')
-        self.sleep(5)
-        self.inputs.start_service('collector', [in_use_servers[0]], container='collector')
-        new_in_use_servers, status, ports = self.get_all_in_use_servers(
-                                            "collector", "control", "contrail-control", 
-                                            self.inputs.bgp_control_ips[0])
+        new_in_use_servers, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "control", "contrail-collector", 
+                                             "contrail-control", in_use_servers[0],
+                                            self.inputs.bgp_control_ips[0], "analytics")
         if in_use_servers[0] not in new_in_use_servers \
             and all(x == 'Up' for x in status):
             self.logger.info("Connections switched to other Collector")
         else:
             self.logger.error("Connection not switched to new Collector")
             assert False, "Unexpected Connection"
-        ip = self.inputs.bgp_control_ips[0]
-        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
-                                self.inputs.host_data[ip]['username'],
-                                self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        servers_in_use, status, ports = self.get_all_in_use_servers("collector",
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup("collector",
                                         "control", "contrail-control",
-                                        self.inputs.bgp_control_ips[0])
-        if new_in_use_servers != servers_in_use \
-            and all(x == 'Up' for x in status):
+                                        self.inputs.bgp_control_ips[0],
+                                        "controller", new_in_use_servers)
+        if connection_updated == True:
             self.logger.info("The client which was affected due to down/up of server "
                             " has successfully taken part in reallocation/load " 
                             " balancing after issuing SIGHUP")
@@ -660,11 +639,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                             " issuing SIGHUP")
             assert False, "Unexpected Connection"
         # checking that restarting inactive collector doesnt affect the connections after SIGHUP
-        self.inputs.stop_service('collector', [new_in_use_servers[0]], container='collector')
-        self.sleep(5)
-        self.inputs.start_service('collector', [new_in_use_servers[0]], container='collector')
-        in_use_servers_new, status, ports = self.get_all_in_use_servers(
-                                            "collector", "control", "contrail-control",
+        in_use_servers_new, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "control", "contrail-control", 
+                                             "contrail-control", new_in_use_servers[0],
                                             self.inputs.bgp_control_ips[0], "analytics")
         if servers_in_use == in_use_servers_new \
             and all(x == 'Up' for x in status):
@@ -675,15 +652,13 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                               " was not being used by client, connection should not have"
                               " been affected")
             assert False, "Unexpected Connection"
-        ip = self.inputs.bgp_control_ips[0]
-        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
-                                self.inputs.host_data[ip]['username'],
-                                self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        servers_in_use, status, ports = self.get_all_in_use_servers(
-                                        "collector", "control", "contrail-control",
-                                        self.inputs.bgp_control_ips[0])
-        if servers_in_use == in_use_servers_new \
-            and all(x == 'Up' for x in status):
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup(
+                                        "collector",
+                                        "control", "contrail-control",
+                                        self.inputs.bgp_control_ips[0],
+                                        "controller", in_use_servers_new)
+        if connection_updated == False:
             self.logger.info("There is no affect on client which was connected to "
                             "different servers than the server which went down/up")
         else:

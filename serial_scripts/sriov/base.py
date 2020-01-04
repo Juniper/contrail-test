@@ -1,4 +1,3 @@
-from builtins import range
 import test
 import time
 import struct
@@ -46,7 +45,7 @@ class BaseSriovTest(test.BaseTestCase):
               time.sleep(3)
     def get_sriov_enabled_compute_list(self):
         sriov_host_name_list=[]      
-        sriov_host_list=list(self.inputs.sriov_data[0].keys())
+        sriov_host_list=self.inputs.sriov_data[0].keys()
         for item in sriov_host_list:
             sriov_host_name_list.append(self.inputs.host_data[item.split('@')[1]]['name'])
         return sriov_host_name_list

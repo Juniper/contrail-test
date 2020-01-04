@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from scapy.all import *
 import sys
 import argparse
@@ -25,12 +22,12 @@ os.system(
             args.localIP)
 
 id = int(args.id)
-print("using IP id %s" % (id))
+print "using IP id %s" % (id)
 ip1=IP(id=id, dst=args.remoteIP)
 ip2=IP(id=id+1, dst=args.remoteIP)
 
-packet1=old_div(old_div(ip1,ICMP()),("X"*20))
-packet2=old_div(old_div(ip2,ICMP()),("X"*17))
+packet1=ip1/ICMP()/("X"*20)
+packet2=ip2/ICMP()/("X"*17)
 frag1 = fragment(packet1, fragsize=8)
 frag2= fragment(packet2, fragsize=8)
 

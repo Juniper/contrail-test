@@ -1,4 +1,3 @@
-from builtins import object
 import abc
 import logging
 from fabric.operations import get, put, run, local, sudo
@@ -14,11 +13,11 @@ from jnpr.junos.exception import *
 
 from common import log_orig as contrail_logging
 import gevent
-from future.utils import with_metaclass
 
-class AbstractConnection(with_metaclass(abc.ABCMeta, object)):
+class AbstractConnection(object):
     ''' Abstract connnection class for ssh/netconf etc
     '''
+    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __init__(self, *args, **kwargs):
@@ -134,7 +133,7 @@ class NetconfConnection(AbstractConnection):
           for stmt in stmts:
             try:
                 self.config_handle.load(stmt, format='set', merge=True)
-            except ConfigLoadError as e:
+            except ConfigLoadError,e:
                 if ignore_errors:
                     self.logger.debug('Exception %s ignored' % (e))
                     self.logger.exception(e)
@@ -143,7 +142,7 @@ class NetconfConnection(AbstractConnection):
         if commit:
             try:
                 self.config_handle.commit(timeout=timeout)
-            except CommitError as e:
+            except CommitError,e:
                 self.logger.exception(e)
                 return (False,e)
         return (True, None)

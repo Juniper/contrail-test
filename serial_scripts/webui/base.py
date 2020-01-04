@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from builtins import object
 import test_v1
 from common import isolated_creds
 from vn_test import *
@@ -14,7 +12,7 @@ from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from sdn_ui_topo_setup import *
-from .webui_topology import *
+from webui_topology import *
 from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *
@@ -58,7 +56,7 @@ class WebuiBaseTest(test_v1.BaseTestCase_v1):
     # end UicleanUp
 
 
-class ResourceFactory(object):
+class ResourceFactory:
     factories = {}
 
     def createResource(id):
@@ -97,7 +95,7 @@ class WebuiTestSanityResource (BaseResource):
     def cleanUp(self):
         super(WebuiTestSanityResource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
 
         def create(self): return WebuiTestSanityResource()
 

@@ -1,10 +1,3 @@
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import next
-from builtins import range
-from builtins import object
 import os
 import re
 import sys
@@ -12,10 +5,10 @@ import json
 import time
 import socket
 import getpass
-import configparser
+import ConfigParser
 import ast
 from netaddr import *
-from itertools import ifilterfalse, ifilter
+from itertools import ifilterfalse
 
 import fixtures
 from fabric.api import env, run, local, sudo
@@ -40,7 +33,6 @@ import random
 from cfgm_common import utils
 import argparse
 import yaml
-from future.utils import with_metaclass
 
 ORCH_DEFAULT_DOMAIN = {
     'openstack' : 'Default',
@@ -82,13 +74,14 @@ if "check_output" not in dir(subprocess):  # duck punch it in!
     subprocess.check_output = f
 
 
-class TestInputs(with_metaclass(Singleton, object)):
+class TestInputs(object):
     '''
        Class that would populate testbedinfo from parsing the
        .ini and .json input files if provided (or)
        check the keystone server to populate
        the same with the certain default value assumptions
     '''
+    __metaclass__ = Singleton
 
     def __init__(self, input_file, logger=None):
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
@@ -126,8 +119,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         protocol = 'https' if self.contrail_configs.get('SSL_ENABLE') else 'http'
         self.api_protocol = 'https' if self.contrail_configs.get(
             'CONFIG_API_SSL_ENABLE') else protocol
-        self.analytics_api_protocol = 'https' if self.contrail_configs.get(
-            'ANALYTICS_API_SSL_ENABLE') else protocol
+        self.analytics_api_protocol = 'http' #Hardcoded until CEM-4334 is resolved
         self.introspect_protocol = 'https' if self.contrail_configs.get(
             'INTROSPECT_SSL_ENABLE') else protocol
         if self.api_protocol == 'https':
@@ -144,13 +136,6 @@ class TestInputs(with_metaclass(Singleton, object)):
                 'INTROSPECT_KEYFILE') or DEFAULT_PRIV_KEY
             self.introspect_cafile = self.contrail_configs.get(
                 'INTROSPECT_CA_CERTFILE') or DEFAULT_CA
-        if self.analytics_api_protocol == 'https':
-            self.analytics_certfile = self.contrail_configs.get(
-                'ANALYTICS_API_SERVER_CERTFILE') or DEFAULT_CERT
-            self.analytics_keyfile = self.contrail_configs.get(
-                'ANALYTICS_API_SERVER_KEYFILE') or DEFAULT_PRIV_KEY
-            self.analytics_cafile = self.contrail_configs.get(
-                'ANALYTICS_API_SERVER_CA_CERTFILE') or DEFAULT_CA
 
         apicertbundle = None
         if not self.api_insecure and self.api_protocol == 'https':
@@ -158,12 +143,6 @@ class TestInputs(with_metaclass(Singleton, object)):
             apicertbundle = utils.getCertKeyCaBundle(api_bundle,
                             [self.apicertfile, self.apikeyfile,
                              self.apicafile])
-        analyticscertbundle = None
-        if not self.analytics_api_insecure and self.analytics_api_protocol == 'https':
-            analytics_bundle = '/tmp/' + get_random_string() + '.pem'
-            analyticscertbundle = utils.getCertKeyCaBundle(analytics_bundle,
-                            [self.analytics_certfile, self.analytics_keyfile,
-                             self.analytics_cafile])
         introspect_certbundle = None
         if not self.introspect_insecure and self.introspect_protocol == 'https':
             introspect_bundle = '/tmp/' + get_random_string() + '.pem'
@@ -173,9 +152,9 @@ class TestInputs(with_metaclass(Singleton, object)):
 #            introspect_certbundle = self.introspect_cafile
 
         self.certbundle = None
-        if keycertbundle or apicertbundle or introspect_certbundle or analyticscertbundle:
+        if keycertbundle or apicertbundle or introspect_certbundle:
             bundle = '/tmp/' + get_random_string() + '.pem'
-            certs = [cert for cert in [keycertbundle, apicertbundle, introspect_certbundle, analyticscertbundle] if cert]
+            certs = [cert for cert in [keycertbundle, apicertbundle, introspect_certbundle] if cert]
             self.certbundle = utils.getCertKeyCaBundle(bundle, certs)
 
         # List of service correspond to each module
@@ -221,7 +200,7 @@ class TestInputs(with_metaclass(Singleton, object)):
             return self.host_data[host]['ips']
         username = self.host_data[host]['username']
         password = self.host_data[host]['password']
-        ips = get_ips_of_host(self.get_host_ip(host), nic=nic,
+        ips = get_ips_of_host(host, nic=nic,
                           username=username,
                           password=password,
                           as_sudo=True,
@@ -233,17 +212,17 @@ class TestInputs(with_metaclass(Singleton, object)):
     def _get_ip_for_service(self, host, service):
         host_dict = self.host_data[host]
         if service.lower() == 'vrouter':
-            ip = self.get_ips_of_host(host, 'vhost0')[0]
-            self.host_data[host]['control_data_ip'] = ip
-            return ip
+            return self.get_ips_of_host(host, 'vhost0')[0]
         elif service.lower() == 'control':
-            ip_list = self.contrail_configs.get('CONTROL_NODES') or \
-                self.contrail_configs.get('CONTROLLER_NODES') or ''
-            ips = self.get_ips_of_host(host)
-            for ip in ip_list.split(','):
-                if ip in ips:
-                    self.host_data[host]['control_data_ip'] = ip
-                    return ip
+            ip_list = self.contrail_configs.get('CONTROL_NODES')
+            if not ip_list:
+                return
+            else:
+                ips = self.get_ips_of_host(host)
+                for ip in ip_list.split(','):
+                    if ip in ips:
+                        self.host_data[host]['control_data_ip'] = ip
+                        return ip
         elif service.lower() == 'openstack':
             nic = host_dict['roles']['openstack'].get('network_interface') \
                   if host_dict['roles']['openstack'] else \
@@ -335,7 +314,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         username = provider_configs.get('ssh_user') or 'root'
         password = provider_configs.get('ssh_pwd') or 'c0ntrail123'
         domainsuffix = provider_configs.get('domainsuffix') or 'englab.juniper.net'
-        for host, values  in (self.config.get('instances') or {}).items():
+        for host, values  in (self.config.get('instances') or {}).iteritems():
             roles = values.get('roles') or {}
             host_data = dict()
             host_data['host_ip'] = values['ip']
@@ -488,9 +467,6 @@ class TestInputs(with_metaclass(Singleton, object)):
             roles.append('webui')
         if host_ip in self.kube_manager_ips or host_data_ip in self.kube_manager_control_ips:
             roles.append('kubernetes')
-        for r in ['analytics_snmp', 'analytics_alarm']:
-            if r in self.host_data[host]['roles']:
-                roles.append(r)
         return roles
 
     def get_prouter_rb_roles(self, name):
@@ -511,7 +487,7 @@ class TestInputs(with_metaclass(Singleton, object)):
     def parse_yml_file(self):
         self.key = 'key1'
         self.use_project_scoped_token = True
-        self.insecure = self.api_insecure = self.introspect_insecure = self.analytics_api_insecure = True
+        self.insecure = self.api_insecure = self.introspect_insecure = True
         self.keystonecertfile = self.keystonekeyfile = self.keystonecafile = None
         self.apicertfile = self.apikeyfile = self.apicafile = None
         self.introspect_certfile = self.introspect_keyfile = self.introspect_cafile = None
@@ -554,8 +530,6 @@ class TestInputs(with_metaclass(Singleton, object)):
         self.bgp_port = contrail_configs.get('CONTROL_INTROSPECT_PORT') or '8083'
         self.dns_port = contrail_configs.get('DNS_INTROSPECT_PORT') or '8092'
         self.k8s_port = contrail_configs.get('K8S_INTROSPECT_PORT') or '8108'
-        self.bgp_asn  = contrail_configs.get('BGP_ASN') or 64512
-        self.enable_4byte_as = contrail_configs.get('ENABLE_4BYTE_AS') or False
         self.agent_port = '8085'
         self.api_server_ip = contrail_configs.get('CONFIG_API_VIP')
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
@@ -632,9 +606,6 @@ class TestInputs(with_metaclass(Singleton, object)):
         #physical_router needs the following configuration
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
 
-        self.data_sw_ip = test_configs.get('data_sw_ip')
-        self.data_sw_compute_bond_interface = test_configs.get('data_sw_compute_bond_interface')
-
         self.physical_routers_data = test_configs.get('physical_routers',{})
         self.bms_data = test_configs.get('bms',{})
         self.bms_lcm_config = test_configs.get('bms_lcm_config',{})
@@ -644,22 +615,22 @@ class TestInputs(with_metaclass(Singleton, object)):
         self.tor_hosts_data = test_configs.get('tor_hosts',{})
 
         self.ext_routers = []
-        for rtr_name, address in test_configs.get('ext_routers', {}).items():
+        for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
             self.ext_routers.append((rtr_name, address))
         self.as4_ext_routers = []
-        for rtr_name, address in test_configs.get('as4_ext_routers', {}).items():
+        for rtr_name, address in test_configs.get('as4_ext_routers', {}).iteritems():
             self.as4_ext_routers.append((rtr_name, address))
         self.local_asbr_info = []
-        for asbr_name, address in test_configs.get('local_asbr', {}).items():
+        for asbr_name, address in test_configs.get('local_asbr', {}).iteritems():
             self.local_asbr_info.append((asbr_name, address))
         self.remote_asbr_info = {}
         remote_asbr_configs = test_configs.get('remote_asbr') or {}
         for remote_asbr in remote_asbr_configs:
           self.remote_asbr_info[remote_asbr] = {}
-          for key, value in remote_asbr_configs.get(remote_asbr, {}).items():
+          for key, value in remote_asbr_configs.get(remote_asbr, {}).iteritems():
             self.remote_asbr_info[remote_asbr][key] = value
         self.fabric_gw_info = []
-        for gw_name, address in test_configs.get('fabric_gw', {}).items():
+        for gw_name, address in test_configs.get('fabric_gw', {}).iteritems():
             self.fabric_gw_info.append((gw_name, address))
         if 'traffic_generator' in test_configs:
             traffic_gen = test_configs['traffic_generator']
@@ -788,10 +759,6 @@ class TestInputs(with_metaclass(Singleton, object)):
             return True
         return False
 
-    def refresh_containers(self, host):
-        del self.host_data[host]['containers']
-        self._check_containers(self.host_data[host])
-
     def _check_containers(self, host_dict):
         '''
         Find out which components have containers and set
@@ -807,12 +774,10 @@ class TestInputs(with_metaclass(Singleton, object)):
             return
         containers = [x.strip('\r') for x in output.split('\n')]
 
-        pod_containers = ifilter(lambda x: 'k8s_POD' in x, containers)
-        containers = set(containers) - set(pod_containers)
         tmp_containers = ifilterfalse(lambda x: 'nodemgr' in x, containers)
         nodemgr_cntrs = set(containers) - set(tmp_containers)
         containers = set(containers) - set(nodemgr_cntrs)
-        for service, names in get_contrail_services_map(self).iteritems():
+        for service, names in CONTRAIL_SERVICES_CONTAINER_MAP.iteritems():
             if 'nodemgr' in service:
                 continue
             for name in names:
@@ -825,7 +790,7 @@ class TestInputs(with_metaclass(Singleton, object)):
                     containers.remove(container)
                     break
 
-        for service, names in get_contrail_services_map(self).iteritems():
+        for service, names in CONTRAIL_SERVICES_CONTAINER_MAP.iteritems():
             if 'nodemgr' in service:
                 for name in names:
                     container = next((container for container in nodemgr_cntrs
@@ -887,16 +852,16 @@ class TestInputs(with_metaclass(Singleton, object)):
                 logical_queues= vrouter_data_dict['QOS_LOGICAL_QUEUES']
                 logical_queue_list = logical_queues.split(';')
                 logical_queue_list = [x.strip("[] ") for x in logical_queue_list]
-                if "QOS_DEF_HW_QUEUE" in list(vrouter_data_dict.keys()) and \
+                if "QOS_DEF_HW_QUEUE" in vrouter_data_dict.keys() and \
                         len(logical_queue_list) == len(hw_queue_list):
                     logical_queue_list[-1] = logical_queue_list[-1] + ",default"
-                elif "QOS_DEF_HW_QUEUE" in list(vrouter_data_dict.keys()) and \
+                elif "QOS_DEF_HW_QUEUE" in vrouter_data_dict.keys() and \
                         len(logical_queue_list) == (len(hw_queue_list) -1):
                     logical_queue_list.append("default")
                 hw_to_logical_map_list = [{hw_queue_list[x]:logical_queue_list[x].split(",")} for \
                                      x in range(0,len(hw_queue_list))]
                 qos_queue_per_host = [host_ip , hw_to_logical_map_list]
-        except KeyError as e:
+        except KeyError, e:
             pass
         try:
             if vrouter_data_dict['PRIORITY_ID']:
@@ -915,7 +880,7 @@ class TestInputs(with_metaclass(Singleton, object)):
                                         x in range(0,len(priority_id_list))]
                 qos_queue_pg_properties_per_host = [host_ip ,
                                                      pg_properties_list]
-        except KeyError as e:
+        except KeyError, e:
             pass
         return (qos_queue_per_host, qos_queue_pg_properties_per_host)
 
@@ -978,7 +943,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         '''
         container : name or id of the container
         '''
-        if server_ip in list(self.host_data.keys()):
+        if server_ip in self.host_data.keys():
             if not username:
                 username = self.host_data[server_ip]['username']
             if not password:
@@ -1051,7 +1016,7 @@ class ContrailTestInit(object):
     # end __init__
 
     def is_ci_setup(self):
-        if 'ci_image' in os.environ:
+        if os.environ.has_key('ci_image'):
             return True
         else:
             return False
@@ -1099,7 +1064,7 @@ class ContrailTestInit(object):
         contrail_svc = []
         non_contrail_svc = []
         if service:
-            services = [service] if not isinstance(service, list) else service
+            services = [service] if isinstance(service, str) else service
             for s in services:
                 svc_container = self.get_container_for_service(s)
                 if svc_container:
@@ -1133,8 +1098,8 @@ class ContrailTestInit(object):
             if failed_services:
                 self.logger.debug('Not all services up. '
                    'Sleeping for %s seconds. iteration: %s' %(delay, i))
-                if i+1 < tries:
-                    time.sleep(delay)
+                time.sleep(delay)
+                continue
             else:
                 return (True, status_dict)
         self.logger.error(
@@ -1142,8 +1107,8 @@ class ContrailTestInit(object):
         return (False, failed_services)
 
     def non_contrail_service_status(self, host, service):
-        hosts = [host] if not isinstance(host, list) else host
-        services = [service] if not isinstance(service, list) else service
+        hosts = [host] if (isinstance(host, str) or isinstance(host, unicode)) else host
+        services = [service] if isinstance(service, str) else service
         status_dict = dict()
         for node in hosts:
             status_dict[node] = dict()
@@ -1165,7 +1130,7 @@ class ContrailTestInit(object):
             actual_bgp_peer = []
             inspect_h = connections.agent_inspect[ip]
             agent_xmpp_status = inspect_h.get_vna_xmpp_connection_status()
-            for i in range(len(agent_xmpp_status)):
+            for i in xrange(len(agent_xmpp_status)):
                 actual_bgp_peer.append(agent_xmpp_status[i]['controller_ip'])
             agent_to_control_dct[ip] = actual_bgp_peer
         return agent_to_control_dct
@@ -1173,8 +1138,8 @@ class ContrailTestInit(object):
 
     def reboot(self, server_ip):
         i = socket.gethostbyaddr(server_ip)[0]
-        print("rebooting %s" % i)
-        if server_ip in list(self.host_data.keys()):
+        print "rebooting %s" % i
+        if server_ip in self.host_data.keys():
             username = self.host_data[server_ip]['username']
             password = self.host_data[server_ip]['password']
         with hide('everything'):
@@ -1279,7 +1244,7 @@ class ContrailTestInit(object):
             return dct.get(service)
         elif container:
             try:
-                return list(dct.keys())[list(dct.values()).index(container)]
+                return dct.keys()[dct.values().index(container)]
             except ValueError:
                 return
 
@@ -1413,15 +1378,13 @@ class ContrailTestInit(object):
     # end restart_service
 
     def stop_service(self, service_name, host_ips=None,
-                     container=None, verify_service=True):
-        self._action_on_service(service_name, 'stop', host_ips, container,
-            verify_service=verify_service)
+                     container=None):
+        self._action_on_service(service_name, 'stop', host_ips, container)
     # end stop_service
 
     def start_service(self, service_name, host_ips=None,
-                      container=None, verify_service=True):
-        self._action_on_service(service_name, 'start', host_ips, container,
-            verify_service=verify_service)
+                      container=None):
+        self._action_on_service(service_name, 'start', host_ips, container)
     # end start_service
 
     def run_provision_control(
@@ -1540,8 +1503,8 @@ class ContrailTestInit(object):
         #command_to_push.append("set routing-instances %s routing-options static route 0.0.0.0/0 next-hop %s" %(ri_name, ri_gateway))
         # command_to_push.append("commit")
 
-        print("Final commad will be pushed to MX")
-        print("%s" % command_to_push)
+        print "Final commad will be pushed to MX"
+        print "%s" % command_to_push
 
         # for command in command_to_push:
         #    output = self.run_cmd_on_server(mx_ip,command,mx_user,mx_password)
@@ -1565,8 +1528,8 @@ class ContrailTestInit(object):
         command_to_push.append("delete protocols bgp group %s" % (bgp_group))
         command_to_push.append("commit")
 
-        print("Final commad will be pushed to MX")
-        print("%s" % command_to_push)
+        print "Final commad will be pushed to MX"
+        print "%s" % command_to_push
 
         for command in command_to_push:
             output = self.run_cmd_on_server(
@@ -1613,7 +1576,7 @@ class ContrailTestInit(object):
             else
                 Returns 'cirros' image name
         '''
-        if 'ci_image' not in os.environ:
+        if not os.environ.has_key('ci_image'):
             return None
         if image_name in CI_IMAGES:
             return image_name
@@ -1656,7 +1619,7 @@ class ContrailTestInit(object):
         self.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                     as_sudo=True)
 
-        knob_list = [knob] if not isinstance(knob, list) else knob
+        knob_list = [knob] if isinstance(knob, str) else knob
 
         for knob in knob_list:
             just_knob = knob[:knob.find('=')]

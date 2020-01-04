@@ -1,5 +1,4 @@
-from __future__ import absolute_import
-from .base import BasePolicyTest
+from base import BasePolicyTest
 from tcutils.wrappers import preposttest_wrapper
 import test
 from vn_test import VNFixture
@@ -10,10 +9,10 @@ from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
 from tcutils.util import get_random_name, get_random_cidr
 from common.system.system_verification import system_vna_verify_policy
 from tcutils.test_lib.test_utils import assertEqual
-from . import sdn_basic_topology
+import sdn_basic_topology
 import os
-from . import sdn_single_vm_multiple_policy_topology
-from . import sdn_single_vm_policy_topology
+import sdn_single_vm_multiple_policy_topology
+import sdn_single_vm_policy_topology
 from vnc_api.vnc_api import *
 
 af_test = 'dual'

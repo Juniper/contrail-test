@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import sys
 import os
 from vn_test import *
@@ -24,6 +22,17 @@ import test
 
 
 class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPSanity, cls).setUpClass()
+    # end setUpClass
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPSanity, cls).tearDownClass()
+    # end tearDownClass
+
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
@@ -262,20 +271,36 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                               **self.common_args)
         si_fixture = ret_dict['si_fixture']
         svm_ids = si_fixture.svm_ids
-        self.get_rt_info_tap_intf_list(self.left_vn_fixture,
-            self.left_vm_fixture, self.right_vm_fixture, svm_ids,
+        self.get_rt_info_tap_intf_list(
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids,
             si_fixture)
-        icmp_stream = self.start_traffic(self.left_vm_fixture,
-            self.right_vm_fixture, 'icmp')
-        udp_stream = self.start_traffic(self.left_vm_fixture,
-            self.right_vm_fixture, 'udp', sport=10000, dport=11000)
-        tcp_stream = self.start_traffic(self.left_vm_fixture,
-            self.right_vm_fixture, 'tcp', sport=10000, dport=11000)
-        self.sleep(5)
+        vm_list = [self.left_vm_fixture, self.right_vm_fixture]
+        for vm in vm_list:
+            vm.install_pkg("Traffic")
+        old_stream1 = Stream(
+            proto="icmp", src=self.left_vm_fixture.vm_ip,
+            dst=self.right_vm_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
+        old_stream2 = Stream(
+            proto="udp", src=self.left_vm_fixture.vm_ip,
+            dst=self.right_vm_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
+        old_stream3 = Stream(
+            proto="tcp", src=self.left_vm_fixture.vm_ip,
+            dst=self.right_vm_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
+        old_stream_list = [old_stream1, old_stream2, old_stream3]
+
         dst_vm_list = [self.right_vm_fixture]
+        old_sender, old_receiver = self.start_traffic(
+            self.left_vm_fixture, dst_vm_list, old_stream_list,
+            self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        self.logger.info(
+            'Sending traffic for 10 seconds and will start more flows')
+        self.sleep(10)
         self.verify_traffic_flow(
             self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
-        self.stop_multiple_streams([icmp_stream, udp_stream, tcp_stream])
+        self.verify_flow_records(
+            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        self.stop_traffic(
+            old_sender, old_receiver, dst_vm_list, old_stream_list)
     # end test_ecmp_svc_in_network_with_3_instance_add_flows
 
     @preposttest_wrapper
@@ -301,24 +326,40 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                               **self.common_args)
         si_fixture = ret_dict['si_fixture']
         svm_ids = si_fixture.svm_ids
-        self.get_rt_info_tap_intf_list(self.left_vn_fixture,
-            self.left_vm_fixture, self.right_vm_fixture, svm_ids,
+        self.get_rt_info_tap_intf_list(
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids,
             si_fixture)
+        vm_list = [self.left_vm_fixture, self.right_vm_fixture]
+        for vm in vm_list:
+            vm.install_pkg("Traffic")
 
-        icmp_stream = self.start_traffic(self.left_vm_fixture,
-            self.right_vm_fixture, 'icmp')
-        udp_stream = self.start_traffic(self.left_vm_fixture,
-            self.right_vm_fixture, 'udp', sport=8000, dport=9000)
-        tcp_stream = self.start_traffic(self.left_vm_fixture,
-            self.right_vm_fixture, 'tcp', sport=8000, dport=9000)
-        self.sleep(5)
+        stream1 = Stream(
+            proto="icmp", src=self.left_vm_fixture.vm_ip,
+            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+        stream2 = Stream(
+            proto="udp", src=self.left_vm_fixture.vm_ip,
+            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+        stream3 = Stream(
+            proto="tcp", src=self.left_vm_fixture.vm_ip,
+            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+        stream_list = [stream1, stream2, stream3]
+
+        dst_vm_list = [self.right_vm_fixture]
+        sender, receiver = self.start_traffic(
+            self.left_vm_fixture, dst_vm_list, stream_list,
+            self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+
+        self.logger.info('Sending traffic for 10 seconds')
+        self.sleep(10)
+
         #Verify flow records for each stream
         #Need to do ICMP flow verification
         for protocol in ['6', '17']:
-            self.verify_flow_records(self.left_vm_fixture,
-                self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip,
-                flow_count=1, protocol=protocol)
-        self.stop_multiple_streams([icmp_stream, udp_stream, tcp_stream])
+          self.verify_flow_records(
+            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip, flow_count=1, protocol=protocol)
+
+        self.stop_traffic(
+            sender, receiver, dst_vm_list, stream_list)
     # end test_ecmp_svc_in_network_with_3_instance_diff_proto
 
     @preposttest_wrapper
@@ -347,26 +388,41 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
             svm_ids, si_fixture)
-        dest_vm2 = self.create_vm(vn_fixture=self.right_vn_fixture,
-            image_name='cirros-traffic')
-        dest_vm3 = self.create_vm(vn_fixture=self.right_vn_fixture,
-            image_name='cirros-traffic')
-        self.check_vms_booted([dest_vm2, dest_vm3])
+        dest_vm2 = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=self.right_vn_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='dest_vm2'))
+        assert dest_vm2.verify_on_setup()
+        dest_vm3 = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=self.right_vn_fixture.obj, flavor='contrail_flavor_small', image_name='ubuntu-traffic', vm_name='dest_vm3'))
+        assert dest_vm3.verify_on_setup()
+        vm_list = [self.left_vm_fixture, self.right_vm_fixture, dest_vm2, dest_vm3]
+        for vm in vm_list:
+            vm.install_pkg("Traffic")
 
-        stream1 = self.start_traffic(self.left_vm_fixture,
-            self.right_vm_fixture, 'udp', sport=8000, dport=9000)
-        stream2 = self.start_traffic(self.left_vm_fixture,
-            dest_vm2, 'udp', sport=8001, dport=9000)
-        stream3 = self.start_traffic(self.left_vm_fixture,
-            dest_vm3, 'udp', sport=8002, dport=9000)
+        stream1 = Stream(
+            proto="udp", src=self.left_vm_fixture.vm_ip,
+            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+        stream2 = Stream(
+            proto="udp", src=self.left_vm_fixture.vm_ip,
+            dst=dest_vm2.vm_ip, sport=unicode(8000), dport=unicode(9000))
+        stream3 = Stream(
+            proto="udp", src=self.left_vm_fixture.vm_ip,
+            dst=dest_vm3.vm_ip, sport=unicode(8000), dport=unicode(9000))
+
         stream_list = [stream1, stream2, stream3]
+
+        dst_vm_list = [self.right_vm_fixture]
+        sender, receiver = self.start_traffic(self.left_vm_fixture, dst_vm_list, stream_list,
+                               self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.sleep(1)
-        vm_ips = [self.right_vm_fixture.vm_ip, dest_vm2.vm_ip, dest_vm3.vm_ip]
-        for dst_ip, stream in zip(vm_ips, stream_list):
-            self.verify_flow_records(self.left_vm_fixture,
-                self.left_vm_fixture.vm_ip, dst_ip, flow_count=1,
-                traffic_objs=[stream])
-        self.stop_multiple_streams(stream_list)
+        for dst_ip in [self.right_vm_fixture.vm_ip, dest_vm2.vm_ip, dest_vm3.vm_ip]:
+          self.verify_flow_records(
+            self.left_vm_fixture, self.left_vm_fixture.vm_ip, dst_ip, flow_count=1)
+        self.stop_traffic(
+            sender, receiver, dst_vm_list, stream_list)
     # end test_ecmp_svc_in_network_with_3_instance_incr_dip
 
     @preposttest_wrapper
@@ -391,9 +447,8 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                               **self.common_args)
         si_fixture = ret_dict['si_fixture']
         svm_ids = si_fixture.svm_ids
-        self.get_rt_info_tap_intf_list(self.left_vn_fixture,
-            self.left_vm_fixture, self.right_vm_fixture, svm_ids,
-            si_fixture)
+        self.get_rt_info_tap_intf_list(
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids, si_fixture)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(
             self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
@@ -401,10 +456,10 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             'Will Detach the policy from the networks and delete it')
         self.detach_policy(ret_dict['left_vn_policy_fix'])
         self.detach_policy(ret_dict['right_vn_policy_fix'])
+        self.sleep(30)
         self.logger.info('Traffic between the VMs should fail now')
         # Ping from left VM to right VM; expected to fail
-        errmsg = "Ping to right VM %s from left VM should have failed"%(
-            self.right_vm_fixture.vm_ip)
+        errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
         assert self.left_vm_fixture.ping_with_certainty(
             self.right_vm_fixture.vm_ip, expectation=False), errmsg
 
@@ -412,12 +467,24 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             'Will Re-Configure the policy and attach it to the networks')
         self.attach_policy_to_vn(ret_dict['policy_fixture'], self.left_vn_fixture)
         self.attach_policy_to_vn(ret_dict['policy_fixture'], self.right_vn_fixture)
+        self.sleep(30)
         self.logger.info('Traffic between the VMs should pass now')
-        self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-                                 si_fixture, self.left_vn_fixture)
+        self.verify_traffic_flow(
+            self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_policy_bind_unbind
 
+
 class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPwithFIP_1, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPwithFIP_1, cls).tearDownClass()
+    # end tearDownClass
+
     @preposttest_wrapper
     def test_ecmp_with_svc_with_fip_dest(self):
         """
@@ -442,16 +509,16 @@ class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraf
         my_fip = get_an_ip(self.left_vn_fixture.vn_subnets[0]['cidr'], offset=20)
 
         vm2_1 = self.create_vm(vn_fixture=self.right_vn_fixture,
-                               image_name='cirros-traffic', vm_name='vm2_1')
+                               vm_name='vm2_1')
         vm2_2 = self.create_vm(vn_fixture=self.right_vn_fixture,
-                               image_name='cirros-traffic', vm_name='vm2_2')
-        self.check_vms_booted([vm2_1, vm2_2])
+                               vm_name='vm2_2')
+        assert vm2_1.verify_on_setup()
+        assert vm2_2.verify_on_setup()
 
         fip_fixture = self.useFixture(
             FloatingIPFixture(
                 project_name=self.inputs.project_name, inputs=self.inputs,
-                connections=self.connections, pool_name='some-pool1',
-                vn_id=self.left_vn_fixture.vn_id))
+                connections=self.connections, pool_name='some-pool1', vn_id=self.left_vn_fixture.vn_id))
         assert fip_fixture.verify_on_setup()
 
         fvn_obj = self.vnc_lib.virtual_network_read(
@@ -468,12 +535,12 @@ class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraf
         vn2_fq_name = self.right_vn_fixture.vn_fq_name
         vn2_vrf_name = self.right_vn_fixture.vrf_name
         vn2_ri_name = self.right_vn_fixture.ri_name
-        vmi1_id = self.right_vm_fixture.get_vmi_id(
-            self.right_vn_fixture.vn_fq_name)
-        vmi2_id = vm2_1.get_vmi_id(
-            self.right_vn_fixture.vn_fq_name)
-        vmi3_id = vm2_2.get_vmi_id(
-            self.right_vn_fixture.vn_fq_name)
+        vmi1_id = self.right_vm_fixture.tap_intf[
+            self.right_vn_fixture.vn_fq_name]['uuid']
+        vmi2_id = vm2_1.tap_intf[
+            self.right_vn_fixture.vn_fq_name]['uuid']
+        vmi3_id = vm2_2.tap_intf[
+            self.right_vn_fixture.vn_fq_name]['uuid']
         vm2_intf = self.vnc_lib.virtual_machine_interface_read(
             id=vmi1_id)
         vm2_1_intf = self.vnc_lib.virtual_machine_interface_read(
@@ -492,6 +559,16 @@ class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraf
     # end test_ecmp_with_svc_with_fip_dest
 
 class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPwithFIP_2, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPwithFIP_2, cls).tearDownClass()
+    # end tearDownClass
+
     @preposttest_wrapper
     def test_ecmp_bw_three_vms_add_del_same_fip(self):
         """
@@ -508,15 +585,18 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         vm_list = []
         vm_list = [self.vm1, self.vm2, self.vm3]
 
-        traffic_objs = self.start_multiple_streams(
+        self.logger.info('Will send traffic from the fvn_vm1 to 30.1.1.3')
+        self.stream_list = self.setup_streams(
             self.fvn_vm1, vm_list, self.fvn_vm1.vm_ip, self.my_fip)
+        self.sender, self.receiver = self.start_traffic(
+            self.fvn_vm1, vm_list, self.stream_list, self.fvn_vm1.vm_ip, self.my_fip)
 
         self.logger.info(
             'Will disassociate the fip address from two VMs and check that there should be no traffic loss.')
         self.fip_obj.del_virtual_machine_interface(self.vm1_intf)
         self.fip_obj.del_virtual_machine_interface(self.vm3_intf)
         self.vnc_lib.floating_ip_update(self.fip_obj)
-        self.sleep(5)
+        sleep(5)
         self.logger.info(
             'Will re-associate the fip address to the VMs ')
         self.fip_obj.add_virtual_machine_interface(self.vm3_intf)
@@ -524,6 +604,9 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         self.vnc_lib.floating_ip_update(self.fip_obj)
 
         self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
+        self.stop_traffic(
+            self.sender, self.receiver, vm_list, self.stream_list)
+
         return True
     # end test_ecmp_bw_three_vms_add_del_same_fip
 
@@ -541,13 +624,19 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
          """
         self.setup_common_objects()
         vm_list = [self.vm1, self.vm2, self.vm3]
-        streams = list()
-        for port in [8000, 11000, 12000]:
-            for vm in vm_list:
-                streams.append(self.start_traffic(self.fvn_vm1, vm, 'udp',
-                    sport=port, dport=int(self.dport1), fip_ip=self.my_fip))
-        self.sleep(5)
-        self.verify_flow_records(self.fvn_vm1, traffic_objs=streams)
+        stream1 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
+                         dst=self.my_fip, sport=unicode(8000), dport=self.dport1)
+        stream2 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
+                         dst=self.my_fip, sport=unicode(11000), dport=self.dport1)
+        stream3 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
+                         dst=self.my_fip, sport=unicode(12000), dport=self.dport1)
+        stream_list = [stream1, stream2, stream3]
+
+        self.sender, self.receiver = self.start_traffic(
+            self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
+        self.logger.info('Sending traffic for 10 seconds')
+        self.sleep(10)
+        self.verify_flow_records(self.fvn_vm1, stream_list=stream_list)
         return True
 
     # end test_ecmp_bw_three_vms_same_fip_incr_sport
@@ -566,23 +655,33 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         """
         self.setup_common_objects()
         vm_list = [self.vm1, self.vm2, self.vm3]
-        streams_vm1 = list()
-        streams_vm2 = list()
-        streams_vm3 = list()
-        for vm in vm_list:
-            streams_vm1.append(self.start_traffic(self.fvn_vm1,
-                vm, 'udp', sport=8000, dport=9000, fip_ip=self.my_fip))
-            streams_vm2.append(self.start_traffic(self.fvn_vm2,
-                vm, 'udp', sport=8001, dport=9001, fip_ip=self.my_fip))
-            streams_vm3.append(self.start_traffic(self.fvn_vm3,
-                vm, 'udp', sport=8002, dport=9002, fip_ip=self.my_fip))
-        self.sleep(5)
-        self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip, traffic_objs=streams_vm1)
-        self.verify_flow_records(self.fvn_vm2, self.fvn_vm2.vm_ip, self.my_fip, traffic_objs=streams_vm2)
-        self.verify_flow_records(self.fvn_vm3, self.fvn_vm3.vm_ip, self.my_fip, traffic_objs=streams_vm3)
+        stream1 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
+                         dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
+        stream2 = Stream(proto="udp", src=self.fvn_vm2.vm_ip,
+                         dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
+        stream3 = Stream(proto="udp", src=self.fvn_vm3.vm_ip,
+                         dst=self.my_fip, sport=self.udp_src, dport=self.dport1)
+        stream_list = [stream1, stream2, stream3]
+
+        self.sender, self.receiver = self.start_traffic(
+            self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
+        self.logger.info('Sending traffic for 10 seconds')
+        self.sleep(10)
+        self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip, stream_list=stream_list)
         return True
 
+
 class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPwithSVMChange, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPwithSVMChange, cls).tearDownClass()
+    # end tearDownClass
+
     @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
@@ -609,9 +708,12 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
         for svm in svms:
             self.logger.info('SVM %s is in %s state' % (svm, svm.status))
         self.logger.info('Will send traffic between the VMs')
-        vm_list = [self.right_vm_fixture]
-        traffic_objs = self.start_multiple_streams(self.left_vm_fixture,
-            vm_list, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        dst_vm_list = [self.right_vm_fixture]
+        stream_list = self.setup_streams(
+            self.left_vm_fixture, dst_vm_list, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        sender, receiver = self.start_traffic(
+            self.left_vm_fixture, dst_vm_list, stream_list,
+            self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.verify_flow_thru_si(si_fixture, self.left_vn_fixture)
         while(len(svms) > 1):
             old_count = len(svms)
@@ -666,9 +768,11 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
         for svm in svms:
             self.logger.info('SVM %s is in %s state' % (svm, svm.status))
         self.logger.info('Will send traffic between the VMs')
-        vm_list = [self.right_vm_fixture]
-        traffic_objs = self.start_multiple_streams(self.left_vm_fixture,
-            vm_list, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        dst_vm_list = [self.right_vm_fixture]
+        stream_list = self.setup_streams(
+            self.left_vm_fixture, dst_vm_list, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        sender, receiver = self.start_traffic(
+            self.left_vm_fixture, dst_vm_list, stream_list, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.verify_flow_thru_si(si_fixture)
 
         self.logger.info(
@@ -676,10 +780,10 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
         for i in range(len(svms) - 1):
             self.logger.info('Will Suspend SVM %s' % svms[i].name)
             svms[i].suspend()
-        self.sleep(30)
-        self.verify_flow_records(
-            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-        self.verify_flow_thru_si(si_fixture)
+            sleep(30)
+            self.verify_flow_records(
+                self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+            self.verify_flow_thru_si(si_fixture)
 
         self.logger.info(
             '%%%%%% Will resume the suspended SVMs and check traffic flow %%%%%%')
@@ -689,16 +793,26 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
                 self.logger.info(
                     'Will resume the suspended SVM %s' % svms[i].name)
                 svms[i].resume()
+                self.sleep(30)
             else:
                 self.logger.info('SVM %s is not SUSPENDED' % svms[i].name)
-        self.sleep(30)
-        self.verify_flow_records(
-            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-        self.verify_flow_thru_si(si_fixture)
+            self.verify_flow_records(
+                self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+            self.verify_flow_thru_si(si_fixture)
+
     # end test_ecmp_with_svm_suspend_start
 
 
 class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestMultiInlineSVC, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestMultiInlineSVC, cls).tearDownClass()
+    # end tearDownClass
 
     @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
@@ -1640,22 +1754,25 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         for i in range(len(svms) - 1):
             self.logger.info('Will Suspend SVM %s' % svms[i].name)
             svms[i].suspend()
-        self.sleep(30)
-        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixture, left_vn_fixture,
-                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+            sleep(30)
+            self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                     si_fixture, left_vn_fixture,
+                                     ecmp_hash=ecmp_hash, flow_count=flow_count)
         self.logger.info('%% Will resume the suspended SVMs and check traffic flow %%%%%%')
         for i in range(len(svms)):
             svms = self.get_svms_in_si(si_fixture)
             if svms[i].status == 'SUSPENDED':
                 self.logger.info('Will resume the suspended SVM %s' % svms[i].name)
                 svms[i].resume()
+                sleep(30)
             else:
                 self.logger.info('SVM %s is not SUSPENDED' % svms[i].name)
-        self.sleep(30)
-        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixture, left_vn_fixture,
-                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+
+            self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                     si_fixture, left_vn_fixture,
+                                     ecmp_hash=ecmp_hash, flow_count=flow_count)
+
+
         return True
     # end test_ecmp_hash_vm_suspend_restart
 

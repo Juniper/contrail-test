@@ -1,4 +1,3 @@
-from __future__ import print_function
 from common.neutron.attributes import *
 import testtools
 import json
@@ -55,7 +54,7 @@ class TestCRUD(BaseNeutronTest):
         for attribute_list in combos(get_other_network_create_attributes()):
             body = {}
             count += 1
-            print(count)
+            print count
             for attribute in attribute_list:
                 body[attribute] = get_random_value(network, attribute)
             for attribute in get_network_create_required_attributes():
@@ -64,7 +63,7 @@ class TestCRUD(BaseNeutronTest):
                 body['tenant_id'] = proj1_id
             # TODO
             # Workaround so that name is present always
-            if 'name' not in list(body.keys()):
+            if 'name' not in body.keys():
                 continue
             body = {'network': body}
             self.log.info("Network Create Request %s" % (body))
@@ -73,7 +72,7 @@ class TestCRUD(BaseNeutronTest):
                 response = self.neutron_h.create_network(body)
                 self.log.info("Network Create Response : %s" % (response))
                 self.addCleanup(self._delete_network, response['network']['id'])
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with neutron "\
                               "create network : %s" % (e, body)
             assert response and response['network'],\
@@ -97,7 +96,7 @@ class TestCRUD(BaseNeutronTest):
         net_id = network_obj['id']
         try:
             response = self.neutron_h.show_network(net_id)
-        except NeutronClientException as e:
+        except NeutronClientException, e:
             assert False, "NeutronClientException %s with show_network : "\
                 "%s" % (e)
 
@@ -117,7 +116,7 @@ class TestCRUD(BaseNeutronTest):
             item_count = len(fields['fields'])
             try:
                 response = self.neutron_h.show_network(net_id, **fields)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with show_network :"\
                               "%s" % (e)
             assert len(response['network']) == item_count,\
@@ -138,7 +137,7 @@ class TestCRUD(BaseNeutronTest):
             response = None
             try:
                 response = self.neutron_h.update_network(net_id, body)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with neutron update"\
                     " network : %s" % (e, body)
             assert response and response['network'],\
@@ -169,7 +168,7 @@ class TestCRUD(BaseNeutronTest):
         for attribute_list in combos(get_other_subnet_create_attributes()):
             body = {}
             count += 1
-            print(count)
+            print count
             for attribute in get_subnet_create_required_attributes():
                 body[attribute] = get_random_value(subnet, attribute)
             for attribute in attribute_list:
@@ -189,7 +188,7 @@ class TestCRUD(BaseNeutronTest):
                 response = self.neutron_h.create_subnet(body)
                 self.log.info("Subnet create Response : %s" % (response))
                 self.addCleanup(self._delete_subnet, response['subnet']['id'])
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with create \
                                 subnet : %s" % (e, body)
             assert response and response['subnet'],\
@@ -215,7 +214,7 @@ class TestCRUD(BaseNeutronTest):
         subnet_id = subnet_obj['id']
         try:
             response = self.neutron_h.show_subnet(subnet_id)
-        except NeutronClientException as e:
+        except NeutronClientException, e:
             assert False,\
                 "NeutronClientException %s with show_subnet: %s" % (e)
 
@@ -235,7 +234,7 @@ class TestCRUD(BaseNeutronTest):
             item_count = len(fields['fields'])
             try:
                 response = self.neutron_h.show_subnet(subnet_id, **fields)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False,\
                     "NeutronClientException %s with show_subnet: %s" % (e)
             assert len(response['subnet']) == item_count,\
@@ -265,7 +264,7 @@ class TestCRUD(BaseNeutronTest):
             response = None
             try:
                 response = self.neutron_h.update_subnet(subnet_id, body)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with Subnet update "\
                     "network : %s" % (e, body)
             assert response and response['subnet'],\
@@ -307,7 +306,7 @@ class TestCRUD(BaseNeutronTest):
         for attribute_list in combos(get_other_port_create_attributes()):
             body = {}
             count += 1
-            print(count)
+            print count
             for attribute in get_port_create_required_attributes():
                 body[attribute] = get_random_value(port, attribute)
             for attribute in attribute_list:
@@ -329,7 +328,7 @@ class TestCRUD(BaseNeutronTest):
                 response = self.neutron_h.create_port(body)
                 self.log.info("Port create Response : %s" % (response))
                 self.addCleanup(self._delete_port, response['port']['id'])
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with create port:"\
                     "%s" % (e, body)
             assert response and response['port'],\
@@ -355,7 +354,7 @@ class TestCRUD(BaseNeutronTest):
                     self.log.error('Result of delete port %s: %s' % (port_id,
                                                                      result))
                     return False
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 self.log.exception(e)
                 return False
         return True
@@ -369,7 +368,7 @@ class TestCRUD(BaseNeutronTest):
                     self.log.error('Result of delete network %s: %s' % (
                                     network_id, result))
                     return False
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 self.log.exception(e)
                 return False
         return True
@@ -383,7 +382,7 @@ class TestCRUD(BaseNeutronTest):
                     self.log.error('Result of delete subnet %s: %s' % (
                                     subnet_id, result))
                     return False
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 self.log.exception(e)
                 return False
         return False
@@ -397,7 +396,7 @@ class TestCRUD(BaseNeutronTest):
                     self.log.error('Result of delete router %s: %s' % (
                                     router_id, result))
                     return False
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 self.log.exception(e)
                 return False
         return True
@@ -408,7 +407,7 @@ class TestCRUD(BaseNeutronTest):
         port_id = port_obj['id']
         try:
             response = self.neutron_h.show_port(port_id)
-        except NeutronClientException as e:
+        except NeutronClientException, e:
             assert False, "NeutronClientException %s with show_port: %s" % (e)
 
         for attribute in get_port_read_attributes():
@@ -426,7 +425,7 @@ class TestCRUD(BaseNeutronTest):
             item_count = len(fields['fields'])
             try:
                 response = self.neutron_h.show_port(port_id, **fields)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with show_port with"\
                               " fields : %s" % (e)
             assert len(response['port']) == item_count,\
@@ -459,7 +458,7 @@ class TestCRUD(BaseNeutronTest):
             response = None
             try:
                 response = self.neutron_h.update_port(port_id, body)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with update \
                     port : %s" % (e, body)
             assert response and response['port'],\
@@ -488,7 +487,7 @@ class TestCRUD(BaseNeutronTest):
         for attribute_list in combos(get_other_router_create_attributes()):
             body = {}
             count += 1
-            print(count)
+            print count
             for attribute in attribute_list:
                 body[attribute] = get_random_value(router, attribute)
             for attribute in get_router_create_required_attributes():
@@ -497,7 +496,7 @@ class TestCRUD(BaseNeutronTest):
                 body['tenant_id'] = proj1_id
             # TODO
             # Workaround so that name is present always
-            if 'name' not in list(body.keys()):
+            if 'name' not in body.keys():
                 continue
             body = {'router': body}
             self.log.info("Router create Request %s" % (body))
@@ -506,7 +505,7 @@ class TestCRUD(BaseNeutronTest):
                 response = self.neutron_h.create_router(body)
                 self.log.info("Router create Response : %s" % (response))
                 self.addCleanup(self._delete_router, response['router']['id'])
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False, "NeutronClientException %s with neutron create "\
                               "router : %s" % (e, body)
             assert response and response['router'],\
@@ -527,7 +526,7 @@ class TestCRUD(BaseNeutronTest):
         router_id = router_obj['id']
         try:
             response = self.neutron_h.show_router(router_id)
-        except NeutronClientException as e:
+        except NeutronClientException, e:
             assert False, "NeutronClientException %s with show_router : %s" % (
                 e)
 
@@ -546,7 +545,7 @@ class TestCRUD(BaseNeutronTest):
             item_count = len(fields['fields'])
             try:
                 response = self.neutron_h.show_router(router_id, **fields)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False,\
                     "NeutronClientException rs with show_router:  %s" % (e)
             assert len(response['router']) == item_count,\
@@ -569,7 +568,7 @@ class TestCRUD(BaseNeutronTest):
             response = None
             try:
                 response = self.neutron_h.update_router(router_id, body)
-            except NeutronClientException as e:
+            except NeutronClientException, e:
                 assert False,\
                     "NeutronClientException %s with router update : %s" % (
                         e, body)

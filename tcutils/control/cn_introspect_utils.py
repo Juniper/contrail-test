@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import str
 import logging as LOG
 from lxml import etree
 import re
@@ -33,7 +31,7 @@ class ControlNodeInspect (VerificationUtilBase):
             # sometime ./xpath dosen't work; work around
             # should debug to find the root cause.
             xp = p.xpath('/IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo')
-        f = [x for x in xp if x.xpath('./node_name')[0].text == match]
+        f = filter(lambda x: x.xpath('./node_name')[0].text == match, xp)
         if 1 == len(f):
             d = {}
             for e in f[0]:
@@ -91,7 +89,7 @@ class ControlNodeInspect (VerificationUtilBase):
             xpath = './IFMapPeerServerInfoResp/%s' % (match)
             d = EtreeToDict(xpath).get_all_entry(p)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return d
 
@@ -120,7 +118,7 @@ class ControlNodeInspect (VerificationUtilBase):
         p = self.dict_get(path)
         ifmaps = EtreeToDict(xpath).get_all_entry(p)
 
-        if type(ifmaps) is dict and 'node_name' in ifmaps and ifmaps['node_name'] == policy_name:
+        if type(ifmaps) is dict and ifmaps.has_key('node_name') and ifmaps['node_name'] == policy_name:
             return ifmaps
 
         if type(ifmaps) is list:
@@ -289,7 +287,7 @@ class ControlNodeInspect (VerificationUtilBase):
         p = self.dict_get(path)
         ifmaps = EtreeToDict(xpath).get_all_entry(p)
 
-        if type(ifmaps) is dict and 'node_name' in ifmaps and ifmaps['node_name'] == sec_name:
+        if type(ifmaps) is dict and ifmaps.has_key('node_name') and ifmaps['node_name'] == sec_name:
             return ifmaps
 
         if type(ifmaps) is list:
@@ -364,8 +362,8 @@ if __name__ == '__main__':
     cn = ControlNodeInspect('10.204.216.58')
     v = cn.get_cn_ri_membership('default-domain:admin:net1:net1')
     cn = ControlNodeInspect('10.84.14.9')
-    print("ipam", cn.get_cn_config_ipam())
-    print("policy", cn.get_cn_config_policy())
-    print("vn", cn.get_cn_config_vn())
-    print("vn", cn.get_cn_config_vn(vn_name=get_random_name("fvnn100")))
-    print("fip_pool", cn.get_cn_config_fip_pool())
+    print "ipam", cn.get_cn_config_ipam()
+    print "policy", cn.get_cn_config_policy()
+    print "vn", cn.get_cn_config_vn()
+    print "vn", cn.get_cn_config_vn(vn_name=get_random_name("fvnn100"))
+    print "fip_pool", cn.get_cn_config_fip_pool()

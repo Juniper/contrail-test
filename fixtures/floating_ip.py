@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import fixtures
 from vnc_api.vnc_api import *
 from cfgm_common import exceptions as vncExceptions
@@ -434,7 +432,7 @@ class FloatingIPFixture(fixtures.Fixture):
                 intf = self.analytics_obj.get_intf_uve(item)
                 for item1 in intf['floating_ips']:
                     ip_list = [item1['ip_address']]
-                    if 'ip6_address' in item1:
+                    if item1.has_key('ip6_address'):
                         ip_list.extend([item1['ip6_address']])
                     if fip in ip_list:
                         found_ip = 1

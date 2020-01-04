@@ -1,4 +1,3 @@
-from builtins import str
 import vnc_api_test
 from cfgm_common.exceptions import NoIdError
 from tcutils.util import get_random_name, retry
@@ -90,7 +89,7 @@ class FabricFixture(vnc_api_test.VncLibFixture):
         self.vnc_h.delete_creds_from_fabric(self.name, creds)
 
     def add_namespaces(self, namespaces):
-        for ns_key, ns_values in namespaces.items():
+        for ns_key, ns_values in namespaces.iteritems():
             ns_type = 'IPV4-CIDR'
             for ns in ns_values:
                 if ns_key == 'management':
@@ -127,7 +126,7 @@ class FabricFixture(vnc_api_test.VncLibFixture):
 
     def delete(self):
         self.logger.info('Deleting Fabric %s(%s)'%(self.name, self.uuid))
-        self.delete_namespaces(list(self._ns_id.keys()))
+        self.delete_namespaces(self._ns_id.keys())
         try:
             self.vnc_h.delete_fabric(id=self.uuid)
         except NoIdError:

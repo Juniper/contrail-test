@@ -1,9 +1,8 @@
 ''' This module provides utils for setting up sdn topology given the ui topo inputs'''
-from __future__ import absolute_import
 import os
 import copy
 import fixtures
-from . import topo_steps
+import topo_steps
 from common.contrail_test_init import ContrailTestInit
 from common.connections import ContrailConnections
 from contrail_fixtures import *
@@ -348,7 +347,7 @@ def attachIntfTabToPort(self):
         return True
     result = True
     self.logger.info("Setup step: Editing Port to attach Interface table")
-    ports = list(self.topo.port_intf_params.keys())
+    ports = self.topo.port_intf_params.keys()
     for port in ports:
         if port in self.topo.port_list:
             intf_name = self.topo.port_intf_params[port]

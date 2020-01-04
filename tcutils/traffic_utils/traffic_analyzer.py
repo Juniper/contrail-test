@@ -1,7 +1,4 @@
 
-from builtins import map
-from builtins import range
-from builtins import object
 import logging
 import fixtures
 import dpkt
@@ -13,7 +10,7 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from compute_node_test import ComputeNodeFixture
 from common import log_orig as contrail_logging
 
-class TrafficAnalyzer(object):
+class TrafficAnalyzer:
     '''
     This class is used to capture traffic using tcpdump and analyze qos
     related fields of captured packets.
@@ -107,10 +104,10 @@ class TrafficAnalyzer(object):
             self.logger.debug("The filter pattern is %s" % filter_pattern)
             filter_string = " ".join(filter_pattern)
         elif self.encap_type == "MPLSoGRE" and capture_on_payload == False:
-            src_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*list(map(int,\
-                                        self.src_ip.split('.'))))
-            dest_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*list(map(int,\
-                                        self.dest_ip.split('.'))))
+            src_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*map(int,\
+                                        self.src_ip.split('.')))
+            dest_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*map(int,\
+                                        self.dest_ip.split('.')))
             # Below 'if' check is to distinguish packets within the same network
             # and different  networks
             # Packet between different networks don't carry L2 header and thus 
@@ -223,7 +220,7 @@ class TrafficAnalyzer(object):
                     string = ''
                     try:
                         priority = ether.vlan_tags[0].pri
-                    except AttributeError as e:
+                    except AttributeError, e:
                         self.logger.error(e)
                         return False
                     if priority == dot1p:
@@ -243,7 +240,7 @@ class TrafficAnalyzer(object):
                     ip = ether.data
                     try:
                         actual_dscp = int(bin(ip.tos >> 2), 2)
-                    except AttributeError as e:
+                    except AttributeError, e:
                         self.logger.error(e)
                         return False
                     if dscp == actual_dscp:
@@ -280,7 +277,7 @@ class TrafficAnalyzer(object):
                             self.logger.error("Correct the 'packet_type' "
                                               "or 'encap_type'")
                             return False
-                    except AttributeError as e:
+                    except AttributeError, e:
                         self.logger.error(e)
                         return False
                     if mpls_exp == actual_mpls_exp:
@@ -308,7 +305,7 @@ class TrafficAnalyzer(object):
                 if ether.ip.data.encode("hex")[0:8] == '00008847':
                     actual_encap = 'MPLSoGRE'
                     break
-            except AttributeError as e:
+            except AttributeError, e:
                 self.logger.debug(e)
                 self.logger.debug("Packet different from GRE encap")  
             if ether.ip.data.data.encode("hex")[0:8] == '08000000':

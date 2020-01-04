@@ -1,7 +1,4 @@
-from builtins import str
-from builtins import range
-from builtins import object
-class sdn_1vn_2vm_config(object):
+class sdn_1vn_2vm_config ():
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -92,7 +89,7 @@ class sdn_1vn_2vm_config(object):
 #
 
 
-class sdn_2vn_2vm_config(object):
+class sdn_2vn_2vm_config ():
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -184,7 +181,7 @@ class sdn_2vn_2vm_config(object):
 #
 
 
-class sdn_3vn_4vm_config(object):
+class sdn_3vn_4vm_config ():
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -244,7 +241,7 @@ class sdn_3vn_4vm_config(object):
 #
 
 
-class sdn_3vn_3vm_config(object):
+class sdn_3vn_3vm_config ():
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -293,7 +290,7 @@ class sdn_3vn_3vm_config(object):
 #
 
 
-class sdn_2vn_xvm_config(object):
+class sdn_2vn_xvm_config ():
 
     def __init__(self, domain='default-domain', project='admin', num_compute=1, traffic='yes', num_vm_per_compute=4, username=None, password=None):
         #
@@ -349,7 +346,7 @@ class sdn_2vn_xvm_config(object):
 '''*******AUTO-GENERATED TOPOLOGY*********'''
 
 
-class sdn_20vn_20vm_config(object):
+class sdn_20vn_20vm_config ():
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #

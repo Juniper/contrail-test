@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
 
@@ -50,10 +48,10 @@ class TestQosQueueSerial(QosTestExtendedBase):
         dscp_map = self.configure_map_dynamically("dscp", fcs)
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map,
                                             default_fc_id=0)
-        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
+        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         i = 0
-        for dscp, fc_id in dscp_map.items():
+        for dscp, fc_id in dscp_map.iteritems():
             hw_queue = self.get_hw_queue_from_fc_id(fc_id, fcs, logical_ids)
             validate_method_args = {
                     'src_vm_fixture': self.vn1_vm1_fixture,
@@ -101,7 +99,7 @@ class TestQosQueueSerial(QosTestExtendedBase):
         qos_fixture = self.setup_qos_config(dot1p_map=dot1p_map)
         self.setup_qos_config_on_vn(qos_fixture, self.vn1_fixture.uuid)
         i = 0
-        for dot1p, fc_id in dot1p_map.items():
+        for dot1p, fc_id in dot1p_map.iteritems():
             hw_queue = self.get_hw_queue_from_fc_id(fc_id, fcs, logical_ids)
             validate_method_args = {
                     'src_vm_fixture': self.vn1_vm1_fixture,
@@ -161,7 +159,7 @@ class TestQosQueueSerial(QosTestExtendedBase):
                 'src_vm_fixture': self.vn1_vm1_fixture,
                 'dest_vm_fixture': self.vn1_vm2_fixture,
                 'traffic_generator' : 'scapy',
-                'dot1p': list(dot1p_map.keys())[0],
+                'dot1p': dot1p_map.keys()[0],
                 'src_compute_fixture': self.vn1_vm1_compute_fixture,
                 'queue_id' : hw_queue,
                 'interval' : 0.001,
@@ -207,7 +205,7 @@ class TestQosQueueSerial(QosTestExtendedBase):
         dscp_map = {20: 1 , 40: 2}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map,
                                             default_fc_id=0)
-        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
+        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         dscpValues = [20, 40, 60]
         for elem in dscpValues:
@@ -262,7 +260,7 @@ class TestQosQueueSerial(QosTestExtendedBase):
         compute_control_ip = self.inputs.compute_control_ips[
                                         compute_control_ip_idx] 
         interface = self.vn1_vm1_compute_fixture.agent_physical_interface
-        for key,value in dscp_map_vhost.items():
+        for key,value in dscp_map_vhost.iteritems():
             dscp =key
             tos = format(dscp << 2, 'x')
             # Building command for traffic
@@ -319,12 +317,12 @@ class TestQosEncap(QosTestExtendedBase):
         fc_fixtures = self.setup_fcs(fcs)
         dscp_map = {1: 100}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
-        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
+        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn1_vm2_fixture,
-            dscp=list(dscp_map.keys())[0],
+            dscp=dscp_map.keys()[0],
             expected_dscp=fcs[0]['dscp'],
             expected_dot1p=fcs[0]['dot1p'],
             expected_exp=fcs[0]['exp'],
@@ -373,7 +371,7 @@ class TestQosPolicyEncap(TestQosPolicyBase):
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn2_vm1_fixture,
-            dscp=list(dscp_map.keys())[9],
+            dscp=dscp_map.keys()[9],
             expected_dscp=fcs[0]['dscp'],
             expected_exp=fcs[0]['exp'],
             expected_dot1p=fcs[0]['dot1p'],
@@ -462,7 +460,7 @@ class TestQosPolicyQueueSerial(TestQosPolicyBase):
                                             default_fc_id=0)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture)
         i = 0
-        for dscp, fc_id in dscp_map.items():
+        for dscp, fc_id in dscp_map.iteritems():
             hw_queue = self.get_hw_queue_from_fc_id(fc_id, fcs, logical_ids)
             validate_method_args = {
                     'src_vm_fixture': self.vn1_vm1_fixture,
@@ -519,7 +517,7 @@ class TestQosPolicyQueueSerial(TestQosPolicyBase):
         qos_fixture1 = self.setup_qos_config(dscp_map=dscp_map_vmi)
         qos_fixture2 = self.setup_qos_config(dscp_map=dscp_map_vn)
         qos_fixture3 = self.setup_qos_config(dscp_map=dscp_map_policy)
-        vn1_vm_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
+        vn1_vm_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture1, vn1_vm_vmi_id)
         self.setup_qos_config_on_vn(qos_fixture2, self.vn1_fixture.uuid)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture3)
@@ -609,7 +607,7 @@ class TestQosSVCSerial(TestQosSVCBase):
         # Applying qos-config on right VMI of service instance
         self.setup_qos_config_on_vmi(qos_fixture, right_svmi)
         i = 0
-        for dscp, fc_id in dscp_map.items():
+        for dscp, fc_id in dscp_map.iteritems():
             hw_queue = self.get_hw_queue_from_fc_id(fc_id, fcs, logical_ids)
             validate_method_args = {
                     'src_vm_fixture': self.vn1_vm1_fixture,
@@ -659,8 +657,8 @@ class TestQosQueueQosmap(TestQosQueueProperties):
         fc_fixtures = self.setup_fcs(fcs)
         dscp_map = {25: 101, 26 : 102, 27 : 103,28 : 104}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
-        vn1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
-        vn2_vmi_id = list(self.vn2_vm2_fixture.get_vmi_ids().values())[0]
+        vn1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vn2_vmi_id = self.vn2_vm2_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vn1_vmi_id)
         self.setup_qos_config_on_vmi(qos_fixture, vn2_vmi_id)
 

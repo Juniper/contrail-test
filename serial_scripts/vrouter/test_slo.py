@@ -288,7 +288,7 @@ class SecurityLoggingFw(SloBase, SessionLoggingFwBase):
         slo_rate = 1
         slo_fixture = self.create_slo(parent_obj, rate=slo_rate, sg_obj=sg_obj,
             vn_policy_obj=policy_obj)
-        server_vmi_id = list(self.server_fixture.get_vmi_ids().values())[0]
+        server_vmi_id = self.server_fixture.get_vmi_ids().values()[0]
         self.add_slo_to_vmi(slo_fixture, server_vmi_id)
 
         #create firewall rule and policy

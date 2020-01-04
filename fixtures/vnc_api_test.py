@@ -1,6 +1,3 @@
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
 import fixtures
 import os
 import uuid
@@ -13,7 +10,7 @@ from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
 from common import log_orig as contrail_logging
-from configparser import SafeConfigParser, DuplicateSectionError
+from ConfigParser import SafeConfigParser, DuplicateSectionError
 
 _VNC_API_LIB_INI_ = '/etc/contrail/vnc_api_lib.ini'
 
@@ -105,7 +102,6 @@ class VncLibFixture(fixtures.Fixture):
             self.inputs.apicafile if self.inputs else None
         self.authn_url = self.inputs.authn_url if self.inputs else \
                          kwargs.get('authn_url', None)
-        self.timeout = kwargs.get('timeout',60)
         if self.connections:
             self.logger = self.connections.logger
             self.project_name = self.connections.project_name
@@ -118,7 +114,7 @@ class VncLibFixture(fixtures.Fixture):
             self.auth_server_ip = self.inputs.auth_ip
             self.auth_client = self.connections.auth
             self.project_id = self.connections.project_id
-            self.vnc_h = self.orch.vnc_h
+            self.vnc_h = self.orch.vnc_h if self.orch else kwargs.get('vnc_h', None)
     # end __init__
 
     # Create tmp ini file as workaround for insecure
@@ -159,8 +155,7 @@ class VncLibFixture(fixtures.Fixture):
                               apicertfile=self.apicertfile,
                               apikeyfile=self.apikeyfile,
                               apicafile=self.apicafile,
-                              auth_url=self.authn_url,
-                              timeout=self.timeout)
+                              auth_url=self.authn_url)
             if self.orchestrator == 'openstack':
                 self.auth_client = OpenstackAuth(
                                     self.username,

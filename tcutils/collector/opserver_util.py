@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 # OpServer Utils
 #
@@ -9,9 +8,6 @@ from __future__ import print_function
 # Copyright (c) 2013, Contrail Systems, Inc. All rights reserved.
 #
 
-from builtins import next
-from builtins import str
-from builtins import object
 import datetime
 import time
 import requests
@@ -69,7 +65,7 @@ class OpServerUtils(object):
         if token:
             headers['X-AUTH-TOKEN'] = token['X-AUTH-TOKEN']
         try:
-            print('request version : %s'%(pkg_resources.get_distribution("requests").version[0]))
+            print 'request version : %s'%(pkg_resources.get_distribution("requests").version[0])
             if int(pkg_resources.get_distribution("requests").version[0]) >= 1:
                 response = requests.post(url, stream=True,
                                          data=params,
@@ -78,13 +74,13 @@ class OpServerUtils(object):
                 response = requests.post(url, prefetch=False,
                                          data=params,
                                          headers=headers)
-        except requests.exceptions.ConnectionError as e:
-            print("Connection to %s failed" % url)
+        except requests.exceptions.ConnectionError, e:
+            print "Connection to %s failed" % url
             return None
         if response.status_code in [202 , 200]:
             return response.text
         else:
-            print("HTTP error code: %d" % response.status_code)
+            print "HTTP error code: %d" % response.status_code
         return None
     # end post_url_http
 
@@ -96,8 +92,8 @@ class OpServerUtils(object):
                 data = requests.get(url, stream=True, headers=headers)
             else:
                 data = requests.get(url, prefetch=False, headers=headers)
-        except requests.exceptions.ConnectionError as e:
-            print("Connection to %s failed" % url)
+        except requests.exceptions.ConnectionError, e:
+            print "Connection to %s failed" % url
 
         return data
     # end get_url_http
@@ -108,7 +104,7 @@ class OpServerUtils(object):
         resit = result.iter_lines()
         while not done:
             try:
-                ln = next(resit)
+                ln = resit.next()
                 if ln == '{"value": [':
                     continue
                 if ln == ']}':
@@ -124,7 +120,7 @@ class OpServerUtils(object):
                 for i in out_list:
                     yield i
             except Exception as e:
-                print("Error parsing %s results: %s" % (ln, str(e)))
+                print "Error parsing %s results: %s" % (ln, str(e))
         return
     # end parse_query_result
 
@@ -233,7 +229,7 @@ class OpServerUtils(object):
     @staticmethod
     def _data_dict_to_str(data_dict, sandesh_type):
         data_str = None
-        for key, value in data_dict.items():
+        for key, value in data_dict.iteritems():
             # Ignore if type is sandesh
             if '@type' == key and value == 'sandesh':
                 continue
@@ -249,7 +245,7 @@ class OpServerUtils(object):
             # Handle struct, list
             if '@type' in value_dict:
                 if value_dict['@type'] == 'struct':
-                    for vdict_key, vdict_value in value_dict.items():
+                    for vdict_key, vdict_value in value_dict.iteritems():
                         if isinstance(vdict_value, dict):
                             if data_str == None:
                                 data_str = ''
@@ -278,7 +274,7 @@ class OpServerUtils(object):
                     # Handle list of complex types
                     else:
                         data_str += '[' + key + ':'
-                        for vlist_key, vlist_value in vlist_dict.items():
+                        for vlist_key, vlist_value in vlist_dict.iteritems():
                             if isinstance(vlist_value, dict):
                                 vlist_value_list = [vlist_value]
                             elif isinstance(vlist_value, list):
@@ -370,8 +366,8 @@ class OpServerUtils(object):
                 end_time = OpServerUtils.convert_to_utc_timestamp_usec(
                     end_time)
         except:
-            print('Incorrect start-time (%s) or end-time (%s) format' % (start_time,
-                                                                         end_time))
+            print 'Incorrect start-time (%s) or end-time (%s) format' % (start_time,
+                                                                         end_time)
             return None
 
         sf = select_fields
@@ -392,7 +388,7 @@ class OpServerUtils(object):
                 if len(match_v) is 1:
                     if match_v[0][-1] is '*':
                         match_prefix = match_v[0][:(len(match_v[0]) - 1)]
-                        print(match_prefix)
+                        print match_prefix
                         match_elem = OpServerUtils.Match(name=match_e[0],
                                                          value=match_prefix,
                                                          op=OpServerUtils.MatchOp.PREFIX)

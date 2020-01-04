@@ -1,5 +1,4 @@
 # Add common test utils, which can be used by all test scripts..
-from builtins import map
 from netaddr import IPNetwork
 
 def assertEqual(a, b, error_msg):
@@ -8,7 +7,7 @@ def assertEqual(a, b, error_msg):
 
 def get_ip_list_from_prefix(prefix):
 
-    return list(map(str, IPNetwork(prefix).iter_hosts()))
+    return map(str, IPNetwork(prefix).iter_hosts())
 
 def get_min_max_ip_from_prefix(prefix):
 

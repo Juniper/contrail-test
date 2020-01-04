@@ -1,6 +1,5 @@
 """Parser to parse the netperf output."""
 
-from builtins import object
 import re
 from itertools import dropwhile
 

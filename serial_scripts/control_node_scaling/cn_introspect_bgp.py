@@ -1,9 +1,4 @@
-from __future__ import print_function
-from __future__ import absolute_import
 # generic
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 import json
 import requests
 import re
@@ -15,10 +10,10 @@ import datetime
 
 # contrail
 
-import urllib.request, urllib.error, urllib.parse
+import urllib2
 from lxml import etree
 import xmltodict
-from .commands import Command
+from commands import Command
 from tcutils.verification_util import *
 
 
@@ -37,7 +32,7 @@ class ControlNodeInspect (VerificationUtilBase):
             response = self.dict_get(path)
             if response != None:
                 break
-            print("Retry http get for %s after a second" % (path))
+            print "Retry http get for %s after a second" % (path)
             time.sleep(1)
         return response
 
@@ -48,7 +43,7 @@ class ControlNodeInspect (VerificationUtilBase):
         new_table_req = 'Snh_IFMapTableShowReq?table_name=' + table_name.group(1) + '&search_string=' + match
         p = self.dict_get(new_table_req)
         xp = p.xpath('./IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo')
-        f = [x for x in xp if x.xpath('./node_name')[0].text == match]
+        f = filter(lambda x: x.xpath('./node_name')[0].text == match, xp)
         if 1 == len(f):
             d = {}
             for e in f[0]:
@@ -318,7 +313,7 @@ class ControlNodeInspect (VerificationUtilBase):
             http_get = self.http_get(path)
             if http_get != None:
                 break
-            print("Retry http get for %s after a second" % (path))
+            print "Retry http get for %s after a second" % (path)
             time.sleep(1)
 
         # Get element

@@ -1,7 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import range
-from builtins import object
 import sys
 import os
 import select
@@ -10,7 +6,7 @@ import paramiko
 import threading
 import multiprocessing
 import time
-from . import commands
+import commands
 import subprocess
 from fabric.api import *
 from fabric.state import connections as fab_connections
@@ -42,7 +38,7 @@ class SshConnect(threading.Thread):
         self.remoteCmdExecuterObj._ssh = self.ssh
 
 
-class remoteCmdExecuter(object):
+class remoteCmdExecuter:
 
     def __init__(self):
         pass
@@ -110,7 +106,7 @@ def testRemoteCmdExecuter():
 
 # print aD.execCmd ('ping 39.0.0.1 -I 10.84.7.42 -c 1 -W 1 | grep -i " 0%
 # packet loss"')
-    print(aD.execCmd('cli show bgp summary | display xml'))
+    print aD.execCmd('cli show bgp summary | display xml')
 #   print aD.execCmd ('ifsmon -Id | grep ROUTE')
 #   print aD.execCmd ('cli -c "show bgp summary"')
 

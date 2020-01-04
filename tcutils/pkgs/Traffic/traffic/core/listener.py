@@ -1,7 +1,5 @@
 """Module for creating socket to receive packets.
 """
-from builtins import str
-from builtins import object
 import errno
 import socket
 import signal
@@ -94,7 +92,7 @@ class CaptureBase(Process):
                 log.debug("Duplicate, Skip counting this packet")
                 continue
             last_pkt = p
-            log.debug(repr(p))
+            log.debug(`p`)
             # Discard the first ssh keepalive packet
             try:
                 dport = p[TCP].dport
@@ -236,11 +234,10 @@ class CaptureBase(Process):
     def run(self):
         try:
             self.sniff(**self.kwargs)
-        except socket.error as xxx_todo_changeme:
-            (code, msg) = xxx_todo_changeme.args
+        except socket.error as (code, msg):
             if code != errno.EINTR:
                 raise
-        except Exception as err:
+        except Exception, err:
             log.warn(traceback.format_exc())
         finally:
             self.sock.close()
@@ -272,8 +269,7 @@ class ListenerBase(Process):
         try:
             while self.listen:
                 pkt = self.sock.recv(MTU)
-        except socket.error as xxx_todo_changeme1:
-            (code, msg) = xxx_todo_changeme1.args
+        except socket.error as (code, msg):
             if code != errno.EINTR:
                 raise
 
@@ -403,7 +399,7 @@ class PktListener(object):
                 self.listener.start()
             self.sniffer.start()
             self.sniffer.join()
-        except Exception as err:
+        except Exception, err:
             log.warn(traceback.format_exc())
         finally:
             self.stop()

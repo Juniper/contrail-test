@@ -1,14 +1,10 @@
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-import configparser
+import ConfigParser
 
 
-class ReadConfigIni(object):
+class ReadConfigIni():
 
     def __init__(self):
-        self.Config = configparser.ConfigParser()
+        self.Config = ConfigParser.ConfigParser()
         self.config = self.Config.read("tor_params.ini")
 
     def config_section_map(self, section):

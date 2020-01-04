@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import str
 import fixtures
 from vnc_api.vnc_api import *
 from vnc_api.gen.cfixture import ContrailFixture
@@ -136,7 +134,7 @@ class VdnsFixture(fixtures.Fixture):
                         '\nvdns name info not matching with control name data'
                 act_cn_vdns_data = cn_s_dns['obj_info'][
                     'data']['virtual-DNS-data']
-                print(act_cn_vdns_data)
+                print act_cn_vdns_data
                 exp_vdns_data = self.obj.get_virtual_DNS_data()
                 if act_cn_vdns_data:
                     if exp_vdns_data.__dict__['domain_name'] != act_cn_vdns_data['domain-name']:
@@ -170,7 +168,7 @@ class VdnsFixture(fixtures.Fixture):
         result = True
         api_s_dns = self.api_s_inspect.get_cs_dns(
             vdns_name=str(self.obj.name), refresh=True)
-        print(api_s_dns)
+        print api_s_dns
         msg = ''
         try:
             if self.fq_name != api_s_dns['virtual-DNS']['fq_name']:

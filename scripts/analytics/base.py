@@ -1,4 +1,3 @@
-from builtins import object
 from common import isolated_creds
 from vn_test import *
 from vm_test import *
@@ -20,10 +19,10 @@ class AnalyticsBaseTest(GenericTestBase):
         super(AnalyticsBaseTest, cls).tearDownClass()
     #end tearDownClass
 
-class ResourceFactory(object):
+class ResourceFactory:
     factories = {}
     def createResource(id):
-        if id not in ResourceFactory.factories:
+        if not ResourceFactory.factories.has_key(id):
             ResourceFactory.factories[id] = \
               eval(id + '.Factory()')
         return ResourceFactory.factories[id].create()
@@ -114,7 +113,7 @@ class AnalyticsBasicTestSanityResource (BaseResource):
         pass
         #super(AnalyticsTestSanityResource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
         def create(self): return AnalyticsBasicTestSanityResource()
 
 
@@ -128,7 +127,7 @@ class AnalyticsTestSanityResource (BaseResource):
         pass
         #super(AnalyticsTestSanity1Resource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
         def create(self): return AnalyticsTestSanityResource()
 
 
@@ -142,7 +141,7 @@ class AnalyticsTestSanity1Resource (BaseResource):
         pass
         #super(AnalyticsTestSanity1Resource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
         def create(self): return AnalyticsTestSanity1Resource()
 
 
@@ -156,7 +155,7 @@ class AnalyticsTestSanity2Resource (BaseResource):
         pass
         #super(AnalyticsTestSanity2Resource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
         def create(self): return AnalyticsTestSanity2Resource()
 
 class AnalyticsTestSanity3Resource (BaseResource):
@@ -169,7 +168,7 @@ class AnalyticsTestSanity3Resource (BaseResource):
         pass
         #super(AnalyticsTestSanity3Resource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
         def create(self): return AnalyticsTestSanity3Resource()
 
 class AnalyticsTestSanityWithResourceResource(BaseResource):
@@ -180,7 +179,7 @@ class AnalyticsTestSanityWithResourceResource(BaseResource):
     def cleanUp(self):
         super(AnalyticsTestSanityWithResourceResource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
         def create(self): return AnalyticsTestSanityWithResourceResource()
 #End resource
 

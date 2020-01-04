@@ -1,6 +1,5 @@
 """Policy config utilities."""
 
-from builtins import object
 import random
 
 import fixtures
@@ -40,7 +39,7 @@ class AttachPolicyFixture(fixtures.Fixture):
         self.vn_obj.add_network_policy(self.policy_obj, self.policy_type)
         self.vnc_lib.virtual_network_update(self.vn_obj)
         # Required for verification by VNFixture in vn_test.py
-        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
+        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name) if self.orch else self.vnc_lib.network_policy_read(self.policy_fixture.policy_fq_name)
         self.vn_fixture.update_vn_object()
         policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
@@ -48,7 +47,7 @@ class AttachPolicyFixture(fixtures.Fixture):
             policy_name = policy.fq_name[-1]
         else:
             policy_name = policy['policy']['name']
-        if policy_name not in list(policy_name_objs.keys()):
+        if policy_name not in policy_name_objs.keys():
             pobjs = self.vn_fixture.convert_policy_objs_vnc_to_neutron([policy])
             self.vn_fixture.policy_objs.extend(pobjs)
 
@@ -60,7 +59,7 @@ class AttachPolicyFixture(fixtures.Fixture):
         self.vnc_lib.virtual_network_update(self.vn_obj)
         self.vn_fixture.update_vn_object()
         # Required for verification by VNFixture in vn_test.py
-        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
+        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name) if self.orch else self.vnc_lib.network_policy_read(self.policy_fixture.policy_fq_name)
         policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
         if isinstance(policy, NetworkPolicy):
@@ -70,11 +69,11 @@ class AttachPolicyFixture(fixtures.Fixture):
                                     for policy_obj in self.vn_fixture.policy_objs)
         else:
             policy_name = policy['policy']['name']
-        if policy_name in list(policy_name_objs.keys()):
+        if policy_name in policy_name_objs.keys():
             self.vn_fixture.policy_objs.remove(policy_name_objs[policy_name])
 
 
-class ConfigPolicy(object):
+class ConfigPolicy():
 
     def remove_from_cleanups(self, fix):
         for cleanup in self._cleanups:

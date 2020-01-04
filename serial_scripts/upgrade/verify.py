@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import test
 from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
@@ -9,7 +8,7 @@ import fixtures
 from policy_test import PolicyFixture
 from floating_ip import FloatingIPFixture 
 from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
-from .sdn_topo_with_multi_project import *
+from sdn_topo_with_multi_project import *
 from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
 from common.securitygroup.config import ConfigSecGroup

@@ -1,11 +1,9 @@
-from __future__ import print_function
-from builtins import object
 import logging as LOG
 
 from collections import OrderedDict
 from tcutils.util import get_random_name, retry
 from string import Template
-class ScapyTraffic(object):
+class ScapyTraffic:
     '''
     This class help us to create and send scapy traffic from a VM.
 
@@ -79,10 +77,10 @@ class ScapyTraffic(object):
             self.logger.error("Both IPv4 and IPv6 parameters cannot be"
                               " set in a single stream")
             return
-        for header,dict_values in self.params.items():
+        for header,dict_values in self.params.iteritems():
             if dict_values:
                 vars = []
-                for key,value in dict_values.items():
+                for key,value in dict_values.iteritems():
                     if type(value) is str:
                         var = "%s='%s'" % (key,value)
                     elif type(value) is list or type(value) is tuple:
@@ -107,10 +105,10 @@ class ScapyTraffic(object):
 
     def scapy_build_igmpv3gr(self):
         records = []
-        for header,dict_values in self.igmpv3gr.items():
+        for header,dict_values in self.igmpv3gr.iteritems():
             if dict_values:
                 vars = []
-                for key,value in dict_values.items():
+                for key,value in dict_values.iteritems():
                     if type(value) is str:
                         var = "%s='%s'" % (key,value)
                     elif type(value) is list:
@@ -177,4 +175,4 @@ if __name__ == "__main__":
                                    'tos':0x14}
                             )
     pkt_stream = scapy_obj.scapy_build_stream()
-    print(pkt_stream)
+    print pkt_stream

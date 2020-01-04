@@ -1,4 +1,3 @@
-from builtins import object
 import os
 
 from vnc_api_test import *
@@ -34,7 +33,7 @@ try:
 except ImportError:
     pass
 
-class ContrailConnections(object):
+class ContrailConnections():
     def __init__(self, inputs=None, logger=None, project_name=None,
                  username=None, password=None, domain_name=None, input_file=None, domain_obj=None,scope='domain'):
         self.inputs = inputs or ContrailTestInit(input_file,
@@ -529,7 +528,7 @@ class ContrailConnections(object):
             self.obj = self.vnc_lib
             conf_id = self.obj.get_default_global_vrouter_config_id()
             out = self.obj.global_vrouter_config_read(id=conf_id)
-            if 'evpn_status' in list(out.__dict__.keys()):
+            if 'evpn_status' in out.__dict__.keys():
                 result = out.evpn_status
         except NoIdError:
             errmsg = "No config id found"

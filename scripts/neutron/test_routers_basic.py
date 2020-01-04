@@ -21,7 +21,7 @@ class TestRoutersBasic(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestRoutersBasic, cls).tearDownClass()
 
-    @test.attr(type=['ci_sanity', 'sanity', 'suite1'])
+    @test.attr(type=['ci_sanity', 'suite1'])
     @preposttest_wrapper
     def test_basic_snat_behavior_without_external_connectivity(self):
         '''Create an external network, a router
@@ -30,24 +30,41 @@ class TestRoutersBasic(BaseNeutronTest):
         validate left vm pinging right vm through Snat
        '''
 
+        vm1_name = get_random_name('vm_left')
+        vn1_name = get_random_name('vn_private')
+        vn1_subnets = [get_random_cidr()]
         self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
-        self.allow_all_on_default_fwaas_policy()
-        vn1_fixture = self.create_vn()
-        ext_vn_name = get_random_name('ext_vn')
-        ext_vn_fixture = self.create_vn(vn_name=ext_vn_name,
-            router_external=True)
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vn1_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                         image_name='cirros')
+        vm1_fixture.wait_till_vm_is_up()
 
-        vm1_fixture = self.create_vm(vn1_fixture, image_name='cirros')
-        vm2_fixture = self.create_vm(ext_vn_fixture, image_name='cirros')
+        ext_vn_name = get_random_name('ext_vn')
+        ext_subnets = [get_random_cidr()]
+
+        ext_vn_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=ext_vn_name,
+                inputs=self.inputs,
+                subnets=ext_subnets,
+                router_external=True))
+
+        ext_vn_fixture.verify_on_setup()
+
+        vm2_name = get_random_name('vm_right')
+        vm2_fixture = self.create_vm(ext_vn_fixture, vm2_name,
+                                         image_name='cirros')
+        vm2_fixture.wait_till_vm_is_up()
+
         router_name = get_random_name('router1')
         router_dict = self.create_router(router_name)
         router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 ext_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
-
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(
          vm2_fixture.vm_ip), 'Ping from vm_left to vm_right through snat failed'
         return True

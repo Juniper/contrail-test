@@ -1,4 +1,3 @@
-from builtins import object
 from common.openstack_libs import barbican_client
 import requests, json
 

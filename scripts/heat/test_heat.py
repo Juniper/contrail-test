@@ -1,4 +1,3 @@
-from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -274,7 +273,7 @@ try:
                 svc_tmpls[mode]['fq_name'] = ':'.join(tmpl.st_fq_name)
             sis = {}
             i = 1
-            for svc, mode in list(svcs.items()):
+            for svc, mode in svcs.items():
                 sis[svc] = self.config_svc_instance(
                     'sil_%d' % i, svc_tmpls[mode]['tmpl'], vn_list)
                 i += 1
@@ -451,4 +450,4 @@ try:
             super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
 
 except ImportError:
-    print('Missing Heat Client. Will skip tests')
+    print 'Missing Heat Client. Will skip tests'

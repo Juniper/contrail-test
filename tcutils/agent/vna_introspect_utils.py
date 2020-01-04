@@ -1,14 +1,10 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 import cgitb
 cgitb.enable(format='text')
 
 import logging as LOG
 
 from tcutils.verification_util import *
-from .vna_results import *
+from vna_results import *
 import re
 from netaddr import *
 from tcutils.util import is_v6
@@ -155,7 +151,8 @@ class AgentInspect (VerificationUtilBase):
                                         for pl in cdata[0]:
                                             ace[c.tag][pl.tag] = pl.text
                                 elif c.tag in ('action_l', ):
-                                    ace[c.tag] = [x.text for x in c.xpath('./list/ActionStr/action')]
+                                    ace[c.tag] = map(lambda x: x.text,
+                                                     c.xpath('./list/ActionStr/action'))
                                 else:
                                     ace[c.tag] = c.text
                     else:
@@ -210,7 +207,8 @@ class AgentInspect (VerificationUtilBase):
                                         for pl in ace_id_data[0]:
                                             ace[c.tag][pl.tag] = pl.text
                                 elif c.tag in ('action_l', ):
-                                    ace[c.tag] = [x.text for x in c.xpath('./list/ActionStr/action')]
+                                    ace[c.tag] = map(lambda x: x.text,
+                                                     c.xpath('./list/ActionStr/action'))
                                 else:
                                     ace[c.tag] = c.text
                     elif e.tag == 'aceid_cnt_list':
@@ -300,8 +298,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''This proc typically work in pair with get_vna_fetchflowrecord. It parse the output of get_vna_fetchflowrecord and verify for the given item output is matching with the user expected one.'''
         result = False
         for itr in flow_rec:
-            if list(itr.keys()) == [item]:
-                if expected in list(itr.values())[0]:
+            if itr.keys() == [item]:
+                if expected in itr.values()[0]:
                     result = True
         return result
 
@@ -440,9 +438,9 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             vrf = vrflist.xpath('./VrfListResp')[0]
         else:
             vrf = vrflist
-        avn = [x for x in vrf.xpath(
-            './vrf_list/list/VrfSandeshData') if ':'.join((domain, project,
-                                          vn_name)) in x.xpath('./name')[0].text]
+        avn = filter(lambda x:  ':'.join((domain, project,
+                                          vn_name)) in x.xpath('./name')[0].text, vrf.xpath(
+            './vrf_list/list/VrfSandeshData'))
         p = VnaVrfListResult({'vrf_list': []})
         for v in avn:
             pp = VnaVrfRouteResult()
@@ -607,7 +605,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         ret_list = []
         filter_str = ''
         filter_dict = filter_dict or {}
-        for k,v in filter_dict.items():
+        for k,v in filter_dict.iteritems():
             filter_str = filter_str + '%s:%s' %(k,v)
         p = None
         vnl = self.dict_get('Snh_PageReq?x=begin:-1,end:-1,table:db.interface.0'
@@ -615,7 +613,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         intf_list = vnl.xpath('./ItfResp/itf_list/list/ItfSandeshData') or \
                 vnl.xpath('./itf_list/list/ItfSandeshData')
         if _type:
-            avn = [x for x in intf_list if self._itf_fltr(x, _type, value)]
+            avn = filter(lambda x:  self._itf_fltr(x, _type, value), intf_list)
         else:
             avn = intf_list
 #        if 1 == len (avn):
@@ -705,98 +703,13 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return l
     # end get_vna_xmpp_connection_status
 
-
-    def validate_bondVifListStatus(self,bondStatus="UP",slaveStatus="UP"):
-
-        result = False
-        vnl = self.dict_get('Snh_KInterfaceReq?')
-        elem = vnl.getchildren()[0]
-        var = elem.xpath('./list/KInterfaceInfo')
-        l = []
-        for x in var:
-            p = elem2dict(x)
-            l.append(p)
-
-        for ele in l:
-
-            if "bond" in ele["name"]:
-                self.log.info("Its a bond interface.Name %s" %(ele["name"]))
-                if bondStatus not in ele["status"]:
-                    self.log.error('BOND interface is not active. Bond interface state %s' % (ele["active"]))
-                    return False
-
-                bondList = ele["bond_child_intf_list"]
-                bondList = bondList["list"]
-                NoofbondMembers = len(bondList)
-                count=0
-                for slave in bondList:
-                    self.log.debug('Slave details %s' %(slave))
-                    if slave["child_bond_interface_status"] == slaveStatus:
-                        count = count + 1
-                        self.log.info('Slave interface is UP. Slave interface state %s' % (slave["child_bond_interface_status"]))
-                    else:
-                        self.log.error('Slave interface is not UP. Slave interface state %s' % (slave["child_bond_interface_status"]))
-
-                if (NoofbondMembers == count) and (NoofbondMembers >=1):
-                    self.log.info('All slave members are up.No of members %d' % (count))
-                    result = True
-                else:
-                    self.log.error('All slave interfaces are not UP.')
-                    result = False
-
-        return result
-    # end validate_bondVifListStatus
-
-    def validate_bondStatus(self,bondStatus="Active",slaveStatus="UP"):
-
-        result = False
-        vnl = self.dict_get('Snh_ItfReq??')
-        elem = vnl.getchildren()[0]
-        elem = elem.getchildren()[0]
-        var = elem.xpath('./list/ItfSandeshData')
-        l = []
-        for x in var:
-            p = elem2dict(x)
-            l.append(p)
-
-        for ele in l:
-
-            if "bond" in ele["name"]:
-                self.log.info("Its a bond interface.Name %s" %(ele["name"]))
-                if bondStatus not in ele["active"]:
-                    self.log.error('BOND interface is not active. Bond interface state %s' % (ele["active"]))
-                    return False
-
-                bondList = ele["bond_interface_list"]
-                bondList = bondList["list"]
-                NoofbondMembers = len(bondList)
-                count=0
-                for slave in bondList:
-                    self.log.debug('Slave details %s' %(slave))
-                    if slave["intf_status"] == slaveStatus:
-                        count = count + 1
-                        self.log.info('Slave interface is UP. Slave interface state %s' % (slave["intf_status"]))
-                    else:
-                        self.log.error('Slave interface is not UP. Slave interface state %s' % (slave["intf_status"]))
-
-                if (NoofbondMembers == count) and (NoofbondMembers >=1):
-                    self.log.info('All slave members are up.No of members %d' % (count))
-                    result = True
-                else:
-                    self.log.error('All slave interfaces are not UP.')
-                    result = False
-
-        return result
-    # end validate_bondStatus
-
-
     def get_vna_diag_ping_res(self, src_ip='', src_port='', dst_ip='', dst_port='', proto='', vrf='', size='', count='', intv=''):
         '''
         method: Get the ping response from diag introspect
         '''
         ping_url = "Snh_PingReq?source_ip=%s&source_port=%s&dest_ip=%s&dest_port=%s&protocol=%s&vrf_name=%s&packet_size=%s&count=%s&interval=%s" % (
             src_ip, src_port, dst_ip, dst_port, proto, vrf, size, count, intv)
-        print(ping_url)
+        print ping_url
         self.ping_out = self.dict_get(ping_url)
         l = {}
         i = 1
@@ -834,15 +747,15 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             result = False
         else:
             for i in range(0, len(ping_count['PingSummaryResp']) - 1):
-                if list(ping_count['PingSummaryResp'][i].keys())[0] == 'request_sent':
+                if ping_count['PingSummaryResp'][i].keys()[0] == 'request_sent':
                     req_sent = int(
-                        list(ping_count['PingSummaryResp'][i].values())[0])
-                elif list(ping_count['PingSummaryResp'][i].keys())[0] == 'response_received':
-                    req_rcv = int(list(ping_count['PingSummaryResp'][i].values())[0])
-                elif list(ping_count['PingSummaryResp'][i].keys())[0] == 'pkt_loss':
-                    loss = int(list(ping_count['PingSummaryResp'][i].values())[0])
-            print("%s %s %s" % (req_sent, req_rcv, loss))
-            print("%s" % (count))
+                        ping_count['PingSummaryResp'][i].values()[0])
+                elif ping_count['PingSummaryResp'][i].keys()[0] == 'response_received':
+                    req_rcv = int(ping_count['PingSummaryResp'][i].values()[0])
+                elif ping_count['PingSummaryResp'][i].keys()[0] == 'pkt_loss':
+                    loss = int(ping_count['PingSummaryResp'][i].values()[0])
+            print "%s %s %s" % (req_sent, req_rcv, loss)
+            print "%s" % (count)
 
             if req_sent == req_rcv:
                 result = True
@@ -1238,7 +1151,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
               'rid': '0',
               'vrf_id': '4'}]
         '''
-        filter_dict = dict((k,v) for k,v in  kwargs.items() if v is not None)
+        filter_dict = dict((k,v) for k,v in  kwargs.iteritems() if v is not None)
         filter_set = set(filter_dict.items())
         xml_obj = self.dict_get('Snh_KRouteReq?x=%s' % (vrf_id))
         xpath_str = './KRouteResp'
@@ -1255,7 +1168,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 p = elem2dict(route)
 
                 # Remove any unhashable values in p
-                p = dict((k,v) for k,v in p.items() if v)
+                p = dict((k,v) for k,v in p.iteritems() if v)
 
                 if filter_set.issubset(set(p.items())):
                     if get_nh_details:
@@ -1361,7 +1274,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         for rsp in rsp_list:
             intf_list = rsp.xpath('./KInterfaceResp/if_list/list/KInterfaceInfo') or \
                     rsp.xpath('./if_list/list/KInterfaceInfo')
-            avn = [x for x in intf_list if self._kitf_fltr(x, _type, value)]
+            avn = filter(lambda x:  self._kitf_fltr(x, _type, value), intf_list)
 
             for intf in avn:
                 intf_dict = elem2dict(intf)
@@ -1469,13 +1382,13 @@ if __name__ == '__main__':
     x = v.get_vrouter_route_table('4')
 
     vvnagnt = AgentInspect('10.204.217.12')
-    print(vvnagnt.get_vna_vn('default-domain', 'admin', 'vn-1'))
-    print(vvnagnt.get_vna_vn_list('default-domain', 'demo'))
-    print(vvnagnt.get_vna_vrf_id('default-domain', 'demo', 'fe:fe'))
-    print(vvnagnt.get_vna_route(3, '172.168.10.254', 32))
-    print(vvnagnt.get_vna_tap_interface_by_vmi('73caeeed-7cac-4ef4-8268-f16c1ba514a4'))
-    print(vvnagnt.get_vna_tap_interface_by_vm('ae57b6d0-f057-4ccc-95eb-e3932a265752'))
-    print(vvnagnt.get_vna_intf_details('tap8e3d0097-7b'))
-    print(vvnagnt.get_vna_acl_by_vn('default-domain:demfeo:fe'))
-    print(vvnagnt.get_vna_flow_by_vn('default-domain:demo:pub'))
-    print(vvnagnt.get_vna_tap_interface_by_vm('aec7cc6e-977a-4e2d-8650-e583c5f63241'))
+    print vvnagnt.get_vna_vn('default-domain', 'admin', 'vn-1')
+    print vvnagnt.get_vna_vn_list('default-domain', 'demo')
+    print vvnagnt.get_vna_vrf_id('default-domain', 'demo', 'fe:fe')
+    print vvnagnt.get_vna_route(3, '172.168.10.254', 32)
+    print vvnagnt.get_vna_tap_interface_by_vmi('73caeeed-7cac-4ef4-8268-f16c1ba514a4')
+    print vvnagnt.get_vna_tap_interface_by_vm('ae57b6d0-f057-4ccc-95eb-e3932a265752')
+    print vvnagnt.get_vna_intf_details('tap8e3d0097-7b')
+    print vvnagnt.get_vna_acl_by_vn('default-domain:demfeo:fe')
+    print vvnagnt.get_vna_flow_by_vn('default-domain:demo:pub')
+    print vvnagnt.get_vna_tap_interface_by_vm('aec7cc6e-977a-4e2d-8650-e583c5f63241')

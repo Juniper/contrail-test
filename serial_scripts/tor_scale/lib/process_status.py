@@ -1,9 +1,7 @@
-from builtins import str
-from builtins import object
 import sys
 import psutil
 
-class ProcessStatus(object):
+class ProcessStatus:
 
     output_dict={}    
     process_name = sys.argv[1]       

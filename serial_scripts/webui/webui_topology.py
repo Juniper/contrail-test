@@ -1,9 +1,7 @@
 '''*******AUTO-GENERATED TOPOLOGY*********'''
-from __future__ import print_function
 
 
-from builtins import object
-class sdn_webui_config(object):
+class sdn_webui_config ():
 
     def __init__(
             self,
@@ -776,15 +774,15 @@ class sdn_webui_config(object):
         # end __init__
 
 if __name__ == '__main__':
-    print("Currently topology limited to one domain/project..")
-    print("Based on need, can be extended to cover config for multiple domain/projects")
-    print("Running unit test for this module ...")
+    print "Currently topology limited to one domain/project.."
+    print "Based on need, can be extended to cover config for multiple domain/projects"
+    print "Running unit test for this module ..."
     my_topo = sdn_webui_config(domain='default-domain', project='admin')
     x = my_topo.__dict__
-    print("\nprinting keys of topology dict:")
-    for key, value in x.items():
-        print(key)
-    print()
+    print "\nprinting keys of topology dict:"
+    for key, value in x.iteritems():
+        print key
+    print
     # print "keys & values:"
     # for key, value in x.iteritems(): print key, "-->", value
     # Use topology_helper to extend/derive data from user-defined topology to help verifications.
@@ -794,5 +792,5 @@ if __name__ == '__main__':
     topo_h = topo_helper.topology_helper(my_topo)
     #vmc_list= topo_h.get_vmc_list()
     policy_vn = topo_h.get_policy_vn()
-    print("printing derived topo data - vn's associated to a policy: \n", policy_vn)
+    print "printing derived topo data - vn's associated to a policy: \n", policy_vn
 #

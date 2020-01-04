@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import traffic_tests
 from vn_test import *
 from vm_test import *
@@ -13,7 +12,7 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from .base import BaseRRTest,verify_peer_in_control_nodes,\
+from base import BaseRRTest,verify_peer_in_control_nodes,\
      get_connection_matrix
 from common import isolated_creds
 import inspect
@@ -91,11 +90,8 @@ class TestBasicRR(BaseRRTest):
         connection_dicts = get_connection_matrix(self.inputs,ctrl_node_name)
         #Verifying bgp connections.The non-rr nodes should have only one bgp connection to RR
         #RR should have bgp connections to both the non-rrs
-        skip_peers = []
-        for as4_ext_router in self.inputs.as4_ext_routers:
-            skip_peers.append(as4_ext_router[0])
         for entry in connection_dicts:
-            if verify_peer_in_control_nodes(self.cn_inspect,entry,connection_dicts[entry],skip_peers,self.logger):
+            if verify_peer_in_control_nodes(self.cn_inspect,entry,connection_dicts[entry],self.logger):
                 self.logger.info("BGP connections are proper")
             else: 
                 self.logger.error("BGP connections are not proper")
@@ -147,11 +143,8 @@ class TestBasicRR(BaseRRTest):
         connection_dicts = get_connection_matrix(self.inputs,ctrl_node_name)
         #Verifying bgp connections.The non-rr nodes should have only one bgp connection to RR
         #RR should have bgp connections to both the non-rrs
-        skip_peers = []
-        for as4_ext_router in self.inputs.as4_ext_routers:
-            skip_peers.append(as4_ext_router[0])
         for entry in connection_dicts:
-            if verify_peer_in_control_nodes(self.cn_inspect,entry,connection_dicts[entry],skip_peers,self.logger):
+            if verify_peer_in_control_nodes(self.cn_inspect,entry,connection_dicts[entry],self.logger):
                 self.logger.info("BGP connections are proper")
             else: 
                 self.logger.error("BGP connections are not proper")

@@ -1,5 +1,3 @@
-from builtins import input
-from builtins import str
 import vnc_api_test
 from compute_node_test import ComputeNodeFixture
 from tcutils.util import get_random_name, retry
@@ -201,14 +199,6 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Deleting LogicalRouter %s(%s)'%(self.name, self.uuid))
         self.vnc_h.delete_router(id=self.uuid)
 
-    def get_internal_vn(self):
-        obj = self.vnc_api_h.virtual_network_read(
-            fq_name=[self.parent_fq_name[0],
-                     self.parent_fq_name[1],
-                     self.get_internal_vn_name()])
-
-        return obj
-
     @retry(6, 10)
     def verify_internal_vn_created_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
@@ -391,25 +381,25 @@ if __name__ == "__main__":
     obj.verify_on_setup()
     obj.cleanUp()
     obj.verify_on_cleanup()
-    stop = str(input('press enter after checking cleanup...'))
+    stop = str(raw_input('press enter after checking cleanup...'))
     
     #obj = LogicalRouterFixture(api_type='neutron', uuid='a8395987-8882-41b4-898f-e43085c0f889', connections=setup_test_infra())
     obj.add_physical_router('b9b21cfb-ac15-40b7-90e9-4b037d3e4548')
-    stop = str(input('press enter after verifying physical router addition...'))
+    stop = str(raw_input('press enter after verifying physical router addition...'))
     obj.remove_physical_router('b9b21cfb-ac15-40b7-90e9-4b037d3e4548')
-    stop = str(input('press enter after verifying physical router deletion...'))
+    stop = str(raw_input('press enter after verifying physical router deletion...'))
     obj.add_rt('target:64512:7002')
-    stop = str(input('press enter after verifying route target 64512:7002...'))
+    stop = str(raw_input('press enter after verifying route target 64512:7002...'))
     obj.delete_rt('target:64512:7002')
-    stop = str(input('press enter after deleting  route target 64512:7002...'))
+    stop = str(raw_input('press enter after deleting  route target 64512:7002...'))
     obj.add_interface(vn_3)
-    stop = str(input('press enter after verifying addition of vn-3 network..'))
+    stop = str(raw_input('press enter after verifying addition of vn-3 network..'))
     obj.remove_interface(vn_3)
-    stop = str(input('press enter after verifying deletion of vn-3 network..'))
+    stop = str(raw_input('press enter after verifying deletion of vn-3 network..'))
     obj.set_vni('7001')
-    stop = str(input('press enter after verifying vni vlaue as 7001..'))
+    stop = str(raw_input('press enter after verifying vni vlaue as 7001..'))
     obj.delete_vni()
-    stop = str(input('press enter after remove vni value..'))
+    stop = str(raw_input('press enter after remove vni value..'))
     obj.set_vni('7002')
-    stop = str(input('press enter after verifying vni value as 7002.'))
+    stop = str(raw_input('press enter after verifying vni value as 7002.'))
     obj.cleanUp()

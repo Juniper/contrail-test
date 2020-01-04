@@ -1,4 +1,3 @@
-from builtins import str
 import os
 import fixtures
 import uuid
@@ -58,7 +57,7 @@ class UserFixture(fixtures.Fixture):
             #if test tenant already created, associate user to tenant
             if self.tenant:
                 self.add_user_to_tenant(self.tenant, self.username, self.role)
-        except ks_exceptions.NotFound as e:
+        except ks_exceptions.NotFound, e:
             self.logger.info('Project %s not found, skip adding user %s' % (
                 self.tenant, self.username))
     # end setUp

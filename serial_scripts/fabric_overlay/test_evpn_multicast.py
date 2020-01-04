@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from common.contrail_fabric.mcast_base import *
 import ipaddress
@@ -315,9 +313,8 @@ class TestEvpnt6(TestEvpnt6SPStyle):
         self.connections.vnc_lib_fixture.set_global_igmp_config(igmp_enable=False)
         self.addCleanup(self.connections.vnc_lib_fixture.set_global_igmp_config, igmp_enable=True)
 
-        prouters = self.get_associated_prouters(bms_fixture.name)
-        self.disable_snooping(prouters)
-        self.addCleanup(self.enable_snooping, prouters)
+        self.disable_snooping()
+        self.addCleanup(self.enable_snooping)
 
         time.sleep(40)
 
@@ -348,7 +345,7 @@ class TestEvpnt6(TestEvpnt6SPStyle):
 
         self.logger.info('After disabling IGMP , multcast traffic is sent to all VMs.')
 
-        self.enable_snooping(prouters)
+        self.enable_snooping()
 
 
  
@@ -383,9 +380,9 @@ class TestEvpnt6(TestEvpnt6SPStyle):
 
         self.logger.info('#2 Enable igmp at VMI level. Test type 6 functionality.')
 
-        vmi1= list(vm_fixtures['vm1'].get_vmi_ids().values())[0]
-        vmi2= list(vm_fixtures['vm2'].get_vmi_ids().values())[0]
-        vmi3= list(vm_fixtures['vm3'].get_vmi_ids().values())[0]
+        vmi1= vm_fixtures['vm1'].get_vmi_ids().values()[0]
+        vmi2= vm_fixtures['vm2'].get_vmi_ids().values()[0]
+        vmi3= vm_fixtures['vm3'].get_vmi_ids().values()[0]
         self.configure_igmp_on_vmi(vmi1,True)
         self.configure_igmp_on_vmi(vmi2,True)
         self.configure_igmp_on_vmi(vmi3,True)
@@ -403,8 +400,14 @@ class TestEvpnt6(TestEvpnt6SPStyle):
                                }
                   }
 
-        result = self.send_verify_mcastv2(vm_fixtures, traffic, igmp,vxlan)
+        result = result & self.send_verify_mcastv2(vm_fixtures, traffic, igmp,vxlan)
+
+        self.configure_igmp_on_vmi(vmi1,False)
+        self.configure_igmp_on_vmi(vmi2,False)
+        self.configure_igmp_on_vmi(vmi3,False)
+        time.sleep(30)
         self.connections.vnc_lib_fixture.set_global_igmp_config(igmp_enable=True)
+        time.sleep(30)
 
     @preposttest_wrapper
     def test_multicast_policy(self):
@@ -856,7 +859,7 @@ class TestEvpnt6MultiVn(Evpnt6MultiVnBase):
               'gaddr': '225.1.1.1'       # Multicast group address
                }
 
-        vn_ip = str('5.1.1.0', "utf-8")
+        vn_ip = unicode('5.1.1.0', "utf-8")
         vn_ip = ipaddress.ip_address(vn_ip)
         for i in range(1,vn_count):
 

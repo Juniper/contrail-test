@@ -394,7 +394,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         vnc_h = connections.orch.vnc_h
         if not obj:
             obj = vnc_h.virtual_network_read(id=uuid)
-        for k,v in prop_kv.items():
+        for k,v in prop_kv.iteritems():
             if '.' in k: #SubField Match
                 field = k.split('.')[0]
                 subfield = k.split('.')[1]

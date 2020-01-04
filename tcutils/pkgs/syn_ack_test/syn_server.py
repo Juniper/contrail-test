@@ -1,8 +1,5 @@
 #! /usr/bin/env python
 
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from scapy.all import *
 from time import sleep
 import sys
@@ -26,7 +23,7 @@ os.system(
 server = conf.L3socket(filter='host %s' % ip_remote)
 SYN = server.recv()
 sleep(182)
-SYNACK = old_div(ip,TCP(sport=SYN.dport, dport=SYN.sport, flags="SA", seq=1001, ack=SYN.seq + 1))
+SYNACK = ip/TCP(sport=SYN.dport, dport=SYN.sport, flags="SA", seq=1001, ack=SYN.seq + 1)
 sr1(SYNACK)
 
-print("SUCCESS")
+print "SUCCESS"

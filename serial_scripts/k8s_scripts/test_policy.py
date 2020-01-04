@@ -1,4 +1,3 @@
-from builtins import object
 from common.k8s.base import BaseK8sTest
 from k8s.network_policy import NetworkPolicyFixture
 from tcutils.wrappers import preposttest_wrapper
@@ -12,7 +11,6 @@ import time
 
 import gevent
 from gevent import greenlet
-from future.utils import with_metaclass
 
 class TestNetworkPolicyProjectIsolation(BaseK8sTest):
 
@@ -217,7 +215,9 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
 
 class TestNetworkPolicyRestart(BaseK8sTest):
 
-    class SharedResources (with_metaclass(Singleton, object)):
+    class SharedResources (object):
+        __metaclass__ = Singleton
+
         def __init__ (self, connections):
             self.connections = connections
             self.setUp()
@@ -519,7 +519,6 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]

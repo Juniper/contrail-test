@@ -1,4 +1,3 @@
-from builtins import str
 from fabric.api import run
 from fabric.context_managers import settings
 import time

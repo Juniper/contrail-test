@@ -1,6 +1,3 @@
-from builtins import str
-from builtins import range
-from builtins import object
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -18,7 +15,7 @@ from common.ui.webui_edit import WebuiEdit
 from webui.webui_common import WebuiCommon
 import re
 
-class WebuiTest(object):
+class WebuiTest:
 
     os_release = None
 
@@ -269,7 +266,7 @@ class WebuiTest(object):
                     self.ui.click_element('ui-accordion-header-icon', 'class',
                                          elements=True, index=1)
                     self.ui.click_element('physical_router_vnc_managed', 'name')
-            for field_val, text_box in fields_dict.items():
+            for field_val, text_box in fields_dict.iteritems():
                 self.ui.send_keys(field_val, text_box, 'name')
             if not self.ui.click_on_create(
                 'PhysicalRouter', 'physical_router',
@@ -430,7 +427,7 @@ class WebuiTest(object):
                                 fixture.service_type.title())
             self.ui.dropdown('s2id_Version_dropdown', version_num)
             self.ui.wait_till_ajax_done(self.browser)
-            for index, (intf_element, val) in enumerate(fixture.if_details.items()):
+            for index, (intf_element, val) in enumerate(fixture.if_details.iteritems()):
                 intf_text = intf_element
                 shared_ip = val['shared_ip_enable']
                 static_routes = val['static_route_enable']
@@ -621,7 +618,7 @@ class WebuiTest(object):
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                         self.ui.click_on_accordian('svcHealthChk', def_type=False)
                         self.ui.wait_till_ajax_done(self.browser)
-                        for index, (intf, shc) in enumerate(int_shc.items()):
+                        for index, (intf, shc) in enumerate(int_shc.iteritems()):
                             br = self.ui.find_element('svcHealtchChecks')
                             if attach:
                                 self.ui.click_element('editable-grid-add-link', 'class',
@@ -949,7 +946,7 @@ class WebuiTest(object):
                     element_key = 'fixture.dot1p_mapping'
                 else:
                     element_key = 'fixture.' + element +'_mapping'
-                (ele, fc_value), = list(eval(element_key).items())
+                (ele, fc_value), = eval(element_key).items()
                 fc_pair = element + '_entries_fc_pair'
                 element_browser = self.ui.find_element(fc_pair)
                 self.ui.click_element('editable-grid-add-link', 'class',
@@ -1220,7 +1217,7 @@ class WebuiTest(object):
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                         self.ui.click_on_accordian('rtPolicy', def_type=False)
                         self.ui.wait_till_ajax_done(self.browser)
-                        for index, (intf, pol) in enumerate(int_rp.items()):
+                        for index, (intf, pol) in enumerate(int_rp.iteritems()):
                             br = self.ui.find_element('rtPolicys')
                             if attach:
                                 self.ui.click_element('editable-grid-add-link', 'class',
@@ -1285,7 +1282,7 @@ class WebuiTest(object):
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                         self.ui.click_on_accordian('rtAgg', def_type=False)
                         self.ui.wait_till_ajax_done(self.browser)
-                        for index, (intf, agg) in enumerate(int_ra.items()):
+                        for index, (intf, agg) in enumerate(int_ra.iteritems()):
                             br = self.ui.find_element('rtAggregates')
                             if attach:
                                 self.ui.click_element('editable-grid-add-link', 'class',
@@ -1474,7 +1471,7 @@ class WebuiTest(object):
                 module_cpu_info = analytics_nodes_ops_data.get(
                         'NodeStatus').get('process_mem_cpu_usage')
                 module_cpu_info_len = len(module_cpu_info)
-                for key, value in module_cpu_info.items():
+                for key, value in module_cpu_info.iteritems():
                     if key == 'contrail-collector':
                         cpu_mem_info_dict = value
                         break
@@ -1530,7 +1527,7 @@ class WebuiTest(object):
                             process_down_stop_time_dict,
                             process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-                for k, v in list(process_down_stop_time_dict.items()):
+                for k, v in process_down_stop_time_dict.items():
                     if k not in exclude_process_list:
                         reduced_process_keys_dict[k] = v
                 if not reduced_process_keys_dict:
@@ -1684,7 +1681,7 @@ class WebuiTest(object):
                             process_down_stop_time_dict,
                             process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-                for k, v in list(process_down_stop_time_dict.items()):
+                for k, v in process_down_stop_time_dict.items():
                     if k not in exclude_process_list:
                         reduced_process_keys_dict[k] = v
                 if not reduced_process_keys_dict:
@@ -1713,7 +1710,7 @@ class WebuiTest(object):
                 module_cpu_info = config_nodes_ops_data.get(
                     'NodeStatus').get('process_mem_cpu_usage')
                 module_cpu_info_len = len(module_cpu_info)
-                for key, value in module_cpu_info.items():
+                for key, value in module_cpu_info.iteritems():
                     if key == 'contrail-api:0':
                         cpu_mem_info_dict = value
                         break
@@ -1856,7 +1853,7 @@ class WebuiTest(object):
                         dom_basic_view[i]['key'] = 'CPU'
                         if not dom_basic_view[i]['value'] == '--':
                             val = float(dom_basic_view[i]['value'])
-                            dom_basic_view[i]['value'] = str('%.2f' % val + ' %')
+                            dom_basic_view[i]['value'] = unicode('%.2f' % val + ' %')
                 # filter vrouter basic view details from opserver data
                 vrouters_ops_data = self.ui.get_details(
                     vrouters_list_ops[n]['href'])
@@ -1956,7 +1953,7 @@ class WebuiTest(object):
                                 process_down_stop_time_dict,
                                 process_up_start_time_dict)
                     reduced_process_keys_dict = {}
-                    for k, v in list(process_down_stop_time_dict.items()):
+                    for k, v in process_down_stop_time_dict.items():
                         if k not in exclude_process_list:
                            reduced_process_keys_dict[k] = v
                     if not reduced_process_keys_dict:
@@ -1976,7 +1973,7 @@ class WebuiTest(object):
                         overall_node_status_down_time = self.ui.get_node_status_string(
                             str(max(reduced_process_keys_dict.values())))
                         process_down_count = len(reduced_process_keys_dict)
-                        process_down_list = list(reduced_process_keys_dict.keys())
+                        process_down_list = reduced_process_keys_dict.keys()
                         overall_node_status_string = str(
                             process_down_count) + ' Process down'
                         modified_ops_data.extend([{
@@ -2145,7 +2142,7 @@ class WebuiTest(object):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif isinstance(complete_ops_data[k]['value'], str):
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
@@ -2293,7 +2290,7 @@ class WebuiTest(object):
                             process_down_stop_time_dict,
                             process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-                for k, v in list(process_down_stop_time_dict.items()):
+                for k, v in process_down_stop_time_dict.items():
                     if k not in exclude_process_list:
                         reduced_process_keys_dict[k] = v
 
@@ -2309,7 +2306,7 @@ class WebuiTest(object):
                 else:
                     overall_node_status_down_time = self.ui.get_node_status_string(
                         str(max(reduced_process_keys_dict.values())))
-                    process_down_list = list(reduced_process_keys_dict.keys())
+                    process_down_list = reduced_process_keys_dict.keys()
                     process_down_count = len(reduced_process_keys_dict)
                     overall_node_status_string = str(
                         process_down_count) + ' Process down'
@@ -2450,7 +2447,7 @@ class WebuiTest(object):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif isinstance(complete_ops_data[k]['value'], str):
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
@@ -2586,7 +2583,7 @@ class WebuiTest(object):
                         for m in range(len(complete_ops_data[k]['value'])):
                             complete_ops_data[k]['value'][m] = str(
                                 complete_ops_data[k]['value'][m])
-                    elif isinstance(complete_ops_data[k]['value'], str):
+                    elif isinstance(complete_ops_data[k]['value'], unicode):
                         complete_ops_data[k]['value'] = str(
                             complete_ops_data[k]['value'])
                     else:
@@ -2662,7 +2659,7 @@ class WebuiTest(object):
                             process_down_stop_time_dict,
                             process_up_start_time_dict)
                 reduced_process_keys_dict = {}
-                for k, v in list(process_down_stop_time_dict.items()):
+                for k, v in process_down_stop_time_dict.items():
                     reduced_process_keys_dict[k] = v
                 if not reduced_process_keys_dict:
                     recent_time = max(process_up_start_time_dict.values())
@@ -2686,7 +2683,7 @@ class WebuiTest(object):
                     version = self.ui.get_version_string(version)
                 mem_info = database_nodes_ops_data.get(
                     'DatabaseUsageInfo').get('database_usage')
-                for key, value in mem_info[0].items():
+                for key, value in mem_info[0].iteritems():
                     space_val = self.ui.get_memory_string(value, unit='KB')
                     if key == 'disk_space_available_1k':
                         avail_space = space_val
@@ -2694,8 +2691,8 @@ class WebuiTest(object):
                         ana_db_size = space_val
                     if key == 'disk_space_used_1k':
                         used_space = space_val
-                percent_space = int(round((list(database_nodes_ops_data.get('NodeStatus').get(
-                        'disk_usage_info').values())[0].get('percentage_partition_space_used'))))
+                percent_space = int(round((database_nodes_ops_data.get('NodeStatus').get(
+                        'disk_usage_info').values()[0].get('percentage_partition_space_used'))))
                 dom_basic_view = self.ui.get_basic_view_infra()
                 node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
                     'p').get_attribute('innerHTML').replace('\n', '').strip()
@@ -2831,7 +2828,7 @@ class WebuiTest(object):
                         for m in range(len(complete_ops_data[k]['value'])):
                             complete_ops_data[k]['value'][m] = str(
                                 complete_ops_data[k]['value'][m])
-                    elif isinstance(complete_ops_data[k]['value'], str):
+                    elif isinstance(complete_ops_data[k]['value'], unicode):
                         complete_ops_data[k]['value'] = str(
                             complete_ops_data[k]['value'])
                     else:
@@ -2953,7 +2950,7 @@ class WebuiTest(object):
                                 for m in range(len(complete_ops_data[k]['value'])):
                                     complete_ops_data[k]['value'][m] = str(
                                         complete_ops_data[k]['value'][m])
-                            elif isinstance(complete_ops_data[k]['value'], str):
+                            elif isinstance(complete_ops_data[k]['value'], unicode):
                                 complete_ops_data[k]['value'] = str(
                                     complete_ops_data[k]['value'])
                             else:
@@ -3017,7 +3014,7 @@ class WebuiTest(object):
                                 for m in range(len(complete_ops_data[k]['value'])):
                                     complete_ops_data[k]['value'][m] = str(
                                         complete_ops_data[k]['value'][m])
-                            elif isinstance(complete_ops_data[k]['value'], str):
+                            elif isinstance(complete_ops_data[k]['value'], unicode):
                                 complete_ops_data[k]['value'] = str(
                                     complete_ops_data[k]['value'])
                             else:
@@ -3538,7 +3535,7 @@ class WebuiTest(object):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif isinstance(complete_ops_data[k]['value'], str):
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
@@ -3644,7 +3641,7 @@ class WebuiTest(object):
                             for m in range(len(complete_ops_data[k]['value'])):
                                 complete_ops_data[k]['value'][m] = str(
                                     complete_ops_data[k]['value'][m])
-                        elif isinstance(complete_ops_data[k]['value'], str):
+                        elif isinstance(complete_ops_data[k]['value'], unicode):
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                         else:
@@ -3735,7 +3732,7 @@ class WebuiTest(object):
                             for m in range(len(complete_ops_data[t]['value'])):
                                 complete_ops_data[t]['value'][m] = str(
                                     complete_ops_data[t]['value'][m])
-                        elif isinstance(complete_ops_data[t]['value'], str):
+                        elif isinstance(complete_ops_data[t]['value'], unicode):
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
                         else:
@@ -4813,7 +4810,7 @@ class WebuiTest(object):
         self.logger.debug(self.dash)
         result = True
         dns_record_list_api = self.ui.get_dns_records_list_api()
-        server_name_list = list(dns_params.keys())
+        server_name_list = dns_params.keys()
         for server in server_name_list:
             for dns in range(len(dns_record_list_api['virtual-DNS-records'])):
                 api_project_name = dns_record_list_api[
@@ -5400,7 +5397,7 @@ class WebuiTest(object):
                         if 'prefix' in term_match_con:
                             match_term = 'prefix'
                             term_mat = term_match_con['prefix']
-                            term_match = '[' + list(term_mat[0].values())[1] + ' ' + list(term_mat[0].values())[0] + ']'
+                            term_match = '[' + term_mat[0].values()[1] + ' ' + term_mat[0].values()[0] + ']'
                         elif 'community' in term_match_con:
                             match_term = 'community'
                             term_match = term_match_con['community']
@@ -5423,11 +5420,11 @@ class WebuiTest(object):
                             if not act_t:
                                 act_term = ''
                             else:
-                                if list(act_t.keys())[0] == 'local_pref':
+                                if act_t.keys()[0] == 'local_pref':
                                     act_t_key = 'local-preference'
                                 else:
-                                    act_t_key = list(act_t.keys())[0]
-                                act_term = act_t_key + ' ' + str(list(act_t.values())[0]) + ' '
+                                    act_t_key = act_t.keys()[0]
+                                act_term = act_t_key + ' ' + str(act_t.values()[0]) + ' '
                             term_action = 'default'
                         term_action_list = act_term + 'action ' + term_action
                         term_concat = 'from ' + term_match_condition + ' then ' + term_action_list
@@ -6225,7 +6222,7 @@ class WebuiTest(object):
                     rows[j].find_elements_by_tag_name(
                         'td')[0].find_element_by_tag_name('a').click()
                     break
-                elif (j == list(range(len(rows)))):
+                elif (j == range(len(rows))):
                     self.logger.info(
                         "Vn name %s : %s is not matched in webui  " %
                         (fixture.vn_name, details['virtual-network']['fq_name'][2]))
@@ -7934,7 +7931,7 @@ class WebuiTest(object):
                         more_count = len(net_list) - 2
                         net_list_grid_row = [net_list[0],net_list[2]]
                         more_text = '(' + str(more_count) + ' more)'
-                        net_list_grid_row.append(str(more_text))
+                        net_list_grid_row.append(unicode(more_text))
                     else:
                         net_list_grid_row = net_list
                     self.ui.keyvalue_list(
@@ -8661,7 +8658,7 @@ class WebuiTest(object):
         self.logger.debug(self.dash)
         result = True
         if type(port_details) is dict:
-            port_name_list = list(port_details.keys())
+            port_name_list = port_details.keys()
         else:
             port_name_list = port_details
         port_list_api = self.ui.get_vm_intf_refs_list_api()
@@ -8846,8 +8843,8 @@ class WebuiTest(object):
                 if 'ecmp_hashing_include_fields' in api_data_basic:
                     ecmp_fields = api_data_basic['ecmp_hashing_include_fields']
                     if ecmp_fields:
-                        ecmp_keys = list(ecmp_fields.keys())
-                        ecmp_values = list(ecmp_fields.values())
+                        ecmp_keys = ecmp_fields.keys()
+                        ecmp_values = ecmp_fields.values()
                         value = ''
                         for ecmp in range(len(ecmp_values)):
                             if ecmp_values[ecmp]:
@@ -9062,8 +9059,8 @@ class WebuiTest(object):
                         encap_list.append(encap)
                 ecmp_fields = vrouter_config.get('ecmp_hashing_include_fields')
                 if ecmp_fields:
-                    ecmp_keys = list(ecmp_fields.keys())
-                    ecmp_values = list(ecmp_fields.values())
+                    ecmp_keys = ecmp_fields.keys()
+                    ecmp_values = ecmp_fields.values()
                     for ecmp in range(len(ecmp_values)):
                         if ecmp_values[ecmp]:
                             if ecmp_keys[ecmp] == 'hashing_configured':
@@ -9088,7 +9085,7 @@ class WebuiTest(object):
                 ip_fabric = bgp_system_config.get('ip_fabric_subnets')
                 if ip_fabric:
                     subnet = ip_fabric.get('subnet')
-                    subnet = str(list(subnet[0].values())[0]) + '/' + str(list(subnet[0].values())[1])
+                    subnet = str(subnet[0].values()[0]) + '/' + str(subnet[0].values()[1])
                     complete_api_data.append({'key': 'IP_Fabric_Subnets', 'value':
                                             subnet})
                 if grace_restart:
@@ -9894,7 +9891,7 @@ class WebuiTest(object):
     # end verify_phy_rtr_api_data
 
     def verify_alarms_api_data(self, alarm_params, action='create', expected_result=None):
-        alarms_name_list = list(alarm_params.keys())
+        alarms_name_list = alarm_params.keys()
         result = True
         for alarm in alarms_name_list:
             parent_type = alarm_params[alarm].get('parent_type')
@@ -10497,8 +10494,8 @@ class WebuiTest(object):
                                     value = []
                                     for index1, property in enumerate(svc_property):
                                         property_data = ''
-                                        prop_dict = dict((k, v) for k, v in list(property.items()))
-                                        for key, val in prop_dict.items():
+                                        prop_dict = dict((k, v) for k, v in property.items())
+                                        for key, val in prop_dict.iteritems():
                                             property_data += key.title() + ": " + val + " "
                                         if len(svc_property) >= 1:
                                             value.append(property_data.strip())
@@ -10775,8 +10772,8 @@ class WebuiTest(object):
                                 if svc_property:
                                     property_data = ''
                                     for index1, property in enumerate(svc_property):
-                                        prop_dict = dict((k, v) for k, v in list(property.items()))
-                                        for key, val in prop_dict.items():
+                                        prop_dict = dict((k, v) for k, v in property.items())
+                                        for key, val in prop_dict.iteritems():
                                             property_data += key.title() + ": " + val + " "
                                         if index1 >= 1:
                                             list(value).append(property_data.strip())
@@ -11367,7 +11364,7 @@ class WebuiTest(object):
                             for m in range(len(complete_ops_data[t]['value'])):
                                 complete_ops_data[t]['value'][m] = str(
                                     complete_ops_data[t]['value'][m])
-                        elif isinstance(complete_ops_data[t]['value'], str):
+                        elif isinstance(complete_ops_data[t]['value'], unicode):
                             complete_ops_data[t]['value'] = str(
                                 complete_ops_data[t]['value'])
                         else:

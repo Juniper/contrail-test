@@ -21,7 +21,7 @@ class BaseDropStats(GenericTestBase) :
 
     def print_drop_stats_dict(self, d):
         self.logger.info("%s \n"  % ('-'*100))
-        for k, v in d.items():
+        for k, v in d.iteritems():
             self.logger.info("%s : %s"  % (k, v))
     # end print_drop_stats_dict
 

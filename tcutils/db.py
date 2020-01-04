@@ -1,9 +1,6 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import object
 import os
 import shelve
-from . import filelock
+import filelock
 
 def fqname_to_str(fqname):
     if type(fqname) is list:
@@ -51,7 +48,7 @@ class TestDB(object):
                     self.close(mode='write')
                     return result
             except filelock.Timeout:
-                print('Unable to acquire lock on', self.db_file)
+                print 'Unable to acquire lock on', self.db_file
                 raise
         return wrapper
 
@@ -84,7 +81,7 @@ class TestDB(object):
 
     @read
     def list_vdns(self):
-        return list(self.db['vdns'].keys())
+        return self.db['vdns'].keys()
 
     @write
     def add_vdns_to_ipam(self, vdns_fqname, ipam_fqname):
@@ -137,7 +134,7 @@ class TestDB(object):
 
     @read
     def list_projects(self):
-        return list(self.db['projects'].keys())
+        return self.db['projects'].keys()
 
     def get_ipam_dict(self, fqname):
         project_fqname = ':'.join(fqname.split(':')[:-1])
@@ -175,7 +172,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if 'ipams' not in proj:
             return []
-        return list(proj['ipams'].keys())
+        return proj['ipams'].keys()
 
     def get_vn_dict(self, fqname):
         project_fqname = ':'.join(fqname.split(':')[:-1])
@@ -228,7 +225,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if 'virtual-networks' not in proj:
             return []
-        return list(proj['virtual-networks'].keys())
+        return proj['virtual-networks'].keys()
 
     def get_vm_dict(self, name, project_fqname):
         project = self.get_project_dict(project_fqname)
@@ -280,7 +277,7 @@ class TestDB(object):
     @read
     def get_creds_of_vm(self, vm_id, proj_fqname):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
-        for vm_name in list(proj['virtual-machines'].keys()):
+        for vm_name in proj['virtual-machines'].keys():
             vm = self.get_vm_dict(vm_name, fqname_to_str(proj_fqname))
             if vm_id == vm['uuid']:
                 return (vm['username'], vm['password'])
@@ -291,7 +288,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if 'virtual-machines' not in proj:
             return []
-        return list(proj['virtual-machines'].keys())
+        return proj['virtual-machines'].keys()
 
     @read
     def list_vms_in_vn(self, vn_id, proj_fqname):
@@ -299,7 +296,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if not proj.get('virtual-machines', None):
             return vms
-        for vm_name in list(proj['virtual-machines'].keys()):
+        for vm_name in proj['virtual-machines'].keys():
             if vn_id in proj['virtual-machines'][vm_name]['vns']:
                 vm_dict = self.get_vm_dict(vm_name, fqname_to_str(proj_fqname))
                 vms.append(vm_dict['uuid'])
@@ -337,7 +334,7 @@ class TestDB(object):
 
     @read
     def list_fip_pools(self):
-        return list(self.db['fip-pool'].keys())
+        return self.db['fip-pool'].keys()
 
     @read
     def get_fips(self, fqname):
@@ -361,7 +358,7 @@ class TestDB(object):
 
     @read
     def find_fip_pool_id(self, fip_id):
-        for fqname, value in self.db['fip-pool'].items():
+        for fqname, value in self.db['fip-pool'].iteritems():
             if fip_id in value['fip_ids']:
                 return value['uuid']
 
@@ -397,7 +394,7 @@ class TestDB(object):
 
     @read
     def list_logical_routers(self):
-        return list(self.db['logical_router'].keys())
+        return self.db['logical_router'].keys()
 
     @read
     def get_vns_of_lr(self, fqname):
@@ -519,11 +516,11 @@ class TestDB(object):
 
     @read
     def list_load_balancer(self):
-        return list(self.db['load_balancer'].keys())
+        return self.db['load_balancer'].keys()
 
     @read
     def dump(self):
-        print(self.db)
+        print self.db
 
 def main():
 #    db = TestDB('db.1')
@@ -539,16 +536,16 @@ def main():
 #        if db.get_logical_router_id(entry) == '22c7f61b-aec3-4787-9dbf-98bee9f030fc':
 #            import pdb; pdb.set_trace()
     for entry in db.list_fip_pools():
-        print(entry)
+        print entry
         fips = db.get_fips(entry)
         import pdb; pdb.set_trace()
     exit(0)
     db.delete_project('default-domain:TestProject-LBaas')
     db.set_project_id('default-domain:db-test', 123)
-    print(db.get_project_id('default-domain:db-test'))
+    print db.get_project_id('default-domain:db-test')
     db.add_virtual_network('default-domain:db-test:db-vn', 1234)
-    print(db.get_virtual_network_id('default-domain:db-test:db-vn'))
-    print(db.list_virtual_networks('default-domain:db-test'))
+    print db.get_virtual_network_id('default-domain:db-test:db-vn')
+    print db.list_virtual_networks('default-domain:db-test')
 
 if __name__ == "__main__":
     main()

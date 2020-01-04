@@ -6,7 +6,6 @@
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 # Set the env variable MX_GW_TESTto 1 to run the test
 #
-from builtins import str
 import os
 from time import sleep
 import socket
@@ -52,7 +51,7 @@ class TestEncapCases(base.BaseEncapTest):
             self.logger.info('Created.UUID is %s' % (config_id))
 
             configured_encap_list = [
-                str('MPLSoUDP'), str('MPLSoGRE'), str('VXLAN')]
+                unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
             if existing_encap != configured_encap_list :
                 self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
             encap_list = self.connections.read_vrouter_config_encap()
@@ -201,7 +200,7 @@ class TestEncapCases(base.BaseEncapTest):
             self.logger.info('Created.UUID is %s' % (config_id))
 
             configured_encap_list = [
-                str('MPLSoUDP'), str('MPLSoGRE'), str('VXLAN')]
+                unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
             if existing_encap != configured_encap_list :
                 self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
 
@@ -434,7 +433,7 @@ class TestEncapCases(base.BaseEncapTest):
             self.logger.info('Created.UUID is %s' % (config_id))
 
             configured_encap_list = [
-                str('MPLSoUDP'), str('MPLSoGRE'), str('VXLAN')]
+                unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
             if existing_encap != configured_encap_list :
                 self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
 

@@ -1,11 +1,8 @@
 ''' This module provides utils for setting up sdn topology given the topo inputs'''
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 import os
 import copy
 import fixtures
+import topo_steps
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from vn_policy_test import *
@@ -19,7 +16,7 @@ from policy_test import *
 from contrail_fixtures import *
 from user_test import UserFixture
 from tcutils.agent.vna_introspect_utils import *
-from .topo_helper import *
+from topo_helper import *
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from netaddr import *
@@ -214,7 +211,7 @@ def createIPAM(self, option='openstack'):
     self.conf_ipam_objs = {}
     default_ipam_name = self.topo.project + "-default-ipam"
     if 'vn_ipams' in dir(self.topo):
-        print("topology has IPAM specified, need to create for each VN")
+        print "topology has IPAM specified, need to create for each VN"
         for vn in self.topo.vnet_list:
             self.conf_ipam_objs[vn] = []
             if vn in self.topo.vn_ipams:
@@ -228,7 +225,7 @@ def createIPAM(self, option='openstack'):
                     self.conf_ipam_objs[vn] = self.ipam_fixture[
                         ipam_name].fq_name
                 continue
-            print("creating IPAM %s" % ipam_name)
+            print "creating IPAM %s" % ipam_name
             self.ipam_fixture[ipam_name] = self.useFixture(
                 IPAMFixture(
                     connections=self.project_fixture[
@@ -244,7 +241,7 @@ def createIPAM(self, option='openstack'):
                 self.conf_ipam_objs[vn] = self.ipam_fixture[ipam_name].fq_name
     else:
         ipam_name = default_ipam_name
-        print("creating project default IPAM %s" % ipam_name)
+        print "creating project default IPAM %s" % ipam_name
         self.ipam_fixture[ipam_name] = self.useFixture(
             IPAMFixture(
                 connections=self.project_fixture[
@@ -291,10 +288,10 @@ def createVNOrch(self):
 	router_asn = None
 	rt_number = None
 	if hasattr(self.topo, 'vn_params'):	
-	   if vn in self.topo.vn_params:
-  	       if 'router_asn' in self.topo.vn_params[vn]:
+	   if self.topo.vn_params.has_key(vn):
+  	       if self.topo.vn_params[vn].has_key('router_asn'):
 		    router_asn = self.topo.vn_params[vn]['router_asn']
-               if 'rt_number' in self.topo.vn_params[vn]:
+               if self.topo.vn_params[vn].has_key('rt_number'):
                     rt_number = self.topo.vn_params[vn]['rt_number']
 
         self.vn_fixture[vn] = self.useFixture(
@@ -364,10 +361,10 @@ def createVNContrail(self):
         rt_number = None
         rt_obj = None
         if hasattr(self.topo, 'vn_params'):
-           if vn in self.topo.vn_params:
-               if 'router_asn' in self.topo.vn_params[vn]:
+           if self.topo.vn_params.has_key(vn):
+               if self.topo.vn_params[vn].has_key('router_asn'):
                     router_asn = self.topo.vn_params[vn]['router_asn']
-               if 'rt_number' in self.topo.vn_params[vn]:
+               if self.topo.vn_params[vn].has_key('rt_number'):
                     rt_number = self.topo.vn_params[vn]['rt_number']
 
                rt_val = "target:%s:%s" % (router_asn, rt_number)
@@ -481,7 +478,7 @@ def createVMNova(
         else:
             vn_obj = self.vn_fixture[self.topo.vn_of_vm[vm]].obj
         if hasattr(self.topo, 'sg_of_vm'):
-            if vm in self.topo.sg_of_vm:
+            if self.topo.sg_of_vm.has_key(vm):
                 for sg in self.topo.sg_of_vm[vm]:
                     sec_gp.append(self.sg_uuid[sg])
         else:
@@ -865,7 +862,7 @@ def createQos(self, glob_flag=False):
             result = True
             msg = []
             qos_param = qos_params_option[qos_name]
-            if 'qos_config_type' in list(qos_param.keys()):
+            if 'qos_config_type' in qos_param.keys():
                 qos_config_type = qos_param['qos_config_type']
             self.qos_fixture[qos_name] = self.useFixture(
                 QosConfigFixture(
@@ -892,10 +889,10 @@ def allocNassocFIP(self, config_topo=None, assoc=True):
     #                        {'vnet2':{'project1': ['vmc21'], 'project2': ['vmc14']}}
     if not config_topo:
             config_topo = self.config_topo
-    for vn_proj, fvn_vm_map in self.topo.fvn_vm_map.items():
-        for vn_name, map in fvn_vm_map.items():
+    for vn_proj, fvn_vm_map in self.topo.fvn_vm_map.iteritems():
+        for vn_name, map in fvn_vm_map.iteritems():
             # {'project1': ['vmc2', 'vmc3'], 'project2': ['vmc4']},
-            for vm_proj, vm_list in map.items():
+            for vm_proj, vm_list in map.iteritems():
                 for index in range(len(vm_list)):
                     # Get VM fixture from config_topo
                     vm_fixture = config_topo[
@@ -949,8 +946,8 @@ def createAllocateAssociateVnFIPPools(self, config_topo=None, alloc=True):
             config_topo = self.config_topo
         # topology rep: self.fip_pools= {'project1': {'p1-vn1-pool1':
         # {'host_vn': 'vnet1', 'target_projects': ['project1', 'project2']}},
-        for fip_proj, fip_info in self.topo.fip_pools.items():
-            for fip_pool_name, info in fip_info.items():
+        for fip_proj, fip_info in self.topo.fip_pools.iteritems():
+            for fip_pool_name, info in fip_info.iteritems():
                 vn_name = info['host_vn']
                 self.vn_fixture = config_topo[fip_proj]['vn']
                 self.fip_fixture_dict[vn_name] = self.useFixture(

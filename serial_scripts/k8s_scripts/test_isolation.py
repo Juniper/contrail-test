@@ -96,7 +96,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         2. Pods created in isolated namespace can reach pods in other namespaces.
         Restart contrail-kube-manager and verify both the points again
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         client1, client2, client3 = self.setup_common_namespaces_pods()
         #Check 1:
         assert client1[2].ping_to_ip(client2[0].pod_ip, expectation=False)
@@ -122,7 +121,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         2. Pods in isolated namespace cannot be reached from pods in other namespaces through Kubernetes Service-ip
         Restart contrail-kube-manager and verify both the points again
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True)
         #Check 1:
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[3].cluster_ip,
@@ -153,7 +151,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         2. Verify that k8s INgress existing in non isolated namespace is accessible from external world
         Restart contrail-kube-manager and verify both the points again
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True,
                                                                       prov_ingress = True)
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
@@ -267,7 +264,6 @@ class TestCustomIsolationSerial(BaseK8sTest):
         2. restart contrail-kube-manager
         3. Verify reachability between pods and namespaces
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         client1, client2 = self.setup_common_namespaces_pods()
         assert client1[5].ping_to_ip(client1[0].pod_ip, expectation=False)
         assert client1[5].ping_to_ip(client2[0].pod_ip, expectation=False)
@@ -299,7 +295,6 @@ class TestCustomIsolationSerial(BaseK8sTest):
         2. restart contrail-kube-manager
         3. Verify reachability between pods and services
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
         policy_name='allow-btw-custom-ns-and-service'
         if self.inputs.slave_orchestrator == 'kubernetes':
@@ -484,7 +479,6 @@ class TestProjectIsolationSerial(BaseK8sTest):
         """
         Check reachability between Pods and services after kube manager restart
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
         # Reachability of Pods
         assert client1[2].ping_to_ip(client1[0].pod_ip)

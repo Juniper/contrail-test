@@ -1,15 +1,13 @@
-from __future__ import absolute_import
-from builtins import object
 from selenium import webdriver
 from pyvirtualdisplay import Display
-from .webui_common import *
+from webui_common import *
 from selenium.common.exceptions import WebDriverException
 import os
 import time
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 
-class UILogin(object):
+class UILogin:
     browser = None
     browser_openstack = None
     os_url = None

@@ -1,4 +1,3 @@
-from builtins import range
 import os
 import datetime
 from common.connections import ContrailConnections

@@ -4,7 +4,6 @@ Utility to generate ssl certificates using openssl:
 -can generate csr and certificate
 -can generate self signed as well as CA signed certificates
 '''
-from builtins import object
 import logging as LOG
 import subprocess
 import sys

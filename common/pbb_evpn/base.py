@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import re
 from vnc_api.vnc_api import *
 
@@ -183,7 +181,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
                 'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
                 (config_id))
             configured_encap_list = [
-                str('MPLSoGRE'), str('MPLSoUDP'), str('VXLAN')]
+                unicode('MPLSoGRE'), unicode('MPLSoUDP'), unicode('VXLAN')]
         elif encap == 'udp':
             pbb_encap = self.connections.update_vrouter_config_encap(
                     'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
@@ -191,7 +189,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
                 'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
                 (pbb_encap))
             configured_encap_list = [
-                str('MPLSoUDP'), str('MPLSoGRE'), str('VXLAN')]
+                unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
         if existing_encap != configured_encap_list :
             self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
 
@@ -286,7 +284,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
                                   isid=bd_isid)
             bd_fixtures[bd_id] = bd_fixture
 
-        self.verify_bds(list(bd_fixtures.values()))
+        self.verify_bds(bd_fixtures.values())
 
         return bd_fixtures
 
@@ -388,9 +386,9 @@ class PbbEvpnTestBase(BaseVrouterTest):
             if userdata:
                 file_obj.close()
 
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             assert vm_fixture.wait_till_vm_is_up()
-        self.update_vms_for_pbb(list(vm_fixtures.values()))
+        self.update_vms_for_pbb(vm_fixtures.values())
 
         return vm_fixtures
 
@@ -504,7 +502,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
             pbb_compute_node_ips.append(vm_fixtures[vm_fixture]._vm_node_ip)
 
         # PBB EVPN VN configuration
-        for vn_fixture in list(vn_fixtures.values()):
+        for vn_fixture in vn_fixtures.values():
             assert vn_fixture.set_pbb_evpn_enable(pbb_evpn_enable=pbb_evpn_enable)
             assert vn_fixture.set_pbb_etree_enable(pbb_etree_enable=pbb_etree_enable)
             assert vn_fixture.set_unknown_unicast_forwarding(True)
@@ -515,7 +513,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
 
         # BD to VMI mapping
         vlan_tag = 0
-        for bd, vmi_list in bd_vmi_mapping.items():
+        for bd, vmi_list in bd_vmi_mapping.iteritems():
             bd_fixture = bd_fixtures[bd]
             for vmi in vmi_list:
                 vmi_fixture = vmi_fixtures[vmi]

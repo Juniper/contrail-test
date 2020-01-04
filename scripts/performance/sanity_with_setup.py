@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import fixtures
 import testtools
@@ -28,7 +27,7 @@ class PerformanceSanity(testtools.TestCase, ResourcedTestCase, PerformanceTest):
         self.cn_inspect = self.connections.cn_inspect
 
     def __del__(self):
-        print("Deleting test_with_setup now")
+        print "Deleting test_with_setup now"
         SolnSetupResource.finishedWith(self.res)
 
     def setUp(self):
@@ -39,7 +38,7 @@ class PerformanceSanity(testtools.TestCase, ResourcedTestCase, PerformanceTest):
             self.input_file = 'params.ini'
 
     def tearDown(self):
-        print("Tearing down test")
+        print "Tearing down test"
         super(PerformanceSanity, self).tearDown()
         SolnSetupResource.finishedWith(self.res)
 

@@ -5,10 +5,7 @@ protocol header.
 
 This needs to be extended for new protocol streams with new protocol.
 """
-from __future__ import print_function
 
-from builtins import str
-from builtins import object
 import sys
 import inspect
 import random
@@ -42,14 +39,14 @@ def help(header="all"):
     """
     clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
     if not header == "all":
-        clsmembers = [x for x in clsmembers if x[0] == header]
+        clsmembers = filter(lambda x: x[0] == header, clsmembers)
     for clsname, clsmember in clsmembers:
         clsobj = clsmember()
         clsattrs = dir(clsobj)
         if "fields" in clsattrs:
-            print(clsname, ": ", clsobj.fields)
+            print clsname, ": ", clsobj.fields
         if "options" in clsattrs:
-            print(clsname, ": ", clsobj.options)
+            print clsname, ": ", clsobj.options
 
 
 class Stream(object):
@@ -69,9 +66,9 @@ class Stream(object):
                 self.protocol = "ipv6"
         try:
             proto = self.all_fields['proto']
-        except KeyError as err:
-            print(err, "Must specify proto.")
-        if 'dst' in list(self.all_fields.keys()):
+        except KeyError, err:
+            print err, "Must specify proto."
+        if 'dst' in self.all_fields.keys():
             self.all_fields['dst'] = str(self.all_fields['dst'])
 
         self.l2 = self._eth_header()
@@ -117,7 +114,7 @@ class Stream(object):
 class Header(object):
 
     def __init__(self, fields={}):
-        for key, val in list(fields.items()):
+        for key, val in fields.items():
             self.__setattr__(key, val)
 
 
@@ -135,7 +132,7 @@ class AnyHeader(object):
     def create_header(self, fields):
         header = {}
         for field in fields:
-            if field in list(self.all_fields.keys()):
+            if field in self.all_fields.keys():
                 if field == "iplen":  # UDP also has len
                     field = "len"
                 if field == "ipflags":  # TCP also has flags

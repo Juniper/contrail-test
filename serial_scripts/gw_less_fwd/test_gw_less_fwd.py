@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from common.gw_less_fwd.base import *
 from contrailapi import ContrailVncApi
@@ -440,7 +438,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Pinging AAP from compute nodes, ping should be successful
         compute_node_ips = set()
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             compute_node_ips.add(vm_fixture.get_compute_host())
 
         for compute_ip in compute_node_ips:
@@ -1261,7 +1259,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Pinging AAP from compute nodes, ping should be successful
         compute_node_ips = set()
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             compute_node_ips.add(vm_fixture.get_compute_host())
 
         for compute_ip in compute_node_ips:

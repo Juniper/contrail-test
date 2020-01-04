@@ -1,5 +1,3 @@
-from past.builtins import cmp
-from builtins import str
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 import test
@@ -294,7 +292,6 @@ class TestNetworkAttachment(BaseK8sTest):
         contrail components should be stable
         Ping should pass
         """
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         pod1, pod2 = self.common_setup_for_multi_intf()
         self.verify_rechability_between_multi_intf_pods(pod1, pod2)
         #check the cluster status before kube manager restart

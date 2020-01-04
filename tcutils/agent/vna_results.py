@@ -1,4 +1,3 @@
-from builtins import str
 from tcutils.verification_util import *
 
 
@@ -54,8 +53,8 @@ class VnaVrfRouteResult (Result):
 
     def filter(self):
         if self['ip'] and self['prefix']:
-            r = [x for x in self['routes'] if x['src_ip'] == self['ip'] and str(
-                self['prefix']) == x['src_plen']]
+            r = filter(lambda x: x['src_ip'] == self['ip'] and str(
+                self['prefix']) == x['src_plen'], self['routes'])
             self['routes'] = r
 
 
@@ -87,10 +86,10 @@ class VnaItfResult (Result):
         return self['vrf_name']
 
     def floating_ip_list(self):
-        return [x['ip_addr'] for x in self['fip_list']]
+        return map(lambda x: x['ip_addr'], self['fip_list'])
 
     def floating_ip_vrf_list(self):
-        return [x['vrf_name'] for x in self['fip_list']]
+        return map(lambda x: x['vrf_name'], self['fip_list'])
 
 
 class VnaVnResult (Result):

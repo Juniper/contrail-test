@@ -1,4 +1,3 @@
-from builtins import str
 import random
 import time
 from tcutils.tcpdump_utils import *
@@ -12,15 +11,15 @@ from common.fabric_utils import FabricUtils
 from bms_fixture import BMSFixture
 from vm_test import VMFixture
 from tcutils.util import Singleton, skip_because, get_random_vxlan_id
-from future.utils import with_metaclass
 
-class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, GenericTestBase), {}))):
+class FabricSingleton(FabricUtils, GenericTestBase):
+    __metaclass__ = Singleton
     def __init__(self, connections):
         super(FabricSingleton, self).__init__(connections)
         self.vnc_h = connections.orch.vnc_h
         self.invoked = False
 
-    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False, dc_asn=None):
+    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
         if ztp:
@@ -31,14 +30,6 @@ class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, Ge
             self.fabric, self.devices, self.interfaces = \
                 self.onboard_existing_fabric(fabric_dict, cleanup=False,
                     enterprise_style=enterprise_style)
-            if len(self.inputs.fabrics) > 1:
-                fabric_dict = self.inputs.fabrics[1]
-                self.fabric2, self.devices2, self.interfaces2 = \
-                self.onboard_existing_fabric(fabric_dict, cleanup=False,
-                    enterprise_style=enterprise_style, dc_asn=dc_asn)
-                assert self.interfaces2, 'Failed to onboard existing fabric %s'%fabric_dict
-                self.logger.info("Assigning roles for devices in the fabric2")
-                self.assign_roles(self.fabric2, self.devices2, rb_roles=rb_roles)
         assert self.interfaces, 'Failed to onboard fabric %s'%fabric_dict
 
         self.logger.info("Assigning roles for devices in the fabric")
@@ -107,14 +98,10 @@ class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, Ge
                 self.vnc_h.delete_tag(id=self.tag_id)
             super(FabricSingleton, self).cleanup_fabric(self.fabric,
                 self.devices, self.interfaces)
-            if len(self.inputs.fabrics) > 1:
-                super(FabricSingleton, self).cleanup_fabric(self.fabric2,
-                    self.devices2, self.interfaces2)
 
 class BaseFabricTest(BaseNeutronTest, FabricUtils):
     enterprise_style = True
     ztp = False
-    dci_mode = 'ibgp'
     @classmethod
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
@@ -127,7 +114,6 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         cls.set_encap_priority(['VXLAN', 'MPLSoGRE', 'MPLSoUDP'])
         cls.vnc_h.enable_vxlan_routing()
         cls.rb_roles = dict()
-        cls.dci_ebgp_asn = None
 
     @skip_because(function='is_test_applicable')
     def setUp(self):
@@ -137,17 +123,12 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         if not obj.invoked:
             try:
                 obj.create_fabric(self.rb_roles,
-                    enterprise_style=self.enterprise_style, ztp=self.ztp,
-                    dc_asn=self.dci_ebgp_asn if self.dci_mode == 'ebgp' else None)
+                    enterprise_style=self.enterprise_style, ztp=self.ztp)
             except:
                 obj.cleanup()
             if self.inputs.is_ironic_enabled:
                 obj.create_ironic_provision_vn(self.admin_connections)
-        assert obj.fabric and obj.devices and obj.interfaces 
-        if len(self.inputs.fabrics) > 1:
-            assert obj.fabric2 and obj.devices2, "Onboarding fabric failed"
-            self.fabric2 = obj.fabric2
-            self.devices2 = obj.devices2
+        assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
         self.fabric = obj.fabric
         self.devices = obj.devices
         self.interfaces = obj.interfaces
@@ -167,28 +148,24 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         return (True, None)
 
     def is_bms_on_node(self, device_name):
-        for name, prop in self.inputs.bms_data.items():
+        for name, prop in self.inputs.bms_data.iteritems():
             for interface in prop.get('interfaces') or []:
                 if interface['tor'] == device_name:
                     return True
 
     def get_rb_roles(self, device_name):
-        for device in self.inputs.physical_routers_data.values():
+        for device in self.inputs.physical_routers_data.itervalues():
             if device['name'] == device_name:
                 return device.get('rb_roles') or []
 
     def get_bms_nodes(self, role='leaf', bms_type=None,
-                      no_of_interfaces=0, rb_role=None, devices=None):
+                      no_of_interfaces=0, rb_role=None):
         bms, dummy = self.filter_bms_nodes(role=role, bms_type=bms_type,
-                         no_of_interfaces=no_of_interfaces,
-                         rb_role=rb_role, devices=devices)
+                         no_of_interfaces=no_of_interfaces, rb_role=rb_role)
         return bms and list(bms)
 
     def filter_bms_nodes(self, bms_type=None, no_of_interfaces=0,
-                         role='leaf', rb_role=None, devices=None):
-        device_names = set()
-        for device in devices or list():
-            device_names.add(device.name)
+                         role='leaf', rb_role=None):
         bms_nodes = self.inputs.bms_data
         regular_nodes = set()
         multi_homed_nodes = set()
@@ -196,23 +173,21 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         interfaces_filtered = set()
         msg = "Unable to find BMS of type %s with interfaces %s"%(bms_type,
             no_of_interfaces)
-        for name, details in bms_nodes.items():
+        for name, details in bms_nodes.iteritems():
             if role and role not in [self.get_role_from_inputs(interface['tor'])
                for interface in details['interfaces']]:
                 continue
             if rb_role and not all([rb_role in self.get_rb_roles(
                interface['tor']) for interface in details['interfaces']]):
                 continue
-            devices = set()
-            for interface in details['interfaces']:
-                devices.add(interface['tor'])
-            if device_names and devices.difference(device_names):
-                continue
             if len(details['interfaces']) >= no_of_interfaces:
                 interfaces_filtered.add(name)
             if len(details['interfaces']) == 1:
                 regular_nodes.add(name)
                 continue
+            devices = set()
+            for interface in details['interfaces']:
+                devices.add(interface['tor'])
             if len(devices) > 1:
                 multi_homed_nodes.add(name)
             else:

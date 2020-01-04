@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import os
 import time
 import fixtures
@@ -81,8 +79,6 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             [self.policy_fix.policy_fq_name])
 
     def verify_service_failover(self, svc):
-        saved_func = self.connections.analytics_obj.has_opserver
-        self.connections.analytics_obj.has_opserver = lambda : False
         self.setup_objects_for_alarm()
         try:
             nodes = self.inputs.collector_ips[:]
@@ -90,18 +86,17 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 self.inputs.stop_container([node], svc)
                 self.verify_analytics_fns([node])
                 self.verify_alarm_fns([node])
-                self.inputs.start_container([node], svc, verify_service=False)
+                self.inputs.start_container([node], svc)
                 time.sleep(5)
             node_pairs = [nodes[:i] + nodes[i+1:] for i in range(len(nodes))]
             for pairs in node_pairs:
                 self.inputs.stop_container(pairs, svc)
                 self.verify_analytics_fns(pairs)
                 self.verify_alarm_fns(pairs)
-                self.inputs.start_container(pairs, svc, verify_service=False)
+                self.inputs.start_container(pairs, svc)
                 time.sleep(5)
         finally:
-            self.connections.analytics_obj.has_opserver = saved_func
-            self.inputs.start_container(self.inputs.collector_ips, svc, verify_service=False)
+            self.inputs.start_container(self.inputs.collector_ips, svc)
         return True
 
     @skip_because(ssl_enabled=False, analytics_nodes=3)
@@ -113,11 +108,6 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
     @preposttest_wrapper
     def test_redis_failover(self):
         return self.verify_service_failover('redis')
-
-    @skip_because(analytics_nodes=3)
-    @preposttest_wrapper
-    def test_analytics_api_failover(self):
-        return self.verify_service_failover('analytics-api')
 
     @preposttest_wrapper
     def test_verify_bgp_peer_object_logs(self):

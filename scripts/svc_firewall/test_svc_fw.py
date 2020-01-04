@@ -1,5 +1,4 @@
 """Service chain firewall regression suite."""
-from builtins import str
 import os
 import unittest
 import fixtures

@@ -1,10 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from builtins import str
-from builtins import range
-from builtins import object
-from past.utils import old_div
 from fixtures import Fixture
 from user_test import UserFixture
 from multiple_vn_vm_test import *
@@ -14,7 +7,7 @@ from common.connections import *
 import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
-from .base import *
+from base import *
 from vcenter import *
 import test
 from tcutils.contrail_status_check import ContrailStatusChecker
@@ -95,8 +88,8 @@ def vmsummary(summary, guest):
     vmsum = {}
     config = summary.config
     net = getNICs(summary, guest)
-    vmsum['mem'] = str(old_div(config.memorySizeMB, 1024))
-    vmsum['diskGB'] = str("%.2f" % (old_div(summary.storage.committed, 1024**3)))
+    vmsum['mem'] = str(config.memorySizeMB / 1024)
+    vmsum['diskGB'] = str("%.2f" % (summary.storage.committed / 1024**3))
     vmsum['cpu'] = str(config.numCpu)
     vmsum['path'] = config.vmPathName
     vmsum['ostype'] = config.guestFullName
@@ -122,7 +115,7 @@ def vm2dict(dc, cluster, host, vm, summary):
             key = port.key
     vmnet = summary['net']
     if vmnet:
-        for val in list(vmnet.values()):
+        for val in vmnet.values():
             try:
                 ip = val['ip']
                 return NameToIPMap(vmname=vmname,
@@ -131,7 +124,7 @@ def vm2dict(dc, cluster, host, vm, summary):
                              host=host,port=key,
                              macaddress = macaddress)
             except Exception as e:
-                print('%s:%s'%(vmname,val))
+                print '%s:%s'%(vmname,val)
                 return NameToIPMap(vmname=vmname,
                            ip=None,
                            vlanId=None,
@@ -144,7 +137,7 @@ def vm2dict(dc, cluster, host, vm, summary):
                            host=host,port=key,  
                            macaddress = macaddress)
     
-class NameToIPMap(object):
+class NameToIPMap:
     def __init__(self,vmname=None,ip=None,
                  vlanId=None,host=None,
                  port=None,macaddress=None):
@@ -290,7 +283,7 @@ def get_conn(args):
     atexit.register(Disconnect, si)
     return si
 
-class Args(object):
+class Args:
     def __init__(self,host,port,user,password):
         self.host = host
         self.port = port
@@ -388,7 +381,7 @@ def duplicate_vlan(vm_list,logger):
     d = defaultdict(list)
     for vm in vm_list:
         d[vm.host].append(vm.vlanId)
-    for k,v in d.items():
+    for k,v in d.iteritems():
         lst = []
         for vlan in v:
             if vlan == 0:

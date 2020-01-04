@@ -46,7 +46,7 @@ class TestQosNegative(QosTestBase):
                 self.setup_fcs(elem)
                 self.logger.error("Creation of invalid FC '%s' passed" % elem)
                 assert False, "FC with invalid values got created"
-            except BadRequest as e:
+            except BadRequest, e:
                 self.logger.debug(e)
                 self.logger.debug("Creation of invalid FC '%s' failed as expected"
                                   % elem)
@@ -85,7 +85,7 @@ class TestQosNegative(QosTestBase):
                 self.logger.error("Creation of invalid QC with map '%s'"
                                   "passed" % elem)
                 assert False, "QC with invalid values got created"
-            except BadRequest as e:
+            except BadRequest, e:
                 self.logger.debug(e)
                 self.logger.debug("Creation of invalid QC with map '%s'"
                                   " failed as expected" % elem)

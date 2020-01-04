@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -27,7 +25,7 @@ from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from tcutils.wrappers import preposttest_wrapper
 from testresources import ResourcedTestCase
-from .vgw_test_resource import SolnSetupResource
+from vgw_test_resource import SolnSetupResource
 import traffic_tests
 from vgw.verify import VerifyVgwCases
 
@@ -49,7 +47,7 @@ class TestVgwCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
         self.vnc_lib = self.connections.vnc_lib
 
     def __del__(self):
-        print("Deleting test_with_setup now")
+        print "Deleting test_with_setup now"
         SolnSetupResource.finishedWith(self.res)
 
     def setUp(self):
@@ -60,7 +58,7 @@ class TestVgwCases(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtu
             self.input_file = 'params.ini'
 
     def tearDown(self):
-        print("Tearing down test")
+        print "Tearing down test"
         super(TestVgwCases, self).tearDown()
         SolnSetupResource.finishedWith(self.res)
 

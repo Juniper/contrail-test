@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 # Traces Utils
 #
@@ -9,9 +8,6 @@ from __future__ import print_function
 # Copyright (c) 2013, Contrail Systems, Inc. All rights reserved.
 #
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
 import datetime
 import time
 import requests
@@ -23,7 +19,7 @@ from lxml import etree
 import socket
 import sys
 import argparse
-import configparser
+import ConfigParser
 import os
 
 try:
@@ -93,7 +89,7 @@ class TraceUtils(object):
         }
 
         if args.conf_file:
-            config = configparser.SafeConfigParser()
+            config = ConfigParser.SafeConfigParser()
             config.read([args.conf_file])
             defaults.update(dict(config.items("DEFAULTS")))
             if 'KEYSTONE' in config.sections():
@@ -143,15 +139,15 @@ class TraceUtils(object):
                 data = requests.get(url, stream=True)
             else:
                 data = requests.get(url, prefetch=False)
-        except requests.exceptions.ConnectionError as e:
-            print("Connection to %s failed" % url)
+        except requests.exceptions.ConnectionError, e:
+            print "Connection to %s failed" % url
         if data.status_code == 200:
             try:
                 return etree.fromstring(data.text)
             except Exception as e:
                 return json.loads(data.text)
         else:
-            print("HTTP error code: %d" % response.status_code)
+            print "HTTP error code: %d" % response.status_code
         return None
 
     # end get_url_http
@@ -184,7 +180,7 @@ class TraceUtils(object):
         host = socket.gethostbyaddr(ip)[0]
 
         if not (op_ip and nodename and module):
-            print('If traces to be sent to the database all 3 arguments - opserver_ip,node_name and module must be provided')
+            print 'If traces to be sent to the database all 3 arguments - opserver_ip,node_name and module must be provided'
             return
 
         try:
@@ -211,22 +207,22 @@ class TraceUtils(object):
                 for el in text['traces']:
                     with open(filename, "a+") as f:
                         f.write(el + '\n')
-                print("Saved %s traces to %s" % (elem, filename))
+                print "Saved %s traces to %s" % (elem, filename)
             except Exception as e:
-                print("While saving %s trace ,got exception from get_trace_buffer as %s" % (elem, e))
+                print "While saving %s trace ,got exception from get_trace_buffer as %s" % (elem, e)
             if op_ip:
                 try:
                     url1 = 'http://%s:8081/analytics/send-tracebuffer/%s/%s/%s' % (op_ip,
                                                                                    nodename, module, elem)
                     resp1 = TraceUtils.get_url_http(url1)
                     if (resp1['status'] == 'pass'):
-                        print('Traces saved to database')
+                        print 'Traces saved to database'
                     else:
-                        print('Traces could not be saved to database')
+                        print 'Traces could not be saved to database'
 
                 except Exception as e:
-                    print('Traces could not be saved to database')
-                    print('Got exception as %s' % e)
+                    print 'Traces could not be saved to database'
+                    print 'Got exception as %s' % e
 
     @staticmethod
     def messages_xml_data_to_dict(messages_dict, msg_type):
@@ -259,9 +255,9 @@ class EtreeToDict(object):
         a_list = []
         for elem in elems.getchildren():
             rval = self._get_one(elem, a_list)
-            if 'element' in list(rval.keys()):
+            if 'element' in rval.keys():
                 a_list.append(rval['element'])
-            elif 'list' in list(rval.keys()):
+            elif 'list' in rval.keys():
                 a_list.append(rval['list'])
             else:
                 a_list.append(rval)
@@ -296,7 +292,7 @@ class EtreeToDict(object):
 
             if elem.tag in self.xml_list:
                 val.update({xp.tag: self._handle_list(xp)})
-            if elem.tag in list(rval.keys()):
+            if elem.tag in rval.keys():
                 val.update({elem.tag: rval[elem.tag]})
             elif 'SandeshData' in elem.tag:
                 val.update({xp.tag: rval})
@@ -310,7 +306,7 @@ class EtreeToDict(object):
         Returns the element looked for/None.
         """
         xp = path.xpath(self.xpath)
-        f = [x for x in xp if x.text == match]
+        f = filter(lambda x: x.text == match, xp)
         if len(f):
             return f[0].text
         return None

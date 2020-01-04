@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import str
 import fixtures
 from ipam_test import *
 from vn_test import *
@@ -175,10 +173,6 @@ class CNFixture(fixtures.Fixture):
         """
         Check the configured control node has any peer and if so the state is Established.
         """
-        #skip as4_ext_routers
-        skip_peers = []
-        for as4_ext_router in self.inputs.as4_ext_routers:
-            skip_peers.append(as4_ext_router[0])
         result = True
         for entry1 in self.inputs.bgp_ips:
             cn_bgp_entry = self.cn_inspect[
@@ -190,8 +184,6 @@ class CNFixture(fixtures.Fixture):
                     (self.router_ip))
             else:
                 for entry in cn_bgp_entry:
-                    if entry['peer'] in skip_peers:
-                       continue
                     if entry['state'] != 'Established' and entry['router_type'] != 'bgpaas-client':
                         result = result and False
                         self.logger.error('With Peer %s peering is not Established. Current State %s ' % (
@@ -308,7 +300,7 @@ class CNFixture(fixtures.Fixture):
             vnc.bgp_router_update(ctrl_node)
             return True
         except Exception as e:
-            print(e)
+            print e
             return False
     
     def unset_cluster_id(self):
@@ -323,4 +315,4 @@ class CNFixture(fixtures.Fixture):
                 ctrl_node.set_bgp_router_parameters(params)
                 vnc.bgp_router_update(ctrl_node)
         except Exception as e:
-            print(e)
+            print e

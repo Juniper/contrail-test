@@ -1,6 +1,3 @@
-from builtins import str
-from builtins import range
-from builtins import object
 import re
 import os
 import time
@@ -13,7 +10,7 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.operations import get, put
 
 
-class VerifySriovCases(object):
+class VerifySriovCases():
 
     def communication_between_two_sriov_vm (self):
         '''
@@ -163,7 +160,7 @@ class VerifySriovCases(object):
                 'Creating total %s number of SRIOV VM on compute %s' % (total_vf,compute_1))
 
         vm_fixture_list=[]
-        for x in range(0, total_vf):
+        for x in xrange(0, total_vf):
             ports1=vn1_fixture.create_port(vn1_fixture.vn_id,
                     subnet_id=subnet1_objects[0]['id'], ip_address=vm1_sriov_ip, sriov=True)
             ports2=vn3_fixture.create_port(vn3_fixture.vn_id,

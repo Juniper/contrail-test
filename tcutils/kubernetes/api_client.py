@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import object
 import time
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -430,7 +428,7 @@ class Client(object):
             container_objs.append(self._get_container(container_name, item))
         spec['containers'] = container_objs
         spec_obj = client.V1PodSpec(**spec)
-        return spec
+        return spec_obj
     # end create_spec
 
     def get_pods(self, namespace='default', **kwargs):
@@ -809,6 +807,22 @@ class Client(object):
             print("Exception when calling CustomObjectsApi->get_namespaced_custom_object: %s\n" % e)
             return None
         return api_response
+
+    def get_kubernetes_compute_labels(self):
+        '''
+           Get list of all nodes with label computenode, and no of computes
+        '''
+        compute_count=0;
+        compute_label_list = []
+        nodes = self.v1_h.list_node()
+
+        for node in nodes.items:
+            label = node.metadata.labels.get('computenode', None)
+            if label:
+                compute_label_list.append(label)
+                compute_count+=1
+
+        return compute_label_list, compute_count
 
 if __name__ == '__main__':
     c1 = Client()

@@ -1,11 +1,6 @@
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import object
 import os
 import sys
-import configparser
+import ConfigParser
 import socket
 import requests
 import warnings
@@ -55,7 +50,7 @@ class IntrospectUtil(object):
             return etree.fromstring(resp.text)
         else:
             if self._debug:
-                print('URL: %s : HTTP error: %s' % (url, str(resp.status_code)))
+                print 'URL: %s : HTTP error: %s' % (url, str(resp.status_code))
             return None
     #end _load
 
@@ -67,7 +62,7 @@ class IntrospectUtil(object):
             return EtreeToDict(xpath).get_all_entry(p)
         else:
             if self._debug:
-                print('UVE: %s : not found' % (path))
+                print 'UVE: %s : not found' % (path)
             return None
     #end get_uve
 #end class IntrospectUtil
@@ -84,9 +79,9 @@ class EtreeToDict(object):
         a_list = []
         for elem in elems.getchildren():
             rval = self._get_one(elem, a_list)
-            if 'element' in list(rval.keys()):
+            if 'element' in rval.keys():
                 a_list.append(rval['element'])
-            elif 'list' in list(rval.keys()):
+            elif 'list' in rval.keys():
                 a_list.append(rval['list'])
             else:
                 a_list.append(rval)
@@ -112,7 +107,7 @@ class EtreeToDict(object):
                 val.update({xp.tag: self._handle_list(elem)})
             else:
                 rval = self._get_one(elem, a_list)
-                if elem.tag in list(rval.keys()):
+                if elem.tag in rval.keys():
                     val.update({elem.tag: rval[elem.tag]})
                 else:
                     val.update({elem.tag: rval})
@@ -139,7 +134,7 @@ class EtreeToDict(object):
         Returns the element looked for/None.
         """
         xp = path.xpath(self.xpath)
-        f = [x for x in xp if x.text == match]
+        f = filter(lambda x: x.text == match, xp)
         if len(f):
             return f[0].text
         return None
@@ -152,7 +147,7 @@ def get_http_server_port(svc_name, debug):
         return ServiceHttpPortMap[svc_name]
     else:
         if debug:
-            print('{0}: Introspect port not found'.format(svc_name))
+            print '{0}: Introspect port not found'.format(svc_name)
         return -1
 
 def get_svc_uve_status(host, svc_name, debug, timeout, keyfile, certfile, cacert):
@@ -166,18 +161,18 @@ def get_svc_uve_status(host, svc_name, debug, timeout, keyfile, certfile, cacert
     node_status = svc_introspect.get_uve('NodeStatus')
     if node_status is None:
         if debug:
-            print('{0}: NodeStatusUVE not found'.format(svc_name))
+            print '{0}: NodeStatusUVE not found'.format(svc_name)
         return None, None
     node_status = [item for item in node_status if 'process_status' in item]
     if not len(node_status):
         if debug:
-            print('{0}: ProcessStatus not present in NodeStatusUVE'.format(
-                svc_name))
+            print '{0}: ProcessStatus not present in NodeStatusUVE'.format(
+                svc_name)
         return None, None
     process_status_info = node_status[0]['process_status']
     if len(process_status_info) == 0:
         if debug:
-            print('{0}: Empty ProcessStatus in NodeStatusUVE'.format(svc_name))
+            print '{0}: Empty ProcessStatus in NodeStatusUVE'.format(svc_name)
         return None, None
     description = process_status_info[0]['description']
     for connection_info in process_status_info[0].get('connection_infos', []):
@@ -193,13 +188,13 @@ def get_svc_uve_info(host, svc_name, debug, detail, timeout, keyfile, certfile, 
         svc_uve_status, svc_uve_description = \
             get_svc_uve_status(host, svc_name, debug, timeout, keyfile,\
                                certfile, cacert)
-    except requests.ConnectionError as e:
+    except requests.ConnectionError, e:
         if debug:
-            print('Socket Connection error : %s' % (str(e)))
+            print 'Socket Connection error : %s' % (str(e))
         svc_uve_status = "connection-error"
     except (requests.Timeout, socket.timeout) as te:
         if debug:
-            print('Timeout error : %s' % (str(te)))
+            print 'Timeout error : %s' % (str(te))
         svc_uve_status = "connection-timeout"
 
     if svc_uve_status is not None:
@@ -226,7 +221,7 @@ def get_container_status(container, containers):
 def contrail_status(inputs=None, host=None, role=None, service=None,
                     debug=False, detail=False, timeout=30,
                     keyfile=None, certfile=None, cacert=None,
-                    logger=None, refresh=False):
+                    logger=None):
     status_dict = dict()
     if not inputs:
         from common import contrail_test_init
@@ -239,15 +234,13 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
     cacert = cacert or inputs.introspect_cafile
 
     if host:
-        host = [host] if not isinstance(host, list) else host
+        host = [host] if isinstance(host, str) else host
     if role:
-        role = [role] if not isinstance(role, list) else role
+        role = [role] if isinstance(role, str) else role
     if service:
-        service = [service] if not isinstance(service, list) else service
+        service = [service] if isinstance(service, str) else service
 
     for node in host or inputs.host_ips:
-        if refresh:
-            inputs.refresh_containers(node)
         containers = inputs.get_active_containers(node)
         logger.info(node)
         status_dict[node] = dict()

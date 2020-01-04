@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 # Copy certs to tor-agents and restart tor-agent services
 #
@@ -20,12 +19,12 @@ CONTRAIL_CONF_PATH = '/etc/contrail'
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
     if init_obj.tor_agent_data:
-        print('Configuring any cert files required for tor-agents')
+        print 'Configuring any cert files required for tor-agents'
     else:
-        print('No tor-agents in the setup, no cert files will be configured')
+        print 'No tor-agents in the setup, no cert files will be configured'
         sys.exit(0)
 
-    for ta_host_string, ta_list in init_obj.tor_agent_data.items():
+    for ta_host_string, ta_list in init_obj.tor_agent_data.iteritems():
         (user, ip) = ta_host_string.split('@')
         password = init_obj.host_data[ip]['password']
         with settings(host_string=ta_host_string, password=password):
@@ -34,8 +33,8 @@ if __name__ == "__main__":
             put('tools/tor/cacert.pem', cacert_file)
             for tor_agent in ta_list:
                 if tor_agent.get('tor_ovs_protocol') != 'pssl':
-                    print('ToR ovs protocol %s is not pssl' % (
-                        tor_agent.get('tor_ovs_protocol')))
+                    print 'ToR ovs protocol %s is not pssl' % (
+                        tor_agent.get('tor_ovs_protocol'))
                     continue
                 tor_agent_id = tor_agent.get('tor_agent_id')
 

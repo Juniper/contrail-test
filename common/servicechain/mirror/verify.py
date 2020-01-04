@@ -1,21 +1,17 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from builtins import str
-from past.utils import old_div
 import os
 from time import sleep
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
 from tcutils.util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
-from common.servicechain.mirror.config import ConfigSvcMirror
+from config import ConfigSvcMirror
+from common.servicechain.verify import VerifySvcChain
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.floatingip.config import CreateAssociateFip
 from random import randint
 from tcutils.tcpdump_utils import *
 
-class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
+class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
     def verify_svc_mirroring(self, *args, **kwargs):
         ret_dict = self.config_svc_mirroring(*args, **kwargs)
@@ -53,11 +49,11 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
         assert result if replies else not result, errmsg
 
         svm = self.get_svms_in_si(si_fixture)
-        for svm_name, (session, pcap) in list(sessions.items()):
+        for svm_name, (session, pcap) in sessions.items():
             if proto == 'icmp':
-                count = 3
+                count = 5
                 if replies:
-                    count += 3
+                    count += 5
             elif proto == 'udp':
                 sport = 8001
                 dport = 9001
@@ -72,10 +68,10 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
                 left_vm_fixture.vm_node_ip != right_vm_fixture.vm_node_ip:
                 count = count * 2
                 if fip:
-		    count = old_div((count * 3),4)  #Because the ping to FIP involves NAT. 
+		    count = (count * 3)/4  #Because the ping to FIP involves NAT. 
             if proto == 'icmp':
                 if not self.inputs.pcap_on_vm:
-                    print(str(svm_name) + ':' + str(count))
+                    print str(svm_name) + ':' + str(count)
                     total_count += count
                     if len(svm) == 1:
                         assert self.verify_icmp_mirror(svm_name, session, pcap, count)
@@ -240,7 +236,7 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             count = 0
         if left_vm_fix.vm_node_ip != right_vm_fix.vm_node_ip:
             count = count * 2
-        for svm_name, (session, pcap) in list(sessions.items()):
+        for svm_name, (session, pcap) in sessions.items():
             self.verify_icmp_mirror(svm_name, session, pcap, count)
 
         return True
@@ -283,7 +279,7 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
         if left_vm_fix.vm_node_ip != right_vm_fix.vm_node_ip:
             count = count * 2
         assert sent and recv == sent, errmsg
-        for svm_name, (session, pcap) in list(sessions.items()):
+        for svm_name, (session, pcap) in sessions.items():
             assert self.verify_l4_mirror(svm_name, session, pcap, exp_count, proto)
 
         return True
@@ -319,7 +315,7 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             sleep(10)
             output_cmd = 'sudo cat /tmp/%s_out.log' % tapintf
             out, err = execute_cmd_out(session, output_cmd, self.logger)
-            print(out)
+            print out
             if '8099' in out:
                 self.logger.info('Mirroring action verified')
             else:
@@ -356,8 +352,8 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
         if vlan:
             sub_intf = 'eth0.' + str(vlan)
             cmds = "/sbin/ifconfig " + sub_intf + " | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'"
-            src_ip = list(src_vm.run_cmd_on_vm(cmds=[cmds]).values())[0]
-            dst_ip = list(dst_vm.run_cmd_on_vm(cmds=[cmds]).values())[0]
+            src_ip = src_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
+            dst_ip = dst_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
         assert src_vm.ping_with_certainty(dst_ip, count=5, size='1200')
         #lets wait 10 sec for tcpdump to capture all the packets
         sleep(10)
@@ -400,7 +396,7 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
         errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % right_vm_fixture.vm_ip
         assert not left_vm_fixture.ping_to_ip(
             right_vm_fixture.vm_ip), errmsg
-        for svm_name, (session, pcap) in list(sessions.items()):
+        for svm_name, (session, pcap) in sessions.items():
             count = 0
             self.verify_icmp_mirror(svm_name, session, pcap, count)
 
@@ -418,8 +414,8 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             right_vm_fixture.vm_ip), errmsg
         #TODO
         # Check this with Ankit 
-        for svm_name, (session, pcap) in list(sessions.items()):
-            count = 6 
+        for svm_name, (session, pcap) in sessions.items():
+            count = 10
             if left_vm_fixture.vm_node_ip != right_vm_fixture.vm_node_ip:
                 count = count * 2
             assert self.verify_icmp_mirror(svm_name, session, pcap, count)
@@ -821,8 +817,8 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             right_vm_fixture.vm_ip), errmsg
         assert right_vm_fixture.ping_to_ip(
             left_vm_fixture.vm_ip), errmsg
-        for svm_name, (session, pcap) in list(sessions.items()):
-            count = 12
+        for svm_name, (session, pcap) in sessions.items():
+            count = 20
             self.verify_icmp_mirror(svm_name, session, pcap, count)
 
         self.detach_policy(vn1_policy_fix)
@@ -853,11 +849,11 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             right_vm_fixture.vm_ip), errmsg
         assert right_vm_fixture.ping_to_ip(
             left_vm_fixture.vm_ip), errmsg
-        for svm_name, (session, pcap) in list(sessions.items()):
+        for svm_name, (session, pcap) in sessions.items():
             if vn1_seq_num[policy_name2] < vn1_seq_num[policy_name1] or vn2_seq_num[policy_name2] < vn2_seq_num[policy_name1]:
                 self.logger.info(
                     '%s is assigned first. Mirroring expected' % policy_name2)
-                count = 12
+                count = 20
             else:
                 self.logger.info(
                     '%s is assigned first. No mirroring expected' % policy_name1)
@@ -887,11 +883,11 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             right_vm_fixture.vm_ip), errmsg
         assert right_vm_fixture.ping_with_certainty(
             left_vm_fixture.vm_ip), errmsg
-        for svm_name, (session, pcap) in list(sessions.items()):
+        for svm_name, (session, pcap) in sessions.items():
             if vn1_seq_num[policy_name2] < vn1_seq_num[policy_name1] or vn2_seq_num[policy_name2] < vn2_seq_num[policy_name1]:
                 self.logger.info(
                     '%s is assigned first. Mirroring expected' % policy_name2)
-                count = 12
+                count = 20
             else:
                 self.logger.info(
                     '%s is assigned first. No mirroring expected' % policy_name1)
@@ -908,8 +904,8 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             right_vm_fixture.vm_ip), errmsg
         assert right_vm_fixture.ping_to_ip(
             left_vm_fixture.vm_ip), errmsg
-        for svm_name, (session, pcap) in list(sessions.items()):
-            count = 12
+        for svm_name, (session, pcap) in sessions.items():
+            count = 20
             assert self.verify_icmp_mirror(svm_name, session, pcap, count)
     # end verify_policy_order_change
 

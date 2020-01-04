@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import vnc_api_test
 from vnc_api.vnc_api import *
 import random
@@ -120,7 +118,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         '''Cleanup static route on vhost0
         '''
         for compute_ip in compute_node_ips:
-            for vn_fixture in list(vn_fixtures.values()):
+            for vn_fixture in vn_fixtures.values():
                 vn_cidr = vn_fixture.get_cidrs()[0]
                 self.logger.debug('Deleting static route: %s on compute: %s'
                                   %(vn_cidr, compute_ip))
@@ -273,7 +271,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                                             node_name=node_name, image_name=image_name)
             vm_fixtures[vm_id] = vm_fixture
 
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             assert vm_fixture.wait_till_vm_is_up()
 
         return vm_fixtures
@@ -358,7 +356,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         vmi_fixtures = ret_dict['vmi_fixtures']
 
         # Verify VM routes are present in default routing instance
-        for src_vm_fixture in list(vm_fixtures.values()):
+        for src_vm_fixture in vm_fixtures.values():
             vn_fq_name = src_vm_fixture.vn_fq_name
             vn_name = src_vm_fixture.vn_name
             for cn in src_vm_fixture.get_control_nodes():
@@ -446,7 +444,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         vm_fixtures = ret_dict['vm_fixtures']
         # Get the unique compute nodes
         compute_node_ips = set()
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             compute_node_ips.add(vm_fixture.get_compute_host())
 
         # Verify VM routes are present in default routing instance
@@ -491,7 +489,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         vmi_fixtures = ret_dict['vmi_fixtures']
 
         # Verify VM routes are present in default routing instance
-        for src_vm_fixture in list(vm_fixtures.values()):
+        for src_vm_fixture in vm_fixtures.values():
             compute_ip = src_vm_fixture.vm_node_ip
             agent_inspect_h = self.agent_inspect[compute_ip]
             vrf_id = 0
@@ -550,7 +548,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
         # Get the unique compute nodes
         compute_node_ips = set()
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             compute_node_ips.add(vm_fixture.get_compute_host())
 
         # Add static route on compute host for VMs to point to vhost0
@@ -558,7 +556,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         # belong to the same subnet. Right now, agent does not add this
         # route and adding this in test code as a temporary fix
         for compute_ip in compute_node_ips:
-            for vn_fixture in list(vn_fixtures.values()):
+            for vn_fixture in vn_fixtures.values():
                 vn_cidr = vn_fixture.get_cidrs()[0]
                 self.logger.debug('Adding static route: %s on compute: %s'
                                   %(vn_cidr, compute_ip))
@@ -568,7 +566,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
         # Pinging all VMIs from vhost
         for compute_ip in compute_node_ips:
-            for src_vm_fixture in list(vm_fixtures.values()):
+            for src_vm_fixture in vm_fixtures.values():
 
                 vn_name = src_vm_fixture.vn_name
 
@@ -694,11 +692,11 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
         # Get the compute nodes
         compute_node_ips = set()
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             compute_node_ips.add(vm_fixture.get_compute_host())
 
         # Pinging all vhosts from the VMs
-        for src_vm_fixture in list(vm_fixtures.values()):
+        for src_vm_fixture in vm_fixtures.values():
             for compute_ip in compute_node_ips:
 
                 vn_name = src_vm_fixture.vn_name
@@ -819,8 +817,8 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         policy_fixtures = ret_dict.get('policy_fixtures', None)
 
         # Pinging all the VMIs
-        for src_vm_fixture in list(vm_fixtures.values()):
-            for dst_vm_fixture in list(vm_fixtures.values()):
+        for src_vm_fixture in vm_fixtures.values():
+            for dst_vm_fixture in vm_fixtures.values():
                 src_vm_ip = src_vm_fixture.vm_ip
                 dst_vm_ip = dst_vm_fixture.vm_ip
                 src_vn_name = src_vm_fixture.vn_name

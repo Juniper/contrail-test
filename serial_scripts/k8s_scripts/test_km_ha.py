@@ -1,4 +1,3 @@
-from builtins import range
 from common.k8s.base import BaseK8sTest
 from k8s.pod import PodFixture
 from tcutils.wrappers import preposttest_wrapper

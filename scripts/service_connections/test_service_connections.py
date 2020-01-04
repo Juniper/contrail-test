@@ -198,8 +198,8 @@ class TestServiceConnections(BaseServiceConnectionsTest):
                 {'contrail-database-nodemgr' : self.inputs.database_control_ips[0],
                  'contrail-query-engine' : self.inputs.collector_control_ips[0]}
             }
-        for client_type, client_process in verification_dict.items():
-            for process_name, client_node in client_process.items():
+        for client_type, client_process in verification_dict.iteritems():
+            for process_name, client_node in client_process.iteritems():
                 collectors, status, ports = self.get_all_in_use_servers("collector" ,
                                             client_type, process_name, client_node)
                 if collectors and all(x == 'Up' for x in status)\

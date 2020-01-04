@@ -1,4 +1,3 @@
-from builtins import str
 import re
 import copy
 import time
@@ -67,7 +66,7 @@ class BMSFixture(fixtures.Fixture):
             self.ironic_node_id = self.ironic_node_obj.uuid
           else:
             self.ironic_node_obj = self.connections.ironic_h.obj.node.get(self.name)
-        except Exception as e:
+        except Exception,e:
             self.ironic_node_obj = None
 
     def create_bms_node(self,ironic_node_name,port_list,driver_info,properties):
@@ -380,8 +379,8 @@ class BMSFixture(fixtures.Fixture):
         self.run_namespace('ip link set dev %s up'%self.mvlanintf)
 
     def assign_static_ip(self, v4_ip=None, v4_gw_ip=None,
-                         v6_ip=None, v6_gw_ip=None, flush=False):
-        if flush is True:
+                         v6_ip=None, v6_gw_ip=None):
+        if v4_ip or v6_ip:
             self.run_namespace('ip addr flush dev %s'%(self.mvlanintf))
         if v4_ip:
             addr = v4_ip + '/' + str(self.bms_ip_netmask)
@@ -528,11 +527,11 @@ class BMSFixture(fixtures.Fixture):
             if not result:
                 return (result, output)
         if self.bms_ip6:
-#            result, output = self._run_dhclient(af='v6',
-#                timeout=timeout,
-#                expectation=expectation)
+            result, output = self._run_dhclient(af='v6',
+                timeout=timeout,
+                expectation=expectation)
             # Workaround to assign gw ip manually for v6
-            self.assign_static_ip(v6_ip=self.bms_ip6, v6_gw_ip=self.bms_gw_ip6)
+            self.assign_static_ip(v6_gw_ip=self.bms_gw_ip6)
         return (result, output)
     # end run_dhclient
 

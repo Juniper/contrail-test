@@ -73,7 +73,7 @@ class FloatingIpBaseTest(test_v1.BaseTestCase_v1):
             # Verify if file size is same in destination vm
             out_dict = dst_vm.run_cmd_on_vm(
                 cmds=['ls -l %s' % (filename)])
-            if size in list(out_dict.values())[0]:
+            if size in out_dict.values()[0]:
                 self.logger.info('File of size %s is trasferred successfully to \
                     %s by scp ' % (size, dest_vm_ip))
             else:

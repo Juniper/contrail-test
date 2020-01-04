@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import str
 import time
 import test_v1
 from common.connections import ContrailConnections
@@ -19,9 +14,9 @@ from fabric.context_managers import settings
 from fabric.api import run
 from fabric.operations import get, put
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
-from . import template
-from . import  env
-import configparser
+import template as template
+import env as env
+import ConfigParser
 import re
 import copy
 
@@ -258,7 +253,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
                         env['parameters']['shared_ip_list'] = 'False,True,True'
                     else:
                         env['parameters']['shared_ip_list'] = 'False,True,False'
-        if 'image' in env['parameters']:
+        if env['parameters'].has_key('image'):
             env['parameters']['flavor'] = self.nova_h.get_default_image_flavor(env['parameters']['image'])
             self.nova_h.get_image(env['parameters']['image'])
             self.nova_h.get_flavor(env['parameters']['flavor'])

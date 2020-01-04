@@ -1,14 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-from builtins import map
-from builtins import next
-from builtins import str
-from builtins import range
-from past.utils import old_div
-from builtins import object
 import math
 import subprocess
 import os
@@ -30,18 +19,18 @@ import random
 import fcntl
 import socket
 import struct
-from .fabutils import *
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide, cd, lcd
 from fabric.state import connections as fab_connections
 from paramiko.ssh_exception import ChannelException
 #from tcutils.util import retry
-import configparser
+import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
 import testtools
-from .fabfile import *
+from fabfile import *
+from fabutils import *
 import ast
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
@@ -79,7 +68,7 @@ def retry(tries=5, delay=3):
                     final = True
             if type(result) is dict:
                 rv = result['result']
-                if 'final' in list(result.keys()) and result['final']:
+                if 'final' in result.keys() and result['final']:
                     final = True
             while mtries > 0:
                 if rv is True:  # Done on success
@@ -125,7 +114,7 @@ def web_invoke(httplink, logger = None):
     try:
         cmd = 'curl ' + httplink
         output = subprocess.check_output(cmd, shell=True)
-    except Exception as e:
+    except Exception, e:
         output = None
         logger.debug(e)
         return output
@@ -165,12 +154,96 @@ def _escape_some_chars(text):
 def copy_fabfile_to_agent():
     src = 'tcutils/fabfile.py'
     dst = '~/fabfile.py'
-    if 'fab_copied_to_hosts' not in list(env.keys()):
+    if 'fab_copied_to_hosts' not in env.keys():
         env.fab_copied_to_hosts = list()
     if not env.host_string in env.fab_copied_to_hosts:
         if not exists(dst):
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
+
+def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
+                         gateway_password=None, with_sudo=False, timeout=120,
+                         as_daemon=False, raw=False, cd=None, warn_only=True,
+                         logger=None):
+    """ Run command on remote node through another node (gateway).
+        This is useful to run commands on VMs through compute node
+    Args:
+        host_string: host_string on which the command to run
+        password: Password
+        cmd: command
+        gateway: host_string of the node through which host_string will connect
+        gateway_password: Password of gateway hoststring
+        with_sudo: use Sudo
+        timeout: timeout
+        cd: change directory to provided parameter
+        as_daemon: run in background
+        raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
+    """
+    logger = logger or contrail_logging.getLogger(__name__)
+    fab_connections.clear()
+    kwargs = {}
+    if as_daemon:
+        cmd = 'nohup ' + cmd + ' &'
+        kwargs['pty']=False
+
+    if cd:
+        cmd = 'cd %s; %s' % (cd, cmd)
+
+    (username, host_ip) = host_string.split('@')
+
+    if username == 'root':
+        with_sudo = False
+
+    shell = '/bin/bash -l -c'
+
+    if username == 'cirros':
+        shell = '/bin/sh -l -c'
+
+    _run = safe_sudo if with_sudo else safe_run
+
+    #with hide('everything'), settings(host_string=host_string,
+    with settings(host_string=host_string,
+                                      gateway=gateway,
+                                      warn_only=warn_only,
+                                      shell=shell,
+                                      disable_known_hosts=True,
+                                      abort_on_prompts=False):
+        env.forward_agent = True
+        gateway_hoststring = gateway if re.match(r'\w+@[\d\.]+:\d+', gateway) else gateway + ':22'
+        node_hoststring = host_string if re.match(r'\w+@[\d\.]+:\d+', host_string) else host_string + ':22'
+        if password:
+            env.passwords.update({node_hoststring: password})
+            # If gateway_password is not set, guess same password
+            # (if key is used, it will be tried before password)
+            if not gateway_password:
+                env.passwords.update({gateway_hoststring: password})
+
+        if gateway_password:
+            env.passwords.update({gateway_hoststring: gateway_password})
+            if not password:
+                env.passwords.update({node_hoststring: gateway_password})
+
+        logger.debug(cmd)
+        tries = 1
+        output = None
+        while tries > 0:
+            try:
+                output = _run(cmd, timeout=timeout, **kwargs)
+            except CommandTimeout:
+                pass
+            if (output) and ('Fatal error' in output):
+                tries -= 1
+                time.sleep(5)
+            else:
+                break
+        # end while
+
+        if not raw:
+            real_output = remove_unwanted_output(output)
+        else:
+            real_output = output
+        return real_output
+
 
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False,
                         warn_only=True,
@@ -246,7 +319,7 @@ def wait_for_ssh_on_node(host_string, password=None, logger=None):
     try:
         with settings(host_string=host_string, password=password):
             fab_connections.connect(host_string)
-    except Exception as e:
+    except Exception, e:
         # There can be different kinds of exceptions. Catch all
         logger.debug('Host: %s, password: %s Unable to connect yet. Got: %s' % (
             host_string, password, e))
@@ -258,7 +331,7 @@ def wait_for_ssh_on_node(host_string, password=None, logger=None):
 def safe_sudo(cmd, timeout=30, pty=True):
     try:
         output = sudo(cmd, timeout=timeout, pty=pty)
-    except ChannelException as e:
+    except ChannelException, e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
             time.sleep(random.randint(1, 5))
@@ -271,7 +344,7 @@ def safe_sudo(cmd, timeout=30, pty=True):
 def safe_run(cmd, timeout=30):
     try:
         output = run(cmd, timeout=timeout)
-    except ChannelException as e:
+    except ChannelException, e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
             time.sleep(random.randint(1, 5))
@@ -302,7 +375,7 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None,
                 logger.debug("Error on ssh to %s, result: %s %s" % (host_string,
                     result, result.__dict__))
                 return False
-        except CommandTimeout as e:
+        except CommandTimeout, e:
             logger.debug('Could not ssh to %s ' % (host_string))
             return False
 
@@ -353,7 +426,7 @@ def retry_for_value(tries=5, delay=3):
 # end retry_for_value
 
 
-class threadsafe_iterator(object):
+class threadsafe_iterator:
 
     """Takes an iterator/generator and makes it thread-safe by
     serializing call to the `next` method of given iterator/generator.
@@ -366,9 +439,9 @@ class threadsafe_iterator(object):
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def next(self):
         with self.lock:
-            return next(self.it)
+            return self.it.next()
 # end threadsafe_iterator
 
 
@@ -433,7 +506,7 @@ def get_random_name(prefix=None, constant_prefix='ctest'):
     return ret_val
 
 def get_unique_random_name(*args, **kwargs):
-    if 'unique_random_name' not in list(env.keys()):
+    if 'unique_random_name' not in env.keys():
         env['unique_random_name'] = list()
     while True:
         name = get_random_name(*args, **kwargs)
@@ -630,10 +703,10 @@ def get_random_string_list(max_list_length, prefix='', length=8):
 
 
 def get_random_mac():
-    return ':'.join(["%02x" % x for x in [0x00, 0x16, 0x3E,
+    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
                                                random.randint(0x00, 0x7F), random.randint(
                                                    0x00, 0xFF),
-                                               random.randint(0x00, 0xFF)]])
+                                               random.randint(0x00, 0xFF)]))
 
 
 def search_arp_entry(arp_output, ip_address=None, mac_address=None):
@@ -744,7 +817,7 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
             return output
 # end run_cmd_on_server
 
-class Lock(object):
+class Lock:
 
     def __init__(self, filename):
         self.filename = filename
@@ -774,7 +847,7 @@ def read_config_option(config, section, option, default_option):
         return default_option
     try:
         val = config.get(section, option)
-    except (configparser.NoOptionError, configparser.NoSectionError):
+    except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
         return default_option
     if val.lower() == 'true':
         val = True
@@ -997,7 +1070,7 @@ def skip_because(*args, **kwargs):
                     #create the dict in format- {host-ip:hypervisor-type}
                     self.inputs.hypervisors = {x.host_ip: x.hypervisor_type.lower()
                                                    for x in hypervisors}
-                if kwargs["hypervisor"].lower() in list(self.inputs.hypervisors.values()):
+                if kwargs["hypervisor"].lower() in self.inputs.hypervisors.values():
                     skip = True
                     msg = "Skipped as currently test not supported on %s hypervisor." % kwargs["hypervisor"]
                     if "msg" in kwargs:
@@ -1011,7 +1084,7 @@ def skip_because(*args, **kwargs):
                     raise testtools.TestCase.skipException(msg)
 
             if "bms" in kwargs:
-                nodes = len(list(self.inputs.bms_data.keys()))
+                nodes = len(self.inputs.bms_data.keys())
                 mins = kwargs["bms"]
                 if nodes < mins:
                     msg = ' '.join(("Skipped as test requires at least",
@@ -1038,7 +1111,7 @@ def skip_because(*args, **kwargs):
                     if self.inputs.metadata_ssl_enable is False:
                         msg = "Skipped as metadata_ssl_enable is not set to True."
                         check_metadata=1
-                except Exception as e:
+                except Exception, e:
                     msg = "Skipped as metadata_ssl_enable is not defined in testbed file."
                     check_metadata=1
                 if check_metadata == 1:
@@ -1050,10 +1123,9 @@ def skip_because(*args, **kwargs):
                     raise testtools.TestCase.skipException(msg)
 
             if 'dpdk_cluster' in kwargs:
-                val = kwargs['dpdk_cluster']
-                if self.inputs.is_dpdk_cluster == val:
+                if self.inputs.is_dpdk_cluster:
                     skip = True
-                    msg = "Skipped as test is not supported if dpdk_cluster=%s " % val 
+                    msg = "Skipped as test is not supported dpdk_cluster " 
                     raise testtools.TestCase.skipException(msg)
 
             if 'ssl_enabled' in kwargs:
@@ -1102,7 +1174,7 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
                                               password=openstack_node_password):
                 output = sudo(cmd)
                 build_sku = sku_dict[re.findall("[0-9]+",output)[0]]
-        except NetworkError as e:
+        except NetworkError, e:
             pass
         return build_sku
 
@@ -1114,7 +1186,7 @@ def is_almost_same(val1, val2, threshold_percent=10, num_type=int):
     val1 = num_type(val1)
     val2 = num_type(val2)
     if val1:
-        if (old_div(abs(float(val1-val2)),val1))*100 < threshold_percent:
+        if (abs(float(val1-val2))/val1)*100 < threshold_percent:
             return True
         else:
             return False
@@ -1129,9 +1201,9 @@ def compare_dict(dict1, dict2, ignore_keys=[]):
     ''' Compares two dicts.
         Returns a tuple (True/False, set of items which dont match)
     '''
-    d1_new = dict((k, v) for k,v in dict1.items() \
+    d1_new = dict((k, v) for k,v in dict1.iteritems() \
         if k not in ignore_keys)
-    d2_new = dict((k, v) for k,v in dict2.items() \
+    d2_new = dict((k, v) for k,v in dict2.iteritems() \
         if k not in ignore_keys)
     return (d1_new == d2_new, set(d1_new) ^ set(d2_new))
 # end compare_dict
@@ -1205,6 +1277,35 @@ def get_hostname_by_ip(host, ip, **kwargs):
     if not output:
         return None
     return output
+
+def execute_ansible_playbook(playbook, playbook_timeout=None, **kwargs):
+    ev = ''
+    for key,value in kwargs.iteritems():
+        ev = ev + ' -e "%s=%s"'%(key, value)
+    cmd = 'ansible-playbook %s %s'%(ev, playbook)
+    if playbook_timeout:
+        cmd = 'timeout %s %s'%(playbook_timeout, cmd)
+    cwd = os.path.dirname(os.path.realpath(__file__))
+    with lcd(cwd+'/ansible'):
+      with settings(warn_only=True):
+        output = local(cmd, capture=True)
+    if output and output.succeeded:
+        return True
+    return False
+
+def execute_junos_command(host, username, password, command):
+    playbook = './junos_command.yml'
+    json_file = '/tmp/%s.json'%host
+    with settings(warn_only=True):
+      with hide('everything'):
+        local('rm -f %s'%json_file)
+    if execute_ansible_playbook(playbook, host=host, username=username,
+                                password=password, command=command,
+                                json=json_file):
+        with open(json_file, 'r') as fd:
+            content = fd.readlines()[0]
+        return ast.literal_eval(content)
+    return False
 
 class SafeList(list):
     def get(self, index, default=None):

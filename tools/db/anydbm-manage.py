@@ -1,6 +1,3 @@
-from __future__ import print_function
-from builtins import str
-from builtins import object
 import os
 import anydbm
 import argparse
@@ -8,7 +5,7 @@ import logging
 
 logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 
-class AnyDBMManager(object):
+class AnyDBMManager:
     '''
     Manage Anydbm db
     '''
@@ -22,14 +19,14 @@ class AnyDBMManager(object):
         elif args.delete:
             self.delete_entry(args.delete)
         else:
-            print('No operation chosen. Check help')
+            print 'No operation chosen. Check help'
     # end __init__
 
     def list_entries(self):
         try:
             db_h = anydbm.open(self.dbfile, 'r')
-            for k,v in db_h.items():
-                print(k,v)
+            for k,v in db_h.iteritems():
+                print k,v
         finally:
             db_h.close()
 

@@ -1,7 +1,3 @@
-from __future__ import division
-from builtins import str
-from builtins import range
-from past.utils import old_div
 from tcutils.topo.sdn_topo_setup import *
 from tcutils.test_lib.test_utils import assertEqual, get_ip_list_from_prefix
 from common.policy.get_version import get_OS_Release_BuildVersion
@@ -24,7 +20,7 @@ def src_min_max_ip_and_dst_max_port(
         ip_list.append(ips[index])
     src_min_ip = ip_list[0]
     src_max_ip = ip_list[-1]
-    dst_max_port = dst_min_port + (old_div(flows, no_of_ip))
+    dst_max_port = dst_min_port + (flows / no_of_ip)
     result_dict = {'src_min_ip': src_min_ip, 'src_max_ip':
                    src_max_ip, 'dst_max_port': dst_max_port}
     return result_dict
@@ -39,7 +35,7 @@ def create_traffic_profiles(topo_obj, config_topo):
     num_ports_per_ip = 50000.00
     # forward flows = (total no. of flows / 2), so fwd_flow_factor = 2
     fwd_flow_factor = 2
-    for profile, data in list(topo_obj.traffic_profile.items()):
+    for profile, data in topo_obj.traffic_profile.items():
         src_min_ip = 0
         src_max_ip = 0
         dst_ip = 0
@@ -65,10 +61,10 @@ def create_traffic_profiles(topo_obj, config_topo):
         ip_list = get_ip_list_from_prefix(prefix)
         no_of_ip = int(
             math.ceil(
-                old_div((old_div(data['num_flows'],
-                 fwd_flow_factor)),
-                num_ports_per_ip)))
-        forward_flows = old_div(data['num_flows'], fwd_flow_factor)
+                (data['num_flows'] /
+                 fwd_flow_factor) /
+                num_ports_per_ip))
+        forward_flows = data['num_flows'] / fwd_flow_factor
         result_dict = src_min_max_ip_and_dst_max_port(
             ip_list, no_of_ip, dst_min_port, forward_flows)
         if int(no_of_ip) == 1:

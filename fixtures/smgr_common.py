@@ -1,8 +1,3 @@
-from __future__ import print_function
-from past.builtins import cmp
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 import fixtures
 from contrail_fixtures import *
 import sys
@@ -14,7 +9,7 @@ import tempfile
 import os
 import re
 import fabric
-import configparser
+import ConfigParser
 import argparse
 import sys
 from datetime import datetime as dt
@@ -83,7 +78,7 @@ class SmgrFixture(fixtures.Fixture):
         params=self.params
         if not params:
             return None
-        if 'server_file' not in params:
+        if not params.has_key('server_file'):
             return None
         server_file = params['server_file']
 
@@ -111,7 +106,7 @@ class SmgrFixture(fixtures.Fixture):
             Server Manager with legacy method where a user has to edit testbed.py only. '''              
 
         testbed = self.testbed
-        if 'roledefs' not in testbed.env:
+        if not testbed.env.has_key('roledefs'):
             return server_dict
         for  node in server_dict['server']:
           roles = []
@@ -138,7 +133,7 @@ class SmgrFixture(fixtures.Fixture):
 
     def get_compute_node_from_testbed_py(self):
         testbed = self.testbed
-        if 'roledefs' not in testbed.env:
+        if not testbed.env.has_key('roledefs'):
             return None
         return testbed.env.roledefs['compute']
     # end get_compute_node_from_testbed_py
@@ -296,7 +291,7 @@ class SmgrFixture(fixtures.Fixture):
         cluster_data = cluster_file.read()
         cluster_json = json.loads(cluster_data)
         cluster_id = cluster_json['cluster'][0]['id']
-        if  'cluster_id' in params:
+        if  params.has_key('cluster_id'):
             cluster_id = params['cluster_id']
         cluster_file.close()
         return cluster_id
@@ -306,7 +301,7 @@ class SmgrFixture(fixtures.Fixture):
     def add_cluster(self):
         cluster_file = None
         params=self.params
-        if  'cluster_file' in params:
+        if  params.has_key('cluster_file'):
             cluster_file = params['cluster_file']
 
         cluster_id = self.get_pref_cluster_id()
@@ -369,7 +364,7 @@ class SmgrFixture(fixtures.Fixture):
         if not params:
             return None
 
-        if 'tags_file' not in params:
+        if not params.has_key('tags_file'):
             return None
         tags_file = params['tags_file']
 
@@ -392,7 +387,7 @@ class SmgrFixture(fixtures.Fixture):
         params=self.params
         if not params:
             return None
-        if 'image_file' not in params:
+        if not params.has_key('image_file'):
             return None
         image_file = params['image_file']
 
@@ -416,7 +411,7 @@ class SmgrFixture(fixtures.Fixture):
         params=self.params
         if not params:
             return None
-        if 'pkg_file' not in params:
+        if not params.has_key('pkg_file'):
             return None
         pkg_file = params['pkg_file']
 
@@ -441,7 +436,7 @@ class SmgrFixture(fixtures.Fixture):
         if not params:
             return None
 
-        if 'server_file' not in params:
+        if not params.has_key('server_file'):
             return None
         server_file = params['server_file']
 
@@ -464,7 +459,7 @@ class SmgrFixture(fixtures.Fixture):
         params=self.params
         if not params:
             return None
-        if 'cluster_file' not in params:
+        if not params.has_key('cluster_file'):
             return None
         cluster_file = params['cluster_file']
 
@@ -486,9 +481,9 @@ class SmgrFixture(fixtures.Fixture):
 
     def modify_cluster_from_testbed_py(self, cluster_dict):
         testbed = self.testbed
-        if 'mail_to' in testbed.env:
+        if testbed.env.has_key('mail_to'):
             cluster_dict['cluster'][0]['email'] = testbed.env.mail_to
-        if 'encap_priority' in testbed.env:
+        if testbed.env.has_key('encap_priority'):
             cluster_dict['cluster'][0]['parameters']['encapsulation_priority'] = testbed.env.encap_priority
         if 'multi_tenancy' in dir(testbed):
             if testbed.multi_tenancy == True :
@@ -543,7 +538,7 @@ class SmgrFixture(fixtures.Fixture):
 
     def read_ini_file(self, config_ini):
         try:
-            config = configparser.SafeConfigParser()
+            config = ConfigParser.SafeConfigParser()
             config.read([config_ini])
             smgr_config = dict(config.items("SERVER-MANAGER"))
             return smgr_config
@@ -628,7 +623,7 @@ class SmgrFixture(fixtures.Fixture):
 
         server_dict={}
         if not ip:
-            print("Please provide an ip as input arg")
+            print "Please provide an ip as input arg"
             return ip
 
         temp_dir= expanduser("~")
@@ -684,14 +679,14 @@ class SmgrFixture(fixtures.Fixture):
     def get_host_roles_from_testbed_py(self):
         testbed = self.testbed
         node = {}
-        if 'roledefs' not in testbed.env:
+        if not testbed.env.has_key('roledefs'):
             return node
         for key in testbed.env.roledefs:
             if key == 'all' or key == 'build':
                 continue
             for  host_string in testbed.env.roledefs[key]:
                 ip = getIp(host_string)
-                if ip not in node:
+                if not node.has_key(ip):
                     node[ip] = []
                 if key == 'cfgm':
                     node[ip].append('config')
@@ -748,7 +743,7 @@ class SmgrFixture(fixtures.Fixture):
     def get_pref_cluster_id(self):
         cluster_id = None
         params=self.read_ini_file(self.smgr_config_ini)
-        if  'cluster_id' in params:
+        if  params.has_key('cluster_id'):
             cluster_id = params['cluster_id']
         else:
             cluster_id = self.get_cluster_id()
@@ -758,7 +753,7 @@ class SmgrFixture(fixtures.Fixture):
     def get_svrmgr(self):
         svrmgr = None
         params=self.params
-        if  'svrmgr' in params:
+        if  params.has_key('svrmgr'):
             svrmgr = params['svrmgr']
         return params['svrmgr']
     #end get_svrmgr(self):
@@ -767,7 +762,7 @@ class SmgrFixture(fixtures.Fixture):
         params=self.params
         if not params:
             return None
-        if 'server_file' not in params:
+        if not params.has_key('server_file'):
             return None
         server_file = params['server_file']
         return server_file

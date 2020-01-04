@@ -5,8 +5,6 @@
 # You can do 'python -m testtools.run -l vdns_tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
-from __future__ import unicode_literals
-from builtins import str
 import os
 import unittest
 import fixtures
@@ -140,7 +138,7 @@ class TestvDNSBasic0(BasevDNSTest):
             errmsg = "VDNS entry deleted which is not expected, when it has back refrence of ipam."
             self.logger.error(errmsg)
             assert False, errmsg
-        except Exception as msg:
+        except Exception, msg:
             self.logger.debug(msg)
             self.logger.info(
                 "Deletion of the vdns entry failed with back ref of ipam as expected")

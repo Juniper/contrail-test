@@ -1,11 +1,7 @@
-from __future__ import division
-from builtins import range
-from builtins import object
-from past.utils import old_div
 from webui.webui_common import *
 import re
 
-class WebuiEdit(object):
+class WebuiEdit:
 
     def __init__(self, obj):
         self.inputs = obj.inputs
@@ -177,7 +173,7 @@ class WebuiEdit(object):
                                   elements=True, index=3)
                 self.ui.send_keys(dhcp_option[0], 'dhcp_option_name', 'name', clear=True)
                 self.ui.send_keys(dhcp_option[1], 'dhcp_option_value', 'name', clear=True)
-                self.ui.send_keys(old_div(int(dhcp_option[1]),8), 'dhcp_option_value_bytes',
+                self.ui.send_keys(int(dhcp_option[1])/8, 'dhcp_option_value_bytes',
                               'name', clear=True)
                 self.ui.click_on_create(option.strip('s'),
                                     option.strip('s').lower(), save=True)
@@ -203,8 +199,8 @@ class WebuiEdit(object):
             if self.edit_port_result:
                 self.ui.click_element('fatFlowAccordion')
                 self.ui.wait_till_ajax_done(self.browser)
-                fat_flow_protocol_list = list(fat_flow_values.keys())
-                fat_flow_port_list = list(fat_flow_values.values())
+                fat_flow_protocol_list = fat_flow_values.keys()
+                fat_flow_port_list = fat_flow_values.values()
                 for protocol in range(len(fat_flow_protocol_list)):
                     self.ui.click_element('editable-grid-add-link', 'class',
                                       elements=True, index=4)

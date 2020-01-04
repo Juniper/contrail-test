@@ -1,4 +1,3 @@
-from builtins import object
 import os
 import openstack
 from common.openstack_libs import glance_client as client

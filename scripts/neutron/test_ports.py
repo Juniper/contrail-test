@@ -5,7 +5,6 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
-from builtins import str
 import os
 import fixtures
 import testtools
@@ -227,7 +226,7 @@ class TestPorts(BaseNeutronTest):
             subnet_list), 'Mismatch between VM IPs and the Port IPs'
         # Create alias on the VM to respond to pings
         for subnet in subnet_list:
-            output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + str(
+            output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
                 subnet_list.index(subnet)) + ' ' + subnet + ' netmask 255.255.255.0'])
         for ip in vm1_fixture.vm_ips:
             assert test_vm_fixture.ping_with_certainty(ip), ''\
@@ -250,7 +249,7 @@ class TestPorts(BaseNeutronTest):
         assert vm1_fixture.wait_till_vm_is_up()
        # Create alias on the VM to respond to pings
         for subnet in subnet_list2:
-            output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + str(
+            output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
                 subnet_list2.index(subnet)) + ' ' + subnet + ' netmask 255.255.255.0'])
         time.sleep(5)
         for ip in subnet_list2:
@@ -401,14 +400,14 @@ class TestPorts(BaseNeutronTest):
 
         # Check DHCP dns option on vm1
         output = vm1_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
-        resolv_output = list(output.values())[0]
+        resolv_output = output.values()[0]
         assert dns_ip in resolv_output, 'Extra DHCP DNS Server IP %s not seen in '\
             'resolv.conf of the VM' % (dns_ip)
         self.logger.info('Extra DHCP DNS option sent is updated in the VM')
 
         # Check default behavior on vm2
         output = vm2_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
-        resolv_output = list(output.values())[0]
+        resolv_output = output.values()[0]
         assert vn1_dns_server in resolv_output, \
             'Default DNS Server IP %s not seen in resolv.conf of the VM' % (
                 dns_ip)
@@ -419,7 +418,7 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture.reboot()
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
-        resolv_output = list(output.values())[0]
+        resolv_output = output.values()[0]
         assert vn1_dns_server in resolv_output, \
             'Default DNS Server IP %s not restored in resolv.conf of VM' % (
                 dns_ip)

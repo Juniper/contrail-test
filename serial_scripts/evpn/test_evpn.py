@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -8,8 +6,8 @@ from __future__ import absolute_import
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 
 from tcutils.wrappers import preposttest_wrapper
-from .verify import VerifyEvpnCases
-from . import base
+from verify import VerifyEvpnCases
+import base
 import test
 from tcutils.util import skip_because
 
@@ -356,7 +354,7 @@ class TestEvpnCasesRestart(base.BaseEvpnTest, VerifyEvpnCases):
         '''
         verdict=self.verify_epvn_with_agent_restart(encap='vxlan')
         if not verdict:
-            print("collect logs for bug 1737030")
+            print "collect logs for bug 1737030"
             for a_node in self.inputs.collector_ips:
                 cmd='wget '+a_node+':8089/Snh_SandeshTraceRequest?x=UveTrace'
                 self.inputs.run_cmd_on_server (a_node,cmd)

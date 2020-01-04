@@ -1,12 +1,9 @@
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
 import sys
 from fabric.api import env, run , local
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
 import os
-import configparser
+import ConfigParser
 import subprocess
 import yaml
 from tcutils.util import read_config_option
@@ -40,7 +37,7 @@ def get_os_env(var, default=''):
 def upload_to_webserver(config_file, report_config_file, elem):
     jenkins_trigger = get_os_env('JENKINS_TRIGGERED')
     if config_file.endswith('.ini'):
-        config = configparser.ConfigParser()
+        config = ConfigParser.ConfigParser()
         config.read(config_file)
         web_server = read_config_option(config, 'WebServer', 'host', None)
         web_server_report_path = read_config_option(config, 'WebServer',
@@ -66,9 +63,9 @@ def upload_to_webserver(config_file, report_config_file, elem):
 
     if not (web_server and web_server_report_path and web_server_log_path and \
             web_server_username and web_server_password):
-       print("Not all webserver details are available. Skipping upload.")
+       print "Not all webserver details are available. Skipping upload."
        return False
-    report_config = configparser.ConfigParser()
+    report_config = ConfigParser.ConfigParser()
     report_config.read(report_config_file)
     ts = report_config.get('Test', 'timestamp')
     log_scenario = report_config.get('Test', 'logScenario')
@@ -81,7 +78,7 @@ def upload_to_webserver(config_file, report_config_file, elem):
     web_server_path = web_server_log_path + '/' + build_folder + '/'
 
     log = 'logs'
-    print("Web server log path %s"%web_server_path)
+    print "Web server log path %s"%web_server_path
 
     try:
         with hide('everything'):
@@ -162,8 +159,8 @@ def upload_to_webserver(config_file, report_config_file, elem):
                             % (sanity_report, branch, build_id, build_id,
                                 web_server_path, report_config_file))
 
-    except Exception as e:
-        print('Error occured while uploading the logs to the Web Server ',e)
+    except Exception,e:
+        print 'Error occured while uploading the logs to the Web Server ',e
         return False
     return True
 

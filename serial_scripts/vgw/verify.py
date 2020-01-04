@@ -1,4 +1,3 @@
-from builtins import object
 from time import sleep
 import os
 from vn_test import *
@@ -7,7 +6,7 @@ from floating_ip import *
 from tcutils.util import get_random_name
 
 
-class VerifyVgwCases(object):
+class VerifyVgwCases():
 
     def verify_vgw_with_fip(self, compute_type):
 

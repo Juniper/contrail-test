@@ -1,4 +1,3 @@
-from builtins import object
 from common.k8s.base import BaseK8sTest
 from k8s.network_policy import NetworkPolicyFixture
 from tcutils.wrappers import preposttest_wrapper
@@ -12,11 +11,12 @@ import test
 from tcutils.util import skip_because, Singleton
 import gevent
 from gevent import greenlet
-from future.utils import with_metaclass
 
 class TestNetworkPolicy(BaseK8sTest):
 
-    class SharedResources(with_metaclass(Singleton, object)):
+    class SharedResources(object):
+        __metaclass__ = Singleton
+
         def __init__ (self, connections):
             self.connections = connections
             self.setUp()
@@ -2771,7 +2771,9 @@ class TestNetworkPolicyRandom(BaseK8sTest):
     
 class TestNetworkPolicyServiceIngress(BaseK8sTest):
 
-    class SharedResources (with_metaclass(Singleton, object)):
+    class SharedResources (object):
+        __metaclass__ = Singleton
+
         def __init__ (self, connections):
             self.connections = connections
             self.setUp()

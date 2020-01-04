@@ -1,4 +1,3 @@
-from builtins import object
 import re
 import string
 import logging
@@ -96,7 +95,7 @@ class Iperf3(object):
             All values are string or boolean
         '''
         ret_val = ''
-        for (k,v) in list(kwargs.items()):
+        for (k,v) in kwargs.items():
             key = string.replace(k, '_', '-')
             key = '--%s' % (key)
             if type(v) == bool:
@@ -114,7 +113,7 @@ class Iperf3(object):
         result = self.client_vm_fixture.run_cmd_on_vm(
             cmds=['kill `cat %s`' %(self.client_pid_file)],
             raw=True)
-        status = list(result.values())[0]
+        status = result.values()[0]
         if status.succeeded:
             self.logger.debug('iperf3 is active on %s, PID: %s' % (
                               self.client_vm_fixture,

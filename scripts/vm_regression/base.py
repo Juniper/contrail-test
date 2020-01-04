@@ -1,12 +1,11 @@
-from builtins import range
+import test_v1
 import re
-from common.base import GenericTestBase
 from common.connections import ContrailConnections
 from common import isolated_creds
 from vm_test import VMFixture
 from vn_test import VNFixture
 
-class BaseVnVmTest(GenericTestBase):
+class BaseVnVmTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
@@ -32,12 +31,12 @@ class BaseVnVmTest(GenericTestBase):
             if fix.cleanUp in cleanup:
                 self._cleanups.remove(cleanup)
                 break
-    #end remove_from_cleanups
+   #end remove_from_cleanups
 
     def get_default_gateway_interface(self,vm_fixture):
         cmd = "route"+ r" -" +"n"    
         output = vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=False)
-        output = list(output.values())[0].split('\r')
+        output = output.values()[0].split('\r')
         output = output[1:]
         for elem in output:
             elem = elem.rstrip()
@@ -49,7 +48,7 @@ class BaseVnVmTest(GenericTestBase):
         intf_list = []
         cmd = "route"+ r" -" +"n"    
         output = vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=False)
-        output = list(output.values())[0].split('\r')
+        output = output.values()[0].split('\r')
         output = output[2:]
         for elem in output:
             elem = elem.rstrip()
@@ -59,6 +58,8 @@ class BaseVnVmTest(GenericTestBase):
             except Exception as e:
                 pass        
         return intf_list
+                  
+
 
     def trim_command_output_from_vm(self, output):
         output = output.replace("\r", "")
@@ -67,27 +68,27 @@ class BaseVnVmTest(GenericTestBase):
         return output
     # end trim_command_output_from_vm
 
-#    def create_vn(self, *args, **kwargs):
-#        return self.useFixture(
-#                VNFixture(project_name=self.inputs.project_name,
-#                          connections=self.connections,
-#                          inputs=self.inputs,
-#                          *args, **kwargs
-#                          ))
+    def create_vn(self, *args, **kwargs):
+        return self.useFixture(
+                VNFixture(project_name=self.inputs.project_name,
+                          connections=self.connections,
+                          inputs=self.inputs,
+                          *args, **kwargs
+                          ))
 
-#    def create_vm(self, vn_fixture=None, image_name='ubuntu', *args, **kwargs):
-#        if vn_fixture:
-#            vn_obj = vn_fixture.obj
-#        else:
-#            vn_obj = None
-#        return self.useFixture(
-#                VMFixture(
-#                    project_name=self.inputs.project_name,
-#                    connections=self.connections,
-#                    vn_obj=vn_obj,
-#                    image_name=image_name,
-#                    *args, **kwargs
-#                    ))
+    def create_vm(self, vn_fixture=None, image_name='ubuntu', *args, **kwargs):
+        if vn_fixture:
+            vn_obj = vn_fixture.obj
+        else:
+            vn_obj = None
+        return self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_obj,
+                    image_name=image_name,
+                    *args, **kwargs
+                    ))
 
     def bringup_interface_forcefully(self, vm_fixture, intf='eth1'):
         cmd = 'ifconfig %s up'%(intf)

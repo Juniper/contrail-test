@@ -1,4 +1,3 @@
-from builtins import str
 import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
@@ -167,7 +166,7 @@ class BaseRtFilterTest(test_v1.BaseTestCase_v1):
     @retry(delay=2, tries=5)
     def remove_rt_filter_family(self):
         mx = self.vnc_lib.bgp_router_read(
-            fq_name=[u'default-domain', u'default-project', u'ip-fabric', u'__default__', str(self.inputs.ext_routers[0][0])])
+            fq_name=[u'default-domain', u'default-project', u'ip-fabric', u'__default__', unicode(self.inputs.ext_routers[0][0])])
         mx.bgp_router_parameters.get_address_families().set_family(
             [u'inet-vpn'])
         mx._pending_field_updates.add('bgp_router_parameters')
@@ -186,7 +185,7 @@ class BaseRtFilterTest(test_v1.BaseTestCase_v1):
     @retry(delay=2, tries=5)
     def add_rt_filter_family(self):
         mx = self.vnc_lib.bgp_router_read(
-            fq_name=[u'default-domain', u'default-project', u'ip-fabric', u'__default__', str(self.inputs.ext_routers[0][0])])
+            fq_name=[u'default-domain', u'default-project', u'ip-fabric', u'__default__', unicode(self.inputs.ext_routers[0][0])])
         mx.bgp_router_parameters.get_address_families().set_family(
             [u'route-target', u'inet-vpn'])
         mx._pending_field_updates.add('bgp_router_parameters')

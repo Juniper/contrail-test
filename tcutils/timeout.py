@@ -5,18 +5,15 @@
 # with timeout(seconds=3):
 #    sleep(4)
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
 from threading import Timer
-import _thread
+import thread
 
 from time import sleep
 
 class TimeoutError(Exception):
     pass  
 
-class timeout(object):
+class timeout:
     def __init__(self, seconds=1, error_message='Timeout'):
         self.seconds = seconds
         self.error_message = error_message

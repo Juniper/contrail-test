@@ -1,6 +1,4 @@
-from builtins import zip
-from builtins import object
-class DynamicArgs(object):
+class DynamicArgs:
     """ Class variable that specifies expected fields
         This class helps initialiazing the __init__() for
         other classes,which would inherit from this class.

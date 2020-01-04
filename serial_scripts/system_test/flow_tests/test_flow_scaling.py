@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from builtins import range
-from past.utils import old_div
 from serial_scripts.system_test.flow_tests.base import BaseFlowTest
 from tcutils.topo.topo_helper import *
 from tcutils.wrappers import preposttest_wrapper
@@ -9,9 +5,9 @@ import time
 import datetime
 import threading
 import socket
-from . import flow_test_utils
+import flow_test_utils
 from compute_node_test import ComputeNodeFixture
-from . import flow_scale_topo
+import flow_scale_topo
 from tcutils.test_lib.test_utils import assertEqual, get_ip_list_from_prefix
 import math
 from tcutils.topo.sdn_topo_setup import *
@@ -74,7 +70,7 @@ class TestFlowScaling(BaseFlowTest):
             comp_node_fixt = self.useFixture(ComputeNodeFixture(
                     self.connections, cmp_node))
             flows_now = comp_node_fixt.get_vrouter_flow_count()
-            for action, count in flows_now.items():
+            for action, count in flows_now.iteritems():
                 # Any flows set by previous traffic tests should have retired
                 # by now..
                 if int(count) > 1000:
@@ -135,7 +131,7 @@ class TestFlowScaling(BaseFlowTest):
         num_ports_per_ip = 50000.00
         # forward flows = (total no. of flows / 2), so fwd_flow_factor = 2
         fwd_flow_factor = 2
-        for profile, data in list(topo.traffic_profile.items()):
+        for profile, data in topo.traffic_profile.items():
             src_min_ip = 0
             src_max_ip = 0
             dst_ip = 0
@@ -151,12 +147,12 @@ class TestFlowScaling(BaseFlowTest):
                 if data['dst_vm'] == vm_name:
                     dst_ip = config_topo['vm'][vm_name].vm_ip
                     dst_vm_obj = config_topo['vm'][vm_name]
-                    dst_mac_addr = list(config_topo['vm'][
-                                       vm_name].mac_addr.values())[0]
+                    dst_mac_addr = config_topo['vm'][
+                                       vm_name].mac_addr.values()[0]
                 if src_vm == vm_name:
                     src_vm_obj = config_topo['vm'][vm_name]
 
-            forward_flows = int(old_div(data['num_flows'], fwd_flow_factor))
+            forward_flows = int(data['num_flows'] / fwd_flow_factor)
             dst_max_port = dst_min_port + forward_flows
             traffic_scenarios[profile] = [src_vm_obj,
                                          src_vm_obj.vm_ip,  # src_ip_min

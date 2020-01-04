@@ -1,13 +1,9 @@
-from __future__ import print_function
-from builtins import str
-from builtins import object
 import uuid
 import logging
 
 from tcutils.util import *
 from vnc_api.vnc_api import *
 from loadbalancer_vnc_api import *
-from future.utils import with_metaclass
 
 
 class ContrailVncApi(object):
@@ -56,25 +52,6 @@ class ContrailVncApi(object):
     def delete_multicast_policy(self,uuid):
         self._vnc.multicast_policy_delete(id=uuid)
 
-    def create_dci(self, name, lr1_uuid, lr2_uuid):
-        dci = DataCenterInterconnect(name)
-        lr1_obj = self._vnc.logical_router_read(id=lr1_uuid)
-        lr2_obj = self._vnc.logical_router_read(id=lr2_uuid)
-        dci.add_logical_router(lr1_obj)
-        dci.add_logical_router(lr2_obj)
-        return self._vnc.data_center_interconnect_create(dci)
-
-    def delete_dci(self, name=None, **kwargs):
-        '''
-            :param name : name of the object
-            :param fq_name : fqname of the object (list)
-            :param fq_name_str : fqname of the object in string notation
-            :param id : uuid of the object
-        '''
-        if name:
-            kwargs['fq_name'] = ['default-global-system-config', name]
-        self._log.debug('Deleting dci %s' % kwargs)
-        return self._vnc.data_center_interconnect_delete(**kwargs)
 
     @property
     def vnc_project(self):
@@ -393,7 +370,7 @@ class ContrailVncApi(object):
         if not mapping_dict:
             return None
         new_map = QosIdForwardingClassPairs()
-        for k, v in mapping_dict.items():
+        for k, v in mapping_dict.iteritems():
             pair = QosIdForwardingClassPair(k, v)
             new_map.add_qos_id_forwarding_class_pair(pair)
         return new_map
@@ -406,20 +383,20 @@ class ContrailVncApi(object):
             'dot1p: %s, exp: %s' %
             (qos_config_obj.uuid, dscp_mapping, dot1p_mapping, exp_mapping))
         if dscp_mapping:
-            for k, v in dscp_mapping.items():
+            for k, v in dscp_mapping.iteritems():
                 entry = QosIdForwardingClassPair(k, v)
                 qos_config_obj.dscp_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 qos_config_obj.set_dscp_entries(qos_config_obj.dscp_entries)
         if dot1p_mapping:
-            for k, v in dot1p_mapping.items():
+            for k, v in dot1p_mapping.iteritems():
                 entry = QosIdForwardingClassPair(k, v)
                 qos_config_obj.vlan_priority_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 qos_config_obj.set_vlan_priority_entries(
                     qos_config_obj.vlan_priority_entries)
         if exp_mapping:
-            for k, v in exp_mapping.items():
+            for k, v in exp_mapping.iteritems():
                 entry = QosIdForwardingClassPair(k, v)
                 qos_config_obj.mpls_exp_entries.add_qos_id_forwarding_class_pair(
                     entry)
@@ -1230,7 +1207,7 @@ class ContrailVncApi(object):
         '''
         hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
         curr_prop = hc_obj.get_service_health_check_properties()
-        for k, v in kwargs.items():
+        for k, v in kwargs.iteritems():
             setattr(curr_prop, k, v)
         hc_obj.set_service_health_check_properties(curr_prop)
         return self._vnc.service_health_check_update(hc_obj)
@@ -2368,7 +2345,7 @@ class ContrailVncApi(object):
     def add_link_local_service(self, name, ip, port, ipfabric_service_port,
                                ipfabric_service_ip=None,
                                ipfabric_service_dns_name=None):
-        if not isinstance(ipfabric_service_ip, list):
+        if isinstance(ipfabric_service_ip, str):
             ipfabric_service_ip = [ipfabric_service_ip]
         linklocal_obj = LinklocalServiceEntryType(
             linklocal_service_name=name,
@@ -3724,7 +3701,9 @@ class ContrailVncApi(object):
         self._log.debug('Deleting card %s' % kwargs)
         return self._vnc.card_delete(**kwargs)
 
-class LBFeatureHandles(with_metaclass(Singleton, object)):
+class LBFeatureHandles:
+    __metaclass__ = Singleton
+
     def __init__(self, vnc, log):
         self._vnc = vnc
         self._log = log

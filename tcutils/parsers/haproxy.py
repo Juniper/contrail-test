@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import map
 import re
 from fabric.api import run
 from fabric.context_managers import settings, hide
@@ -47,7 +45,7 @@ def parse_haproxy(filename, host, username, password, container=None, **kwargs):
     iters = re.finditer(pattern, output)
     if iters:
         indices = [match.start() for match in iters]
-        matches = list(map(output.__getslice__, indices, indices[1:] + [len(output)]))
+        matches = map(output.__getslice__, indices, indices[1:] + [len(output)])
 
     for match in matches:
         match = match.strip()
@@ -103,4 +101,4 @@ def get_pool_dict(lines):
     return pool_dict
 
 if __name__ == '__main__':
-    print(parse_haproxy('/root/haproxy.cfg', '127.0.0.1', 'root', 'c0ntrail123'))
+    print parse_haproxy('/root/haproxy.cfg', '127.0.0.1', 'root', 'c0ntrail123')

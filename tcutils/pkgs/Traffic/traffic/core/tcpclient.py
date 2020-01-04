@@ -1,8 +1,5 @@
 """TCP Client module built on top of scapy Automaton"""
-from __future__ import division
 
-from builtins import str
-from past.utils import old_div
 from scapy.all import *
 try:
     # Running from the source repo "test".
@@ -30,7 +27,7 @@ class TCPClient(Automaton):
         l3_hdr = self.gen.creater._l3_hdr()
         l4_hdr = self.gen.creater._l4_hdr()
 
-        self.pkt = old_div(l3_hdr, l4_hdr)
+        self.pkt = l3_hdr / l4_hdr
         self.pkt[TCP].flags = 0
         self.pkt[TCP].seq = random.randrange(0, 2 ** 32)
 
@@ -100,7 +97,7 @@ class TCPClient(Automaton):
     def send_syn(self):
         log.info("Sending SYN")
         self.pkt[TCP].flags = "S"
-        log.debug(repr(self.pkt))
+        log.debug(`self.pkt`)
         self.send(self.pkt)
         self.pkt[TCP].seq += 1
 
@@ -115,7 +112,7 @@ class TCPClient(Automaton):
         self.pkt[TCP].ack = pkt[TCP].seq + 1
         self.pkt[TCP].flags = "A"
         log.info("Sending ACK for SYN ACK")
-        log.debug(repr(self.pkt))
+        log.debug(`self.pkt`)
         self.send(self.pkt)
 
     @ATMT.receive_condition(ESTABLISHED)
@@ -130,7 +127,7 @@ class TCPClient(Automaton):
         if data and self.pkt[TCP].ack == pkt[TCP].seq:
             self.pkt[TCP].ack += len(data)
             self.pkt[TCP].flags = "A"
-            log.debug(repr(self.pkt))
+            log.debug(`self.pkt`)
             self.send(self.pkt)
             self.rcvbuf += data
             if pkt[TCP].flags & 8 != 0:  # PUSH
@@ -148,14 +145,14 @@ class TCPClient(Automaton):
             log.debug("Sending RST")
             # User requested to reset the TCP connection
             self.pkt[TCP].flags = "R"
-            log.debug(repr(self.pkt))
+            log.debug(`self.pkt`)
             self.send(self.pkt)
             return
 
         self.count += 1
         self.pkt[TCP].flags = "PA"
-        log.debug(repr(old_div(self.pkt, d)))
-        self.send(old_div(self.pkt, d))
+        log.debug(`self.pkt / d`)
+        self.send(self.pkt / d)
         self.pkt[TCP].seq += len(d)
         self.gen.update_result("Sent=%s\nReceived=%s" %
                                (self.count, self.recv_count))
@@ -176,7 +173,7 @@ class TCPClient(Automaton):
         log.debug("Sending FIN ACK")
         self.pkt[TCP].flags = "FA"
         self.pkt[TCP].ack = pkt[TCP].seq + 1
-        log.debug(repr(self.pkt))
+        log.debug(`self.pkt`)
         self.send(self.pkt)
         self.pkt[TCP].seq += 1
 

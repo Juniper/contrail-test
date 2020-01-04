@@ -60,7 +60,7 @@ class BaseRRTest(test_v1.BaseTestCase_v1):
                     *args, **kwargs))
 
 @retry(delay=5, tries=12)
-def verify_peer_in_control_nodes(cn_inspect,ip,peers,skip_peers,logger):
+def verify_peer_in_control_nodes(cn_inspect,ip,peers,logger):
         """
         Check the configured control node has any peer and if so the state is Established.
         """
@@ -76,8 +76,6 @@ def verify_peer_in_control_nodes(cn_inspect,ip,peers,skip_peers,logger):
         else:
             configured_peers = []
             for entry in cn_bgp_entry:
-                if entry['peer'] in skip_peers:
-                   continue
                 if entry['state'] != 'Established' and entry['router_type'] != 'bgpaas-client':
                     result = result and False
                     logger.error('ctrl node %s With Peer %s peering is not Established. Current State %s ' % (ip,

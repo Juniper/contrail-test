@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import object
 import os
 import re
 from common.openstack_libs import ks_identity
@@ -9,7 +7,7 @@ from common.openstack_libs import ks_exceptions
 from common import log_orig as contrail_logging
 from tcutils.util import retry, get_dashed_uuid
 
-class KeystoneCommands(object):
+class KeystoneCommands():
 
     '''Handle all tenant managements'''
 
@@ -290,7 +288,7 @@ class KeystoneCommands(object):
         try:
             self.keystone.users.delete(user)
             return True
-        except ks_exceptions.ClientException as e:
+        except ks_exceptions.ClientException, e:
             # TODO Remove this workaround 
             if 'Unable to add token to revocation list' in str(e):
                 self.logger.warn('Exception %s while deleting user' % (

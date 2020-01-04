@@ -1,10 +1,6 @@
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
 import sys
 from lxml import etree as ET
-import configparser
+import ConfigParser
 
 def filter_by_tests(doc, value_list = ["process-returncode"]):
     elem = doc.xpath("/testsuite/testcase[@name='process-returncode']")
@@ -32,7 +28,7 @@ def change_tests_name(doc):
         pkg = el.get('classname').split('.')[0] 
         root.set('name',pkg)
     except Exception as e:
-        print('could not change test cases names')     
+        print 'could not change test cases names'     
 
 def _make_url(log_location, classname, name):
     name = name.split('[')[0]
@@ -61,12 +57,12 @@ def add_logfile_link(doc, log_location):
             log_elem = ET.Element('logfile')
             log_elem.text = log_url
             elem.append(log_elem)
-    except Exception as e:
-        print('Some error %s while adding log links' % (e))
+    except Exception,e:
+        print 'Some error %s while adding log links' % (e)
 # end add_logfile_link
 
 def _get_log_location(report_file):
-    config = configparser.ConfigParser()
+    config = ConfigParser.ConfigParser()
     config.read(report_file)
     log_location = config.get('Test', 'logslocation')
     return log_location

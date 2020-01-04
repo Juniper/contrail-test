@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from builtins import str
-from builtins import range
 from fixtures import Fixture
 from user_test import UserFixture
 from multiple_vn_vm_test import *
@@ -10,7 +7,7 @@ from common.connections import *
 import time,random
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
-from .base import *
+from base import *
 from vcenter import *
 import test
 from collections import defaultdict
@@ -45,7 +42,7 @@ class TestVcenter(BaseVnVmTest):
         '''
         vn_name = get_random_name('vn')
         vn_sub = '12.11.10.0/24'
-        vn_fixture = self.create_vn(vn_name=vn_name, vn_subnets=[vn_sub], enable_dhcp=False)
+        vn_fixture = self.create_vn(vn_name=vn_name, subnets=[vn_sub], enable_dhcp=False)
         assert vn_fixture.verify_on_setup()
 
         vm1 = self.create_vm(vn_fixture=vn_fixture, vm_name=get_random_name('vm'), image_name = 'ubuntu-traffic')
@@ -181,8 +178,8 @@ class TestVcenter2(BaseVnVmTest):
            vm_fixtures[vm_name] = self.create_vm(vn_fixture=vn_fixture, vm_name=vm_name, node_name=esxs[i])
            assert vm_fixtures[vm_name].wait_till_vm_is_up()
 
-        for src_vm_fix in list(vm_fixtures.values()):
-            for dst_vm_fix in list(vm_fixtures.values()):
+        for src_vm_fix in vm_fixtures.values():
+            for dst_vm_fix in vm_fixtures.values():
                 if dst_vm_fix is src_vm_fix:
                     continue
                 assert src_vm_fix.ping_with_certainty(dst_vm_fixture=\
@@ -218,18 +215,18 @@ class TestVcenter2(BaseVnVmTest):
            vm_fixtures[get_random_name('vm_mm')] = None
         vn_fixture = self.create_vn(vn_name=vn_name)
         assert vn_fixture.verify_on_setup()
-        vms = list(vm_fixtures.keys())
+        vms = vm_fixtures.keys()
         vm_fixtures[vms[0]] = self.create_vm(vn_fixture=vn_fixture, vm_name=vms[0], node_name=host1)
         vm_fixtures[vms[1]] = self.create_vm(vn_fixture=vn_fixture, vm_name=vms[1], node_name=host1)
         vm_fixtures[vms[2]] = self.create_vm(vn_fixture=vn_fixture, vm_name=vms[2], node_name=host2)
-        for vm_fix in list(vm_fixtures.values()):
+        for vm_fix in vm_fixtures.values():
             if vm_fix:
                 assert vm_fix.wait_till_vm_is_up()
 
-        for src_vm_fix in list(vm_fixtures.values()):
+        for src_vm_fix in vm_fixtures.values():
             if not src_vm_fix:
                 continue
-            for dst_vm_fix in list(vm_fixtures.values()):
+            for dst_vm_fix in vm_fixtures.values():
                 if not dst_vm_fix or dst_vm_fix is src_vm_fix:
                     continue
                 assert src_vm_fix.ping_with_certainty(dst_vm_fixture=\
@@ -248,13 +245,13 @@ class TestVcenter2(BaseVnVmTest):
             "Ping from %s to %s failed" % (src_vm_fix.vm_name, dst_vm_fix.vm_name)
 
         self.orch.exit_maintenance_mode(host1)
-        for vm_fix in list(vm_fixtures.values()):
+        for vm_fix in vm_fixtures.values():
             if vm_fix:
                 assert vm_fix.wait_till_vm_is_up()
-        for src_vm_fix in list(vm_fixtures.values()):
+        for src_vm_fix in vm_fixtures.values():
             if not src_vm_fix:
                 continue
-            for dst_vm_fix in list(vm_fixtures.values()):
+            for dst_vm_fix in vm_fixtures.values():
                 if not dst_vm_fix or dst_vm_fix is src_vm_fix:
                     continue
                 assert src_vm_fix.ping_with_certainty(dst_vm_fixture=\
@@ -346,8 +343,8 @@ class TestVcenter3(BaseVnVmTest):
            vm_fixtures[vm_name] = self.create_vm(vn_fixture=vn_fixture, vm_name=vm_name, zone=clus[i])
            assert vm_fixtures[vm_name].wait_till_vm_is_up()
 
-        for src_vm_fix in list(vm_fixtures.values()):
-            for dst_vm_fix in list(vm_fixtures.values()):
+        for src_vm_fix in vm_fixtures.values():
+            for dst_vm_fix in vm_fixtures.values():
                 if dst_vm_fix is src_vm_fix:
                     continue
                 assert src_vm_fix.ping_with_certainty(dst_vm_fixture=\

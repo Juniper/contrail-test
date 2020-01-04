@@ -15,7 +15,7 @@
 # $EXTRA_RUN_TEST_ARGS - any extra arguments for run_tests.sh
 ##
 
-docker="sudo docker"
+docker=docker
 feature=sanity
 test_tags=${TEST_TAGS:-''}
 scenarios=''
@@ -88,7 +88,7 @@ is_image_available () {
 # Is container available?
 is_container_available () {
     container=${1:-$pos_arg}
-    $docker ps -a -q -f id=$container | grep -q [[:alnum:]] || $docker ps -a -q -f name=$container | grep -q [[:alnum:]]
+    docker ps -a -q -f id=$container | grep -q [[:alnum:]] || docker ps -a -q -f name=$container | grep -q [[:alnum:]]
 }
 
 get_container_name () {

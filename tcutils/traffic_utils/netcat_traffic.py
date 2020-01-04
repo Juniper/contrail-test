@@ -1,8 +1,7 @@
-from __future__ import absolute_import
 # traffic generator using nc.traditional, supports only tcp and udp protocol
 
 from tcutils.util import retry
-from .base_traffic import * 
+from base_traffic import * 
 from tcutils.util import get_random_name
 default_data = '*****This is default data.*****'
 result_file = '/tmp/nc'

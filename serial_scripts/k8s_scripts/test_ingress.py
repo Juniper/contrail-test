@@ -35,7 +35,6 @@ class TestIngress(BaseK8sTest):
 
             For now, do this test only in default project
         '''
-        self.addCleanup(self.invalidate_kube_manager_inspect)
         app = 'http_test'
         labels = {'app':app}
         namespace = self.setup_namespace(name='default')

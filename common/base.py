@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import object
 import re
 import test_v1
 from netaddr import *
@@ -13,19 +11,16 @@ from project_test import ProjectFixture
 from security_group import SecurityGroupFixture
 from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
-from tcutils.util import get_random_name, get_random_cidr, is_v6, get_random_vxlan_id
+from tcutils.util import get_random_name, get_random_cidr, is_v6
 from tcutils.contrail_status_check import ContrailStatusChecker
 from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from lif_fixture import LogicalInterfaceFixture
-from router_fixture import LogicalRouterFixture
 from vdns_fixture import VdnsFixture
 from firewall_policy import FirewallPolicyFixture
 from firewall_rule import FirewallRuleFixture
-from tcutils.traffic_utils.base_traffic import BaseTraffic, SOCKET
-from tcutils.traffic_utils.ping_traffic import Ping
 
-class _GenericTestBaseMethods(object):
+class _GenericTestBaseMethods():
 
     def sleep(self, value):
         self.logger.debug('Sleeping for %s seconds..' % (value))
@@ -159,7 +154,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                         username, role, project_name)
 
     @classmethod
-    def create_only_vn(cls, vn_name=None, vn_subnets=None, **kwargs):
+    def create_only_vn(cls, vn_name=None, vn_subnets=None, vxlan_id=None,
+                   enable_dhcp=True, **kwargs):
         '''Classmethod to do only VN creation
         '''
         if not vn_name:
@@ -171,82 +167,57 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                       inputs=connections.inputs,
                       vn_name=vn_name,
                       subnets=vn_subnets,
+                      vxlan_id=vxlan_id,
+                      enable_dhcp=enable_dhcp,
                       **kwargs)
         vn_fixture.setUp()
         return vn_fixture
     # end create_only_vn
 
-    def create_vn(self, vn_name=None, vn_subnets=None, cleanup=True, **kwargs):
+    def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
+        enable_dhcp=True, cleanup=True, **kwargs):
         vn_fixture = self.create_only_vn(vn_name=vn_name,
                                      vn_subnets=vn_subnets,
+                                     vxlan_id=vxlan_id,
+                                     enable_dhcp=enable_dhcp,
                                      **kwargs)
         if cleanup:
             self.addCleanup(vn_fixture.cleanUp)
+
         return vn_fixture
     # end create_vn
 
-    def setup_evpn_service_chain(self, left_vn, right_vn, **kwargs):
-        left_lr_fixture = self.create_lr([left_vn])
-        right_lr_fixture = self.create_lr([right_vn])
-        left_internal_vn = left_lr_fixture.get_internal_vn()
-        right_internal_vn = right_lr_fixture.get_internal_vn()
-
-        left_lr_intvn_fixture = self.create_vn(
-            left_lr_fixture.get_internal_vn_name(),
-            uuid=left_internal_vn.uuid, clean_up=False)
-        left_intvn_subnet_list = [get_random_cidr(), get_random_cidr(af='v6')]
-        left_intvn_v4_subnets = {'cidr': left_intvn_subnet_list[0] }
-
-        left_lr_intvn_fixture.create_subnet(left_intvn_v4_subnets)
-        left_intvn_v6_subnets = {'cidr': left_intvn_subnet_list[1] }
-        left_lr_intvn_fixture.create_subnet(left_intvn_v6_subnets)
-
-        right_lr_intvn_fixture = self.create_vn(
-            right_lr_fixture.get_internal_vn_name(),
-            uuid=right_internal_vn.uuid, clean_up=False)
-        right_intvn_subnet_list = [get_random_cidr(), get_random_cidr(af='v6')]
-        right_intvn_v4_subnets = {'cidr': right_intvn_subnet_list[0]}
-        right_intvn_v6_subnets = {'cidr': right_intvn_subnet_list[1]}
-        right_lr_intvn_fixture.create_subnet(right_intvn_v4_subnets)
-        right_lr_intvn_fixture.create_subnet(right_intvn_v6_subnets)
-
-        return (left_lr_intvn_fixture, right_lr_intvn_fixture)
-    #end setup_evpn_service_chain
-
-    def create_lr(self, vn_fixtures, vni=None, devices=None, **kwargs):
-        vn_ids = [vn.uuid for vn in vn_fixtures]
-        vni = vni or str(get_random_vxlan_id(min=10000))
-        self.logger.info('Creating Logical Router with VN uuids: %s, VNI %s'%(
-            vn_ids, vni))
-        lr = self.useFixture(LogicalRouterFixture(
-            connections=self.connections,
-            connected_networks=vn_ids, vni=vni, vxlan_enabled=True,
-            **kwargs))
-        return lr
-    #end create_lr
-
     @classmethod
-    def create_only_vm(cls, vn_fixture=None, vm_name=None,
-                  image_name='ubuntu-traffic', **kwargs):
+    def create_only_vm(cls, vn_fixture=None, vm_name=None, node_name=None,
+                  flavor='contrail_flavor_small',
+                  image_name='ubuntu-traffic',
+                  port_ids=[], **kwargs):
         vn_obj = None
+        vn_objs = None
         if vn_fixture:
             vn_obj = vn_fixture.obj
         project_name = kwargs.pop('project_name', None) or cls.connections.project_name
         connections = kwargs.pop('connections', None) or cls.connections
+        vn_objs=kwargs.pop('vn_objs', None)
         vm_obj = VMFixture(
                     connections,
                     project_name=project_name,
                     vn_obj=vn_obj,
+                    vn_objs=vn_objs,
                     vm_name=vm_name,
                     image_name=image_name,
+                    flavor=flavor,
+                    node_name=node_name,
+                    port_ids=port_ids,
                     **kwargs)
         vm_obj.setUp()
         return vm_obj
     # end create_only_vm
 
-    def create_vm(self, vn_fixture=None, vm_name=None,
+    def create_vm(self, vn_fixture=None, vm_name=None, node_name=None,
+                  flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
-                  port_ids=None, **kwargs):
+                  port_ids=[], **kwargs):
         cleanup = kwargs.pop('cleanup', True)
         fixed_ips = kwargs.get('fixed_ips', None)
         binding_vnic_type = None
@@ -265,6 +236,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                 port_ids = [port_obj.uuid]
         vm_fixture = self.create_only_vm(vn_fixture=vn_fixture,
                         vm_name=vm_name,
+                        node_name=node_name,
+                        flavor=flavor,
                         image_name=image_name,
                         port_ids=port_ids,
                         **kwargs)
@@ -735,64 +708,6 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             return False
         return True
     # end check_vms_active
-
-    def start_ping(self, src_vm, dst_vm=None, dst_ip=None):
-        dst_ip = dst_ip or dst_vm.vm_ip
-        ping_h = Ping(src_vm, dst_ip)
-        ping_h.start()
-        return ping_h
-
-    def stop_ping(self, ping_h, expectation=True):
-        (stats, ping_log) = ping_h.stop()
-        self.logger.debug('Ping log : %s' % (ping_log))
-        if expectation:
-            assert int(stats['loss']) != 100, ('Pings failed to VM')
-        else:
-            assert int(stats['loss']) == 100, ('Ping should have failed to VM')
-        return stats
-
-    def start_traffic(self, src_vm_fixture, dst_vm_fixture, proto, sport=None,
-                      dport=None, src_vn_fqname=None, dst_vn_fqname=None,
-                      fip_ip=None, **kwargs):
-        if proto == 'icmp':
-            return self.start_ping(src_vm_fixture, dst_vm=dst_vm_fixture,
-                                   dst_ip=fip_ip)
-        traffic_obj = BaseTraffic.factory(tool=SOCKET, proto=proto)
-        assert traffic_obj.start(src_vm_fixture, dst_vm_fixture, proto, sport,
-                                 dport, sender_vn_fqname=src_vn_fqname,
-                                 receiver_vn_fqname=dst_vn_fqname, fip=fip_ip,
-                                 **kwargs)
-        return traffic_obj
-
-    def stop_traffic(self, traffic_obj, expectation=True, unidirection=False):
-        if isinstance(traffic_obj, Ping):
-            return self.stop_ping(traffic_obj, expectation=expectation)
-        sent, recv, server_sent, server_recv = traffic_obj.stop()
-        if sent is None:
-            return False
-        if unidirection:
-            recv = server_recv
-        msg = "transferred between %s and %s, proto %s sport %s and dport %s"%(
-               traffic_obj.src_ip, traffic_obj.dst_ip, traffic_obj.proto,
-               traffic_obj.sport, traffic_obj.dport)
-        if not expectation:
-            assert sent or traffic_obj.proto == 'tcp', "Packets not %s"%msg
-            assert recv == 0, "Packets %s"%msg
-        else:
-            assert sent and recv, "Packets not %s"%msg
-            if recv*100/float(sent) < 90:
-                assert False, "Packets not %s"%msg
-        return True
-
-    def verify_traffic(self, src_vm_fixture, dst_vm_fixture, proto, sport=0,
-                       dport=0, src_vn_fqname=None, dst_vn_fqname=None,
-                       af=None, fip_ip=None, expectation=True):
-        traffic_obj = self.start_traffic(src_vm_fixture, dst_vm_fixture, proto,
-                                  sport, dport, src_vn_fqname=src_vn_fqname,
-                                  dst_vn_fqname=dst_vn_fqname, af=af,
-                                  fip_ip=fip_ip)
-        self.sleep(2)
-        return self.stop_traffic(traffic_obj, expectation)
 
     @classmethod
     def set_af(cls, family='v4'):

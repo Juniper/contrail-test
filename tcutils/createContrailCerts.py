@@ -1,4 +1,3 @@
-from __future__ import print_function
 import subprocess, os
 import shlex,time
 
@@ -135,19 +134,19 @@ def create_certificate():
         'pass:changeit', '1024'], stdout=subprocess.PIPE)
 
     check_file_dir_exists('./key/private.key')
-    print("Convert to PKCS8")
+    print "Convert to PKCS8"
     cmd = OPENSSL+" pkcs8 -in ./key/private.key -topk8 -nocrypt -out ./key/privatep8.key -passin pass:changeit"
     output = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 
     check_file_dir_exists('./key/privatep8.key')
-    print("Create CA Certificate")
+    print "Create CA Certificate"
     output = subprocess.Popen([MKDIR, './cacert'], stdout=subprocess.PIPE)
     cmd = OPENSSL+' req -config ./cfg/openssl.cfg -new -x509 -days 3650 -key\
         ./key/privatep8.key -out ./cacert/ca.cer -batch'
     output = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 
     check_file_dir_exists('./cacert/ca.cer')
-    print("Create CSR")
+    print "Create CSR"
     output = subprocess.Popen([MKDIR, './req'], stdout=subprocess.PIPE)
     cmd = OPENSSL+' req -new -key ./key/privatep8.key -out ./req/client.csr -config ./cfg/openssl.cfg -batch'
     output = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
@@ -155,7 +154,7 @@ def create_certificate():
     output = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 
     check_file_dir_exists('./req/server.csr')
-    print("Create CA signed cert from CSR")
+    print "Create CA signed cert from CSR"
     output = subprocess.Popen([MKDIR, './certs'], stdout=subprocess.PIPE)
     cmd = TOUCH+' ./database.txt ./database.txt.attr ./serial.txt'
     output = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)

@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from builtins import str
-from builtins import range
-from past.utils import old_div
 from serial_scripts.system_test.flow_tests.base import BaseFlowTest
 from floating_ip import *
 from tcutils.topo.topo_helper import *
@@ -12,13 +7,13 @@ import time
 import datetime
 import threading
 import socket
-from . import flow_test_utils
+import flow_test_utils
 from compute_node_test import ComputeNodeFixture
-from . import system_test_topo
-from . import sdn_flow_test_topo_multiple_projects
+import system_test_topo
+import sdn_flow_test_topo_multiple_projects
 from tcutils.test_lib.test_utils import assertEqual, get_ip_list_from_prefix
 import math
-from .system_flows_config import config_topo_single_proj
+from system_flows_config import config_topo_single_proj
 
 
 class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
@@ -124,7 +119,7 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
                 target=self.start_traffic, args=(
                     traffic_profile[0], traffic_profile[1], traffic_profile[2],
                     traffic_profile[3], traffic_profile[4], traffic_profile[5],
-                    traffic_profile[6], list(traffic_profile[7].mac_addr.values())[0]))
+                    traffic_profile[6], traffic_profile[7].mac_addr.values()[0]))
         else:
             th = threading.Thread(
                 target=self.start_traffic, args=(
@@ -159,7 +154,7 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
         # so NAT flow is calculated at 70% of the average flow setup rate
         # defined.
         RelVer = build_version.split('-')[1]
-        from . import ReleaseToFlowSetupRateMapping
+        import ReleaseToFlowSetupRateMapping
         #from ReleaseToFlowSetupRateMapping import *
         try:
             DefinedSetupRate = ReleaseToFlowSetupRateMapping.expected_flow_setup_rate['policy'][RelVer]
@@ -197,8 +192,8 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
                 AverageFlowSetupRate = FlowRatePerInterval[ind]
             elif ind > 0:
                 FlowRatePerInterval.append(NoOfFlows[ind] - NoOfFlows[ind - 1])
-                AverageFlowSetupRate = old_div((
-                    AverageFlowSetupRate + FlowRatePerInterval[ind]), 2)
+                AverageFlowSetupRate = (
+                    AverageFlowSetupRate + FlowRatePerInterval[ind]) / 2
             self.logger.info("Flows setup in last %s sec = %s" %
                              (sleep_interval, FlowRatePerInterval[ind]))
             self.logger.info(
@@ -217,7 +212,7 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
         # time.sleep(20)
         # Calculate the flow setup rate per second = average flow setup in
         # sleep interval over the above iterations / sleep interval.
-        AverageFlowSetupRate = int(old_div(AverageFlowSetupRate, sleep_interval))
+        AverageFlowSetupRate = int(AverageFlowSetupRate / sleep_interval)
         self.logger.info("Flow setup rate seen in this test is = %s" %
                          (AverageFlowSetupRate))
         if (AverageFlowSetupRate < (0.9 * DefinedSetupRate)):
@@ -441,7 +436,7 @@ class TestFlowMultiProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
         flow_gen_rate = 1000
         proto = 'udp'
         profile = 'TrafficProfile1'
-        details = self.topo[list(self.topo.keys())[0]].traffic_profile[profile]
+        details = self.topo[self.topo.keys()[0]].traffic_profile[profile]
         self.traffic_setup(profile, details, num_flows, flow_gen_rate, proto)
         self.traffic_obj = self.useFixture(
             traffic_tests.trafficTestFixture(self.connections))

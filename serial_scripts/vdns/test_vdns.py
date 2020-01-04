@@ -1,4 +1,3 @@
-from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -6,9 +5,6 @@ from __future__ import print_function
 # You can do 'python -m testtools.run -l vdns_tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
-from builtins import str
-from builtins import range
-from builtins import object
 import os
 import unittest
 import fixtures
@@ -432,7 +428,7 @@ class TestvDNSRestart(BasevDNSTest):
                 sleep(5)
                 continue
 
-    class InitForZoneTests(object):
+    class InitForZoneTests:
         '''
         Initialisation of variables to be used in 2 different test cases
         "test_vdns_with_same_zone" and "test_vdns_with_diff_zone"

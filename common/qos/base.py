@@ -1,7 +1,3 @@
-from builtins import hex
-from builtins import str
-from builtins import range
-from builtins import object
 import re
 from tcutils.util import Lock
 from tcutils.util import is_almost_same
@@ -341,7 +337,7 @@ class QosTestBase(BaseNeutronTest):
             ip = ether.data
             try:
                 actual_dscp = int(bin(ip.tos >> 2), 2)
-            except AttributeError as e:
+            except AttributeError, e:
                 self.logger.error(e)
                 return False
             if expected_dscp == actual_dscp:
@@ -744,11 +740,11 @@ class QosTestBase(BaseNeutronTest):
             if elem[0] == node_ip:
                 map = elem[1]
         for hw_to_logical_value in map:
-            if 'default' in list(hw_to_logical_value.values())[0]:
-                default_queue = int(list(hw_to_logical_value.keys())[0])
-            if list(hw_to_logical_value.values())[0][0] != 'default':
-                hw_queues.append(int(list(hw_to_logical_value.keys())[0]))
-                logical_id = int(list(hw_to_logical_value.values())[0][0].split('-')[0])
+            if 'default' in hw_to_logical_value.values()[0]:
+                default_queue = int(hw_to_logical_value.keys()[0])
+            if hw_to_logical_value.values()[0][0] != 'default':
+                hw_queues.append(int(hw_to_logical_value.keys()[0]))
+                logical_id = int(hw_to_logical_value.values()[0][0].split('-')[0])
                 logical_ids.append(logical_id)
         return (hw_queues, logical_ids, default_queue)
     
@@ -762,7 +758,7 @@ class QosTestBase(BaseNeutronTest):
             if elem[0] == node_ip:
                 map = elem[1]
         for hw_to_logical_value in map:
-            for elem in list(hw_to_logical_value.values())[0]:
+            for elem in hw_to_logical_value.values()[0]:
                 if elem == 'default':
                     continue
                 if '-' not in elem:
@@ -980,7 +976,7 @@ class QosTestBase(BaseNeutronTest):
                         (conf_file))
         cmds.append('openstack-config --del %s QOS hack' % (conf_file))
         for elem in queue_mapping:
-            for key, value in list(elem.items()):
+            for key, value in elem.items():
                 if "default" in value:
                     cmds.append('openstack-config --set %s QUEUE-%s default_hw_queue true'
                                 % (conf_file, key))
@@ -1394,7 +1390,7 @@ class TestQosQueueProperties(QosTestExtendedBase):
         super(TestQosQueueProperties, cls).tearDownClass()
     # end tearDownClass
 
-class FcIdGenerator(object):
+class FcIdGenerator():
     '''
         This class parse through the FCs present and 
         return a unique FC ID which is not in use.

@@ -1,4 +1,3 @@
-from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -6,7 +5,6 @@ from __future__ import print_function
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
-from builtins import str
 import time
 import re
 import socket
@@ -296,10 +294,10 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         '''
         self.setup_vm()  # Creating vns/vm
         # Creating service instance
-        left_vn_fix = list(self.setup_fixture.vn_obj_dict.values())[0]
-        right_vn_fix = list(self.setup_fixture.vn_obj_dict.values())[1]
-        left_vn_fq_name = list(self.setup_fixture.vn_obj_dict.values())[0].vn_fq_name
-        right_vn_fq_name = list(self.setup_fixture.vn_obj_dict.values())[
+        left_vn_fix = self.setup_fixture.vn_obj_dict.values()[0]
+        right_vn_fix = self.setup_fixture.vn_obj_dict.values()[1]
+        left_vn_fq_name = self.setup_fixture.vn_obj_dict.values()[0].vn_fq_name
+        right_vn_fq_name = self.setup_fixture.vn_obj_dict.values()[
             1].vn_fq_name
         self.setup_service_instance(
             left_vn_fixture=left_vn_fix, right_vn_fixture=right_vn_fix)
@@ -406,7 +404,7 @@ def main():
     obj = AnalyticsTestPerformance()
 #    obj.get_ip_list_from_prefix('192.0.2.16/29')
     for ip in obj.get_ip_list_from_prefix('192.0.2.16/29'):
-        print(ip)
+        print ip
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,3 @@
-from __future__ import print_function
-from builtins import zip
-from builtins import object
 from vnc_api.vnc_api import *
 from tcutils.util import get_random_name, get_random_cidrs
 
@@ -35,7 +32,7 @@ def get_sg_rule(direction, af='v4', proto='udp'):
 
     return rule
 ################################################################################
-class sdn_4vn_xvm_config(object):
+class sdn_4vn_xvm_config ():
     def __init__(self, domain= 'default-domain', project= 'admin',
             compute_node_list= None, username= None, password= None,
             config_option='openstack', af_test='v4'):
@@ -105,13 +102,13 @@ class sdn_4vn_xvm_config(object):
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in list(self.vm_node_map.keys()):
+            for cn in self.vm_node_map.keys():
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(list(zip(CN, compute_node_list)))
+                    my_node_dict = dict(zip(CN, compute_node_list))
 
             if my_node_dict:
                 for key in my_node_dict:
@@ -200,13 +197,13 @@ class sdn_4vn_xvm_config(object):
 # end class sdn_4vn_xvm_config
 
 ################################################################################
-class sdn_topo_config(object):
+class sdn_topo_config ():
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
 	#2 VN and 4 VM
     def build_topo_sg_stateful(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
-        print("building dynamic topo")
+        print "building dynamic topo"
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -296,11 +293,11 @@ class sdn_topo_config(object):
 # end class sdn_topo_config
 ################################################################################
 
-class sdn_topo_config_multiproject(object):
+class sdn_topo_config_multiproject():
 
     def __init__(self, domain= 'default-domain', project= 'admin',
             username= None, password= None):
-        print("building dynamic topo")
+        print "building dynamic topo"
 	project1 = 'project1'
         project2 = 'admin'
         user1 = username or 'user1'
@@ -412,7 +409,7 @@ class sdn_topo_config_multiproject(object):
 # end class sdn_topo_config_multiproject
 ################################################################################
 
-class sdn_topo_1vn_2vm_config(object):
+class sdn_topo_1vn_2vm_config ():
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
@@ -490,13 +487,13 @@ class sdn_topo_1vn_2vm_config(object):
 
 
 ################################################################################
-class sdn_topo_icmp_error_handling(object):
+class sdn_topo_icmp_error_handling():
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
         #2 VN and 3 VM
     def build_topo(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
-        print("building dynamic topo")
+        print "building dynamic topo"
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -576,7 +573,7 @@ class sdn_topo_icmp_error_handling(object):
 
     #1VN 2 VM
     def build_topo2(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
-        print("building dynamic topo")
+        print "building dynamic topo"
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -617,13 +614,13 @@ class sdn_topo_icmp_error_handling(object):
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in list(self.vm_node_map.keys()):
+            for cn in self.vm_node_map.keys():
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(list(zip(CN, compute_node_list)))
+                    my_node_dict = dict(zip(CN, compute_node_list))
 
             if my_node_dict:
                 for key in my_node_dict:
@@ -671,11 +668,11 @@ class sdn_topo_icmp_error_handling(object):
 
 # end class sdn_topo_icmp_error_handling
 
-class sdn_topo_mx_with_si(object):
+class sdn_topo_mx_with_si():
     def build_topo(self, domain= 'default-domain', project= 'admin',
 			compute_node_list= None, username= None,
 			password= None, public_vn_info=None,config_option='openstack'):
-        print("building dynamic topo")
+        print "building dynamic topo"
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -775,7 +772,7 @@ class sdn_topo_mx_with_si(object):
         # end build_topo
 
 ################################################################################
-class sdn_topo_flow_to_sg_rule_mapping(object):
+class sdn_topo_flow_to_sg_rule_mapping():
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
@@ -785,7 +782,7 @@ class sdn_topo_flow_to_sg_rule_mapping(object):
                      password= None,no_of_vm=2,
                      config_option='openstack'):
         #no_of_vm must be 2 or 3
-        print("building dynamic topo")
+        print "building dynamic topo"
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -842,13 +839,13 @@ class sdn_topo_flow_to_sg_rule_mapping(object):
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in list(self.vm_node_map.keys()):
+            for cn in self.vm_node_map.keys():
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(list(zip(CN, compute_node_list)))
+                    my_node_dict = dict(zip(CN, compute_node_list))
 
             if my_node_dict:
                 for key in my_node_dict:
@@ -907,7 +904,7 @@ class sdn_topo_flow_to_sg_rule_mapping(object):
                       password= None,no_of_vm=2,
                       config_option='openstack'):
         #no_of_vm must be 2 or 3
-        print("building dynamic topo")
+        print "building dynamic topo"
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -962,13 +959,13 @@ class sdn_topo_flow_to_sg_rule_mapping(object):
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in list(self.vm_node_map.keys()):
+            for cn in self.vm_node_map.keys():
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(list(zip(CN, compute_node_list)))
+                    my_node_dict = dict(zip(CN, compute_node_list))
 
             if my_node_dict:
                 for key in my_node_dict:

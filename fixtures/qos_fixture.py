@@ -75,7 +75,7 @@ class QosQueueFixture(QosBaseFixture):
             queue_obj = self.vnc_api_h.qos_queue_read(fq_name=fq_name)
             self.uuid = queue_obj.uuid
             return self.read()
-        except NoIdError as e:
+        except NoIdError, e:
             pass
         queue_uuid = self.vnc_h.create_queue(self.name,
                               queue_id=self.queue_id,
@@ -116,7 +116,7 @@ class QosQueueFixture(QosBaseFixture):
         agent_qq_reference = agent_qos_queues[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, agent_qq in agent_qos_queues.items():
+        for compute, agent_qq in agent_qos_queues.iteritems():
             self.id[compute] = agent_qq['id']
             (result, mismatches) = compare_dict(agent_qq, agent_qq_reference)
             if not result:
@@ -147,7 +147,7 @@ class QosQueueFixture(QosBaseFixture):
             self.logger.info('Reading existing Queue with UUID %s' % (
                                                         self.uuid))
             queue_obj = self.vnc_api_h.qos_queue_read(id=self.uuid) 
-        except NoIdError as e:
+        except NoIdError, e:
             self.logger.exception('UUID %s not found, unable to read Queue' % (
                 self.uuid))
             raise e
@@ -218,7 +218,7 @@ class QosForwardingClassFixture(QosBaseFixture):
             fc_obj = self.vnc_api_h.forwarding_class_read(fq_name=fq_name)
             self.uuid = fc_obj.uuid
             return self.read()
-        except NoIdError as e:
+        except NoIdError, e:
             pass
 
         if self.inputs.is_gui_based_config():
@@ -274,7 +274,7 @@ class QosForwardingClassFixture(QosBaseFixture):
         agent_fc_reference = agent_fcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, agent_fc in agent_fcs.items():
+        for compute, agent_fc in agent_fcs.iteritems():
             self.id[compute] = agent_fc['id']
             (result, mismatches) = compare_dict(agent_fc, agent_fc_reference,
                                                 ignore_keys=['id'])
@@ -316,7 +316,7 @@ class QosForwardingClassFixture(QosBaseFixture):
         vrouter_fc_reference = vrouter_fcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, vrouter_fc in vrouter_fcs.items():
+        for compute, vrouter_fc in vrouter_fcs.iteritems():
             self.id[compute] = vrouter_fc['id']
             (result, mismatches) = compare_dict(vrouter_fc, vrouter_fc_reference,
                                                 ignore_keys=['id', 'qos_queue'])
@@ -358,7 +358,7 @@ class QosForwardingClassFixture(QosBaseFixture):
             fc_obj = self.vnc_api_h.forwarding_class_read(id=self.uuid)
             self.logger.info('Reading existing FC with UUID %s' % (
                              self.uuid))
-        except NoIdError as e:
+        except NoIdError, e:
             self.logger.exception('UUID %s not found, unable to read FC' % (
                 self.uuid))
             raise e
@@ -431,7 +431,7 @@ class QosConfigFixture(QosBaseFixture):
         if not mapping_dict:
             return None
         new_map = QosIdForwardingClassPairs()
-        for k, v in mapping_dict.items():
+        for k, v in mapping_dict.iteritems():
             pair = QosIdForwardingClassPair(k, v)
             new_map.add_qos_id_forwarding_class_pair(pair)
         return new_map
@@ -446,7 +446,7 @@ class QosConfigFixture(QosBaseFixture):
             qos_config_obj = self.vnc_api_h.qos_config_read(fq_name=fq_name)
             self.uuid = qos_config_obj.uuid
             return self.read()
-        except NoIdError as e:
+        except NoIdError, e:
             pass
         if self.inputs.is_gui_based_config():
             self.webui.create_qos(self)
@@ -484,21 +484,21 @@ class QosConfigFixture(QosBaseFixture):
         self.logger.debug('Adding FC entries, dscp:%s, dot1p: %s, exp: %s' % (
             dscp_mapping, dot1p_mapping, exp_mapping))
         if dscp_mapping:
-            for k, v in dscp_mapping.items():
+            for k, v in dscp_mapping.iteritems():
                 entry = QosIdForwardingClassPair(k, v)
                 self.qos_config_obj.dscp_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 self.qos_config_obj.set_dscp_entries(
                     self.qos_config_obj.dscp_entries)
         if dot1p_mapping:
-            for k, v in dot1p_mapping.items():
+            for k, v in dot1p_mapping.iteritems():
                 entry = QosIdForwardingClassPair(k, v)
                 self.qos_config_obj.vlan_priority_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 self.qos_config_obj.set_vlan_priority_entries(
                     self.qos_config_obj.vlan_priority_entries)
         if exp_mapping:
-            for k, v in exp_mapping.items():
+            for k, v in exp_mapping.iteritems():
                 entry = QosIdForwardingClassPair(k, v)
                 self.qos_config_obj.mpls_exp_entries.add_qos_id_forwarding_class_pair(
                     entry)
@@ -544,7 +544,7 @@ class QosConfigFixture(QosBaseFixture):
             self.logger.info('Reading existing qos-config with UUID %s' % (
                              self.uuid))
             self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
-        except NoIdError as e:
+        except NoIdError, e:
             self.logger.exception('UUID %s not found, cant read qos config' % (
                 self.uuid))
             raise e
@@ -643,7 +643,7 @@ class QosConfigFixture(QosBaseFixture):
         agent_qc_reference = agent_qcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for (compute, agent_qc) in agent_qcs.items():
+        for (compute, agent_qc) in agent_qcs.iteritems():
             self.id[compute] = agent_qc['id']
             (result, mismatches) = compare_dict(agent_qc, agent_qc_reference,
                                                 ignore_keys=['id'])
@@ -670,7 +670,7 @@ class QosConfigFixture(QosBaseFixture):
         vrouter_qc_reference = vrouter_qcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, vrouter_qc in vrouter_qcs.items():
+        for compute, vrouter_qc in vrouter_qcs.iteritems():
             self.id[compute] = vrouter_qc['id']
             (result, mismatches) = compare_dict(vrouter_qc, vrouter_qc_reference,
                                                 ignore_keys=['id'])

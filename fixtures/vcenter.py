@@ -1,8 +1,3 @@
-from __future__ import print_function
-from builtins import next
-from builtins import str
-from builtins import range
-from builtins import object
 import time
 import random
 import uuid
@@ -21,7 +16,6 @@ from common.vcenter_libs import connect
 from common.vcenter_libs import vim
 from tcutils.config import vcenter_verification
 from pyVmomi import vim, vmodl, eam, VmomiSupport, SoapStubAdapter
-from future.utils import with_metaclass
 
 class FabricException(Exception):
     pass
@@ -47,7 +41,7 @@ def _wait_for_task (task):
     return
 
 def _match_obj(obj, param):
-    attr = list(param.keys())[0]
+    attr = param.keys()[0]
     attrs = [attr]
     if '.' in attr:
         attrs = attr.split('.')
@@ -56,10 +50,12 @@ def _match_obj(obj, param):
                 break
             obj = getattr(obj, attrs[i])
     attr = attrs[-1]
-    return hasattr(obj, attr) and getattr(obj, attr) == list(param.values())[0]
+    return hasattr(obj, attr) and getattr(obj, attr) == param.values()[0]
 
 
-class NFSDatastore(with_metaclass(Singleton, object)):
+class NFSDatastore:
+
+    __metaclass__ = Singleton
 
     def __init__(self, inputs, vc):
         self.name = 'nfs-ds'
@@ -105,7 +101,9 @@ class NFSDatastore(with_metaclass(Singleton, object)):
             host.configManager.datastoreSystem.RemoveDatastore(self.nas_ds)  
                     
 
-class VcenterPvtVlanMgr(with_metaclass(Singleton, object)):
+class VcenterPvtVlanMgr:
+
+    __metaclass__ = Singleton
 
     def __init__(self, dvs):
         self._vlans = [(vlan.primaryVlanId, vlan.secondaryVlanId) for vlan in dvs.config.pvlanConfig if vlan.pvlanType == 'isolated']
@@ -116,7 +114,9 @@ class VcenterPvtVlanMgr(with_metaclass(Singleton, object)):
     def free_vlan(self, vlan):
         self._vlans.append(vlan)
 
-class VcenterVlanMgr(with_metaclass(Singleton, VcenterPvtVlanMgr)):
+class VcenterVlanMgr(VcenterPvtVlanMgr):
+
+    __metaclass__ = Singleton
 
     def __init__(self, dvs):
         self._vlans = list(range(1,4096)) 
@@ -160,10 +160,8 @@ class VcenterOrchestrator(Orchestrator):
                 
 
     def get_default_image(self,image_name):
-        if (image_name == 'ubuntu' or  image_name == 'cirros' ):
+        if (image_name == 'ubuntu'):
              return 'vcenter_tiny_vm'
-        if image_name == 'cirros-traffic' or image_name == 'cirros-0.4.0':
-            return 'ubuntu-traffic'
         else:
             return image_name
 
@@ -258,11 +256,11 @@ class VcenterOrchestrator(Orchestrator):
     def get_hosts(self, zone=None):
         if zone:
             return self._clusters_hosts[zone][:]
-        return [host for hosts in list(self._clusters_hosts.values()) for host in hosts]
+        return [host for hosts in self._clusters_hosts.values() for host in hosts]
 
     def get_zones(self):
         zones=[]
-        for k,v in list(self._clusters_hosts.items()):
+        for k,v in self._clusters_hosts.items():
             if v:
                 zones.append(k)  
         return zones
@@ -295,7 +293,7 @@ class VcenterOrchestrator(Orchestrator):
     @threadsafe_generator
     def _get_computes(self):
         while True:
-            hosts = [(server, cluster) for cluster, servers in list(self._clusters_hosts.items()) for server in servers]
+            hosts = [(server, cluster) for cluster, servers in self._clusters_hosts.items() for server in servers]
             for host in hosts:
                  yield host
 
@@ -547,7 +545,7 @@ class VcenterOrchestrator(Orchestrator):
         if vn_name:
             ret = vm_obj.ips.get(vn_name, None)
         else:
-            ret = list(vm_obj.ips.values())
+            ret = vm_obj.ips.values()
         return [ret]
 
     def migrate_vm(self, vm_obj, host):
@@ -862,7 +860,7 @@ class IPv6Subnet(Subnets):
         range = str(ip) + '#' + '255'
         return range
 
-class VcenterVN(object):
+class VcenterVN:
 
     @staticmethod
     def create_in_vcenter(vcenter, name, vlan, prefix, dhcp=True):
@@ -962,11 +960,11 @@ class VcenterVN(object):
            return False
 
     def get(self):
-        fq_name = [u'default-domain',u'vCenter',str(self.name)]
+        fq_name = [u'default-domain',u'vCenter',unicode(self.name)]
         if not self._get_vnc_vn_id(fq_name):
             raise Exception("Unable to query VN %s from vnc" % self.name)
 
-class VcenterVM(object):
+class VcenterVM:
 
     @staticmethod
     def create_from_vmobj(vcenter, vmobj):
@@ -1183,12 +1181,12 @@ class VcenterVM(object):
             try:
                 vcenter.run_a_command(vm_id,user,password,cmd_path,args)
             except Exception as e:
-                print(e)
+                print e
             args = 'dhclient %s'%(intf)
             try:
                 vcenter.run_a_command(vm_id,user,password,cmd_path,args)
             except Exception as e:
-                print(e)
+                print e
         time.sleep(20)
 
 class VcenterAuth(OrchestratorAuth):
@@ -1209,7 +1207,7 @@ class VcenterAuth(OrchestratorAuth):
     def get_project_id(self, project_name=None, domain_id=None):
        if not project_name:
            project_name = self.project_name
-       fq_name = [str(self.domain), str(project_name)]
+       fq_name = [unicode(self.domain), unicode(project_name)]
        obj = self.vnc.project_read(fq_name=fq_name)
        if obj:
            return obj.get_uuid()

@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import str
 from common.neutron.neutron_util import *
 from tcutils.util import *
 import string
@@ -235,9 +233,9 @@ router = {
 
 def get_matching_perm_attributes(obj, conditions):
     return_list = []
-    for (attr, value) in list(obj.items()):
+    for (attr, value) in obj.items():
         needed = True
-        for (cond_attr, cond_value) in list(conditions.items()):
+        for (cond_attr, cond_value) in conditions.items():
             if not cond_value in value[cond_attr]:
                 needed = needed and False
         if needed:
@@ -247,7 +245,7 @@ def get_matching_perm_attributes(obj, conditions):
 
 def get_network_c_reqd_attributes1():
     c_reqd_attributes = []
-    for (attr, value) in list(network.items()):
+    for (attr, value) in network.items():
         if 'c' in value['perm'] and 'true' in value['required']:
             c_reqd_attributes.append(attr)
     return c_reqd_attributes
@@ -375,10 +373,10 @@ if __name__ == "__main__":
     import pdb
     pdb.set_trace()
 #    print get_network_c_reqd_attributes1()
-    print(get_network_create_required_attributes())
-    print(get_other_network_create_attributes())
+    print get_network_create_required_attributes()
+    print get_other_network_create_attributes()
 
     # for i in util.combos(get_other_network_create_attributes()):
     #    print i
-    print(get_fixed_ip_dict_list('some_uuid', '10.1.1.0/24'))
-    print(get_pool_dict_list('10.1.1.0/24'))
+    print get_fixed_ip_dict_list('some_uuid', '10.1.1.0/24')
+    print get_pool_dict_list('10.1.1.0/24')

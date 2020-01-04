@@ -1,77 +1,17 @@
-from builtins import str
 from fabric.operations import get, put, sudo, local
 from fabric.api import run, env
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
-from fabric import sftp
-
+from fabric.state import connections as fab_connections
 from fabric.context_managers import settings, hide, cd
-from fabric import state as fab_state
-from fabric.network import HostConnectionCache, normalize_to_string, connect, normalize
-from paramiko.ssh_exception import SSHException
+
 import re
 from common import log_orig as contrail_logging
 import time
 import os
 import tempfile
 
-# Fabric's HostConnectionCache doesnt take gateway into account
-# the below cache patch takes ssh proxy into consideration
-class ContrailHostConnectionCache(HostConnectionCache):
-    def connect(self, key):
-        """
-        Force a new connection to host string.
-        """
-        from fabric.state import env
 
-        user, host, port = normalize(key)
-        key = normalize_to_string(key)
-        seek_gateway = True
-        # break the loop when the host is gateway itself
-        if env.gateway:
-            seek_gateway = normalize_to_string(env.gateway) != key
-            key = normalize_to_string(env.gateway)+'_'+key
-        self[key] = connect(
-            user, host, port, cache=self, seek_gateway=seek_gateway)
-
-    def __getitem__(self, key):
-        """
-        Autoconnect + return connection object
-        """
-        from fabric.state import env
-        seek_gateway = False
-        key = normalize_to_string(key)
-        if env.gateway:
-            seek_gateway = normalize_to_string(env.gateway) != key
-        if key not in self and (not seek_gateway or \
-               normalize_to_string(env.gateway)+'_'+key not in self):
-            self.connect(key)
-        if seek_gateway:
-            key = normalize_to_string(env.gateway)+'_'+key
-        return dict.__getitem__(self, key)
-
-    def __delitem__(self, key):
-        from fabric.state import env
-        seek_gateway = False
-        key = normalize_to_string(key)
-        if env.gateway:
-            seek_gateway = normalize_to_string(env.gateway) != key
-        if seek_gateway:
-            key = normalize_to_string(env.gateway)+'_'+key
-        return dict.__delitem__(self, key)
-
-    def __contains__(self, key):
-        from fabric.state import env
-        seek_gateway = False
-        key = normalize_to_string(key)
-        if env.gateway:
-            seek_gateway = normalize_to_string(env.gateway) != key
-        if seek_gateway:
-            key = normalize_to_string(env.gateway)+'_'+key
-        return dict.__contains__(self, key)
-
-fab_state.connections = ContrailHostConnectionCache()
-sftp.connections = fab_state.connections
 
 def remote_cmd(host_string, cmd, password=None, gateway=None,
                gateway_password=None, with_sudo=False, timeout=120,
@@ -128,6 +68,7 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
     logger.debug('Running remote_cmd, Cmd : %s, host_string: %s, password: %s'
         'gateway: %s, gateway password: %s' %(cmd, host_string, password,
             gateway, gateway_password))
+    fab_connections.clear()
     if as_daemon:
         cmd = 'nohup ' + cmd + ' & '
         if pidfile:
@@ -173,14 +114,7 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
                 tries -= 1
                 time.sleep(5)
                 continue
-            except EOFError:
-                time.sleep(1)
-                try:
-                    output = _run(cmd, timeout=timeout, pty=not as_daemon, shell=shell)
-                except (CommandTimeout, NetworkError, SystemExit) as e:
-                    tries -= 1
-                    time.sleep(5)
-                    continue
+
             if output and 'Fatal error' in output:
                 tries -= 1
                 time.sleep(5)
@@ -244,6 +178,8 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
         with_sudo: use Sudo
         warn_only: run fab with warn_only
     """
+    fab_connections.clear()
+
     # dest is local file path
     if re.match(r"^[\t\s]*/", dest):
         dest_node = None
@@ -271,58 +207,45 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
     else:
         raise AttributeError("Invalid source path - %s" % src)
 
-    tries = 0
     if src_node:
         # Source is remote
         with settings(host_string=src_node, gateway=src_gw,
                       warn_only=warn_only, disable_known_hosts=True,
                       abort_on_prompts=False):
             update_env_passwords(src_node, src_password, src_gw, src_gw_password)
-            while tries < 2:
-                try:
-                    if exists(src_path, use_sudo=with_sudo):
-                        if dest_node:
-                            # Both source and destination are remote
-                            local_dest = tempfile.mkdtemp()
-                            get(src_path, local_dest)
-                            src_path = os.path.join(local_dest, os.listdir(local_dest)[0])
-                        else:
-                            # Source is remote and destination is local
-                            # Copied to destination
-                            get(src_path, dest_path)
-                            return True
+            try:
+                if exists(src_path, use_sudo=with_sudo):
+                    if dest_node:
+                        # Both source and destination are remote
+                        local_dest = tempfile.mkdtemp()
+                        get(src_path, local_dest)
+                        src_path = os.path.join(local_dest, os.listdir(local_dest)[0])
                     else:
-                        raise IOError("Source not found - %s No such file or directory" % src)
-                except (NetworkError, SystemExit, EOFError) as e:
-                    pass
-                except SSHException:
-                    fab_state.connections.clear()
-                tries += 1
-                time.sleep(3)
-                continue
+                        # Source is remote and destination is local
+                        # Copied to destination
+                        get(src_path, dest_path)
+                        return True
+                else:
+                    raise IOError("Source not found - %s No such file or directory" % src)
+            except NetworkError:
+                pass
 
-    tries = 0
     if dest_node:
         # Source is either local or remote
         with settings(host_string=dest_node, gateway=dest_gw,
                       warn_only=warn_only, disable_known_hosts=True,
                       abort_on_prompts=False):
             update_env_passwords(dest_node, dest_password, dest_gw, dest_gw_password)
-            while tries < 2:
-                try:
-                    put(src_path, dest_path, use_sudo=with_sudo)
-                    return True
-                except (NetworkError, SystemExit, EOFError) as e:
-                    pass
-                except SSHException:
-                    fab_state.connections.clear()
-                tries += 1
-                time.sleep(3)
-                continue
+            try:
+                put(src_path, dest_path, use_sudo=True)
+                return True
+            except NetworkError:
+                pass
     else:
         # Both are local
         local("cp -r %s %s" % (src_path, dest_path))
         return True
+
 
 def update_env_passwords(host, password=None, gateway=None, gateway_password=None):
     """ Update env_passwords for the hosts provided

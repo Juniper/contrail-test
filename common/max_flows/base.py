@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 import test_v1
 import fixtures
 from common import isolated_creds
@@ -48,7 +46,7 @@ class BaseMaxFlowsTest(BaseVrouterTest):
         cls.api_s_inspect = cls.connections.api_server_inspect
         cls.orch = cls.connections.orch
         cls.compute_fixtures = []
-        for name, ip in cls.connections.inputs.compute_info.items():
+        for name, ip in cls.connections.inputs.compute_info.iteritems():
             cls.compute_fixtures.append(ComputeNodeFixture(cls.connections, ip))
 
         try:
@@ -225,7 +223,7 @@ class BaseMaxFlowsTest(BaseVrouterTest):
             vm_index = vm_index + 1 
 
 
-        for vm_fixture in list(vm_fixtures.values()):
+        for vm_fixture in vm_fixtures.values():
             assert vm_fixture.wait_till_vm_is_up()
 
         return vm_fixtures

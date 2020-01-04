@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import object
 import argparse
 import socket
 import sys
@@ -17,7 +15,7 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
         pid = os.fork()
         if pid > 0:
             sys.exit(0)
-    except OSError as e:
+    except OSError, e:
         sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
         sys.exit(1)
     os.chdir("/")
@@ -27,7 +25,7 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
         pid = os.fork()
         if pid > 0:
             sys.exit(0)
-    except OSError as e:
+    except OSError, e:
         sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
         sys.exit(1)
     si = file(stdin, 'r')
@@ -56,8 +54,8 @@ class UdpEchoClient(object):
 
     def write_stats_to_file(self):
         with open(self.stats_file, 'w', 0) as fd:
-            for dport, connections in self.stats.items():
-                for dip, stats in connections.items():
+            for dport, connections in self.stats.iteritems():
+                for dip, stats in connections.iteritems():
                     fd.write('dport: %s - sent: %s%s'%(
                         dport, stats['sent'], os.linesep))
 
@@ -75,7 +73,7 @@ class UdpEchoClient(object):
     def run(self):
         count = 1
         while True:
-            for s, sockaddr in self.sockets.items():
+            for s, sockaddr in self.sockets.iteritems():
                 try:
                     s.sendto(message, sockaddr)
                 except socket.error as e:

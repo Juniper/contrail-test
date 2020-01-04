@@ -1,10 +1,8 @@
-from __future__ import absolute_import
-from builtins import object
 import test_v1
 from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
 from common import isolated_creds
-from .verify import BaseResource
+from verify import BaseResource
 
 class UpgradeBaseTest(test_v1.BaseTestCase_v1):
     
@@ -27,10 +25,10 @@ class UpgradeBaseTest(test_v1.BaseTestCase_v1):
         super(UpgradeBaseTest, cls).tearDownClass()
     #end tearDownClass
     
-class ResourceFactory(object):
+class ResourceFactory:
     factories = {}
     def createResource(id):
-        if id not in ResourceFactory.factories:
+        if not ResourceFactory.factories.has_key(id):
             ResourceFactory.factories[id] = \
               eval(id + '.Factory()')
         return ResourceFactory.factories[id].create()
@@ -45,7 +43,7 @@ class UpgradeTestSanityWithResourceResource(BaseResource):
     def cleanUp(self):
         super(UpgradeTestSanityWithResourceResource, self).cleanUp()
 
-    class Factory(object):
+    class Factory:
         def create(self): return UpgradeTestSanityWithResourceResource()
 
     def runTest(self):

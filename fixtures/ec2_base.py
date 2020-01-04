@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import object
 from fabric.api import local, run
 from fabric.context_managers import shell_env, settings
 import time
@@ -18,8 +16,8 @@ class EC2Base(object):
         self.openstack_ip = self.inputs.openstack_ip
         self.os_username = self.inputs.host_data[self.openstack_ip]['username']
         self.os_password = self.inputs.host_data[self.openstack_ip]['password']
-        print("------------", self.username, self.password, self.tenant)
-        print("+++++++++++", inputs.stack_user, inputs.stack_password)
+        print "------------", self.username, self.password, self.tenant
+        print "+++++++++++", inputs.stack_user, inputs.stack_password
         self.auth_url = self.inputs.auth_url
 
         if not self._set_ec2_keys(tenant):
@@ -51,7 +49,7 @@ class EC2Base(object):
         found = False
 
         for key in keys:
-            key = [k for k in [_f for _f in key.split(' ') if _f] if k != '|']
+            key = [k for k in filter(None, key.split(' ')) if k != '|']
             if key[0] == tenant:
                 found = True
                 self.logger.info('Exported ec2 keys for %s' % tenant)
@@ -110,7 +108,7 @@ class EC2Base(object):
         for row in output:
             if row[0] == '+':
                 continue
-            items = [k for k in [_f for _f in row.split(' ') if _f] if k != '|']
+            items = [k for k in filter(None, row.split(' ')) if k != '|']
             key_data[items[0]] = items[1]
         self.logger.info('Exported ec2 keys for %s' % tenant_name)
         self.access_key = key_data['access']
@@ -145,7 +143,7 @@ class EC2Base(object):
                                                 tenantName)
                                           ).split('\n')
         for tenant in tenants:
-            tenant = [k for k in [_f for _f in tenant.split(' ') if _f] if k != '|']
+            tenant = [k for k in filter(None, tenant.split(' ')) if k != '|']
             if tenant[0] == 'id':
                 self.tenant_id = tenant[1]
                 break

@@ -1,4 +1,3 @@
-from builtins import object
 import requests, json
 import re
 requests.packages.urllib3.disable_warnings()

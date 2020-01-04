@@ -27,7 +27,7 @@ class BaseL3PnfTest(BaseFabricTest):
             msg = 'No device with pnf_service_chain rb_role in the provided topology'
             msg_erb = 'No device with erb_ucast_gw rb_role in the provided topology'
             erb = pnf = False
-            for device_dict in list(self.inputs.physical_routers_data.values()):
+            for device_dict in self.inputs.physical_routers_data.values():
                 if 'pnf_service_chain' in (device_dict.get('rb_roles') or []):
                     pnf = True; msg = msg_erb
                 elif 'erb_ucast_gw' in (device_dict.get('rb_roles') or []):
@@ -37,7 +37,7 @@ class BaseL3PnfTest(BaseFabricTest):
         return False, msg
 
     def setUp(self):
-        for device_name, device_dict in list(self.inputs.physical_routers_data.items()):
+        for device_name, device_dict in self.inputs.physical_routers_data.items():
             if 'pnf_service_chain' in (device_dict.get('rb_roles') or []):
                 if device_dict['role'] == 'spine':
                     self.rb_roles[device_name] = ['Route-Reflector',

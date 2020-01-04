@@ -1,6 +1,3 @@
-from __future__ import print_function
-from builtins import zip
-from builtins import range
 from collections import OrderedDict
 from itertools import repeat
 import re
@@ -16,7 +13,7 @@ from tcutils.agent.vna_introspect_utils import AgentInspect
 
 class TestBmsLcm(BaseFabricTest):
     def setUp(self):
-        for device_name, device_dict in list(self.inputs.physical_routers_data.items()):
+        for device_name, device_dict in self.inputs.physical_routers_data.items():
             if device_dict['role'] == 'spine':
                 self.rb_roles[device_name] = ['DC-Gateway','Route-Reflector']
         super(TestBmsLcm, self).setUp()
@@ -31,8 +28,8 @@ class TestBmsLcm(BaseFabricTest):
 
     def check_ping_from_mx(self):
         internal_vip = self.inputs.internal_vip
-        devices = list(self.inputs.physical_routers_data.keys())
-        for device in self.inputs.physical_routers_data.items():
+        devices = self.inputs.physical_routers_data.keys()
+        for device in self.inputs.physical_routers_data.iteritems():
             router_params = device[1]
             if router_params['role'] == 'spine':
                phy_router_fixture = self.useFixture(PhysicalRouterFixture(
@@ -80,7 +77,7 @@ class TestBmsLcm(BaseFabricTest):
         multi_homing_interface_bms_nodes = []
 
         bms_nodes_filtered = []
-        for k,v in bms_nodes.items():
+        for k,v in bms_nodes.iteritems():
               v['node_name'] = k
               if len(v['interfaces']) == 1 :
                  single_interface_bms_nodes.append(v)
@@ -222,10 +219,10 @@ class TestBmsLcm(BaseFabricTest):
                 if interface['pxe_enabled'] :
                    mac_node_dict[interface['host_mac']] = node['node_name']
 
-        print(mac_node_dict,list(mac_node_dict.keys()))
+        print mac_node_dict,mac_node_dict.keys()
 
         bms_fixtures_list = []
-        for i in range(bms_count):
+        for i in xrange(bms_count):
             bms_fixtures_list.append(self.create_vm(vn_fixture=self.vn_fixture,
                 image_name=bms_image,
                 zone=bms_availability_zone,
@@ -234,18 +231,18 @@ class TestBmsLcm(BaseFabricTest):
             time.sleep(10)
 
 
-        for i in range(5):
+        for i in xrange(5):
             time.sleep(200)
             dhcp_missing_mac_list = []
             for service_node in service_nodes:
                 dhcp_inspect = AgentInspect(service_node)
-                for mac in list(mac_node_dict.keys()):
+                for mac in mac_node_dict.keys():
                     ret = dhcp_inspect.is_dhcp_offered(mac)
                     if ret:
-                       print("DHCP Offer for %s seen"%mac)
+                       print "DHCP Offer for %s seen"%mac
                        self.logger.debug("DHCP request from %s seen"%mac)
                     else:
-                       print("DHCP Offer for %s NOT seen"%mac)
+                       print "DHCP Offer for %s NOT seen"%mac
                        dhcp_missing_mac_list.append(mac)
                        self.logger.debug("DHCP request from %s NOT seen"%mac)
 
@@ -253,11 +250,11 @@ class TestBmsLcm(BaseFabricTest):
                break
             ## BMS LCM node request dhcp before ansible configuration is done.
             ## https://bugs.launchpad.net/juniperopenstack/+bug/1790911
-            dhcp_missing_mac_list_filtered = list(OrderedDict(list(zip(dhcp_missing_mac_list, repeat(None)))).keys())
+            dhcp_missing_mac_list_filtered = OrderedDict(zip(dhcp_missing_mac_list, repeat(None))).keys()
             nodes_list = self.connections.ironic_h.obj.node.list()
-            node_mac_dict = dict([(x.name,x.uuid) for x in nodes_list])
+            node_mac_dict = dict(map(lambda x:(x.name,x.uuid),nodes_list))
             for mac in dhcp_missing_mac_list_filtered:
-               print("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
+               print "Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac]
                self.logger.debug("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
                node_id = node_mac_dict[mac_node_dict[mac]]
                self.connections.ironic_h.obj.node.set_boot_device(node_id,"pxe")
@@ -281,7 +278,7 @@ class TestBmsLcm(BaseFabricTest):
               continue
 
         for bms_fixture in bms_fixtures_up_list:
-            for i in range(5):
+            for i in xrange(5):
                ping_result = self.vm_fixture.ping_with_certainty(bms_fixture.vm_ip)
                if ping_result:
                   break
