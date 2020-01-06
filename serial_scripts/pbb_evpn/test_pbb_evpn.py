@@ -699,16 +699,16 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
         assert result, ("Mac move verification failed")
     #end test_mac_move
 
-class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
+class TestPbbEvpnPbbBridgeDomainConfig(PbbEvpnTestBase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestPbbEvpnBridgeDomainConfig, cls).setUpClass()
+        super(TestPbbEvpnPbbBridgeDomainConfig, cls).setUpClass()
     # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
-        super(TestPbbEvpnBridgeDomainConfig, cls).tearDownClass()
+        super(TestPbbEvpnPbbBridgeDomainConfig, cls).tearDownClass()
     # end tearDownClass
 
     @preposttest_wrapper
@@ -1041,7 +1041,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
     #end test_swap_isids_on_bds
 
     @preposttest_wrapper
-    def test_bd_with_isid_zero(self):
+    def  test_zero_isid_config(self):
         '''
             Test BD creation with ISID=0
                 then changing the value to non-zero ISID, verify mac learning and forwarding
