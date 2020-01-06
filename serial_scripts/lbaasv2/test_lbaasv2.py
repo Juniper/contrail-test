@@ -56,6 +56,7 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
+        self.start_webservers(lb_pool_servers)
 
         assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
@@ -85,6 +86,7 @@ class TestLBaaSV2(BaseLBaaSTest):
         lb.stop_active_vrouter()
         lb.start_active_vrouter()
 
+        client_vm1_fixture.read(refresh=True)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, lb.fip_ip),\
             "Verify lb method failed over standby netns on %s" %lb.standby_vr
 
