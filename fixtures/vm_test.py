@@ -2688,7 +2688,7 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         try:
             vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
-            cmd = "pkill -f SimpleHTTPServer"
+            cmd = "kill -9 $(pidof python)"
             output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
