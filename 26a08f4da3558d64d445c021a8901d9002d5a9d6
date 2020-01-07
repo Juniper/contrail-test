@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "51e73fba_6ff46a8b",
+        "filename": "common/contrail_fabric/ztp_base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-07T22:04:52Z",
+      "side": 1,
+      "message": "When time permits can you look at the other suggestion of backing up the default config in the device\u0027s /var/tmp or somewhere in the image-webserver and loading the same rather than zeroizing which consumes 20 minutes. The logic can be applied to both QFX and MX.\n\nWould recommend someplace in image-webserver since its out of the box and wont be deleted accidentally.",
+      "revId": "26a08f4da3558d64d445c021a8901d9002d5a9d6",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f445e2b5_a14fec65",
+        "filename": "serial_scripts/fabric_underlay/test_ztp.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-07T22:04:52Z",
+      "side": 1,
+      "message": "This would crash if the topology doesn\u0027t have a MX. Rather you may disassociate the VN from all the spines.",
+      "revId": "26a08f4da3558d64d445c021a8901d9002d5a9d6",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
