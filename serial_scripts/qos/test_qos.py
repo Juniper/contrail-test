@@ -112,7 +112,7 @@ class TestQosQueueSerial(QosTestExtendedBase):
                     'queue_id' : hw_queue,
                     'interval' : 0.001,
                     'min_expected_pkts' : 1000, # Due to scapy performance issue, keeping value less than expected.
-                    'traffic_duration' : 5,
+                    'traffic_duration' : 60,
                     'src_mac' : self.vn1_vm1_fixture.mac_addr[
                                             self.vn1_fixture.vn_fq_name]}
             assert self.validate_packet_qos_marking(**validate_method_args)
