@@ -8,13 +8,12 @@ from __future__ import absolute_import
 # try to pick params.ini in PWD
 
 from tcutils.wrappers import preposttest_wrapper
-from .verify import VerifyEVPNType5
 from common.contrail_fabric.base import BaseFabricTest
 import test
 import random
 from tcutils.util import skip_because
 
-class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
+class TestFabricEvpnType5(BaseFabricTest):
 
     @classmethod
     def setUpClass(cls):
@@ -119,21 +118,10 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
 
         self.logger.info(
             "Verify Traffic between VN-1 and VN-2 on Logical Router: lr1")
-        traffic_result = self.verify_traffic(sender_vm=vm11, receiver_vm=vm2,
-                                       proto='udp', sport=10000, dport=20000)
-        self.logger.info("Traffic Tx-Pkts: %d  Rx-Pkts: %d" %
-                         (traffic_result[0], traffic_result[1]))
-        assert traffic_result[0] == traffic_result[1], \
-            "Traffic between VN-1 and VN-2 on Logical Router: lr1 Failed"
-
+        self.verify_traffic(vm11, vm2, 'udp', sport=10000, dport=20000)
         self.logger.info(
             "Verify Traffic between VN-3 and VN-4 on Logical Router: lr2")
-        traffic_result = self.verify_traffic(sender_vm=vm3, receiver_vm=vm4,
-                                      proto='udp', sport=10000, dport=20000)
-        self.logger.info("Traffic Tx-Pkts: %d  Rx-Pkts: %d" %
-                         (traffic_result[0], traffic_result[1]))
-        assert traffic_result[0] == traffic_result[1], \
-            "Traffic between VN-3 and VN-4 on Logical Router: lr2 Failed"
+        self.verify_traffic(vm3, vm4, 'udp', sport=10000, dport=20000)
         self.do_ping_mesh([vm11, vm2, bms1])
         # end test_evpn_type_5_vxlan_traffic_between_vn
 

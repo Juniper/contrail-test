@@ -1019,9 +1019,10 @@ class TestFabricOverlay(TestSPStyleFabric):
 
     @preposttest_wrapper
     def test_hw_inventory(self):
-        for device in self.devices:
+        devices = [device for device in self.devices if 'srx' not in device.model]
+        for device in devices:
             assert len(device.get_hardware_inventorys()) == 1
-        target_device = random.choice(self.devices)
+        target_device = random.choice(devices)
         orig_hw_inventory = target_device.get_hardware_inventorys()
         self.fetch_hardware_inventory(self.fabric, [target_device])
         curr_hw_inventory = target_device.get_hardware_inventorys(refresh=True)

@@ -127,10 +127,10 @@ class FabricUtils(object):
         if wait_for_finish:
             try:
                 status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+                assert status, 'job %s to create fabric failed'%execution_id
             except AssertionError:
                 self.cleanup_fabric(fabric, verify=False)
                 raise
-            assert status, 'job %s to create fabric failed'%execution_id
             for device in fabric.fetch_associated_devices() or []:
                 device_fixture = PhysicalDeviceFixture(connections=self.connections,
                                                        name=device)
