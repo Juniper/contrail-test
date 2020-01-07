@@ -280,7 +280,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vn_obj1 = self.create_vn()
         assert vn_obj1.verify_on_setup()
 
-        vn_obj2 = self.create_vn(vn_name=vn_obj1.get_name(), subnets=vn_obj1.get_cidrs(af='dual'))
+        vn_obj2 = self.create_vn(vn_obj1.get_name(), vn_obj1.get_cidrs(af='dual'))
         assert vn_obj2.verify_on_setup()
         assert vn_obj2, 'Duplicate VN cannot be created'
         if (vn_obj1.vn_id == vn_obj2.vn_id):
@@ -857,7 +857,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         vn1_vm2_name = get_random_name('vn1_vm2')
         vn1_vm3_name = get_random_name('vn1_vm3')
         vn1_vm4_name = get_random_name('vn1_vm4')
-        vn1_fixture = self.create_vn(subnets=vn1_subnets)
+        vn1_fixture = self.create_vn(vn_subnets=vn1_subnets)
         vm1_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm1_name)
         vm2_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm2_name)
         vm3_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm3_name)
@@ -1952,7 +1952,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         if 'v6' in af or 'dual' in af:
             subnets.append(get_random_cidr(af='v6',
                            mask=SUBNET_MASK['v6']['max']))
-        vn_fixture = self.create_vn(subnets=subnets)
+        vn_fixture = self.create_vn(vn_subnets=subnets[0].replace(':', '.'))
         assert vn_fixture.verify_on_setup()
         self.logger.info(
             'out of /29 block, we can have 5 usable addresses. Only 5 VMs should get launched properly.')
