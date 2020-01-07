@@ -88,17 +88,21 @@ class NetconfConnection(AbstractConnection):
         self.logger = kwargs.get('logger', contrail_logging.getLogger(__name__))
         self.config_handle = None
         self.mode = kwargs.get('mode')
-
+        self.port = kwargs.get('port',None)
     def connect(self):
-        self.handle = Device(host=self.host, user=self.username, 
-            password=self.password, mode=self.mode)
+        if self.port:
+            self.handle = Device(host=self.host, user=self.username,
+                password=self.password, mode=self.mode, port=self.port)
+        else:
+            self.handle = Device(host=self.host, user=self.username,
+                password=self.password, mode=self.mode)
         try:
             self.handle.open(gather_facts=False)
             self.config_handle = Config(self.handle)
         except (ConnectAuthError,ConnectRefusedError, ConnectTimeoutError,
             ConnectError) as e:
             self.logger.exception(e)
-        return self.handle 
+        return self.handle
     # end connect
 
     def disconnect(self):
