@@ -11,12 +11,16 @@ class ZtpBaseTest(BaseFabricTest):
     def setUpClass(cls):
         super(ZtpBaseTest, cls).setUpClass()
         cls.netconf_sessions = dict()
+        has_mx = False
         try:
             for device in list(cls.inputs.physical_routers_data.values()):
+                if device.get('model','').startswith('mx'):
+                    has_mx = True
                 cls.netconf_sessions[device['name']] = cls.get_connection_obj(
                     host=device['console'],
                     username=device['ssh_username'],
-                    password=device['ssh_password'])
+                    password=device['ssh_password'],
+                    port=device.get('console_port',None))
                 filepath = '/tmp/'+str(device['name'])+'.conf'
                 try:
                     cls.backup_config(device['name'], filepath=filepath)
@@ -25,16 +29,19 @@ class ZtpBaseTest(BaseFabricTest):
                 cls.zeroize_device(device['name'])
                 cls.netconf_sessions[device['name']].disconnect()
         except:
-            cls.tearDownClass()
+           cls.tearDownClass()
         # Wait for zeroize (takes 10+ mins, onboard will wait for the rest)
-        time.sleep(360)
+        if has_mx:
+            time.sleep(1100)
+        else:
+            time.sleep(360)
     #end setUpClass
 
     @staticmethod
-    def get_connection_obj(host, username, password):
+    def get_connection_obj(host, username, password,port=None):
         conn_obj = ConnectionFactory.get_connection_obj(
             'juniper', host=host, username=username,
-            password=password, mode='telnet')
+            password=password, mode='telnet',port=port)
         conn_obj.connect()
         return conn_obj
     # end get_connection_obj
