@@ -42,6 +42,7 @@ class FabricSingleton(FabricUtils, GenericTestBase):
 
         self.logger.info("Assigning roles for devices in the fabric")
         self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
+        import pdb;pdb.set_trace()
         if ztp:
             self.logger.info("Create provisioning infra network")
             self.infra_ipam, self.infra_vn, self.tag_id = \

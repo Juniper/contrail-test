@@ -15,7 +15,7 @@ NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k',
                  'juniper-qfx5k', 'juniper-qfx5k-lean', 'juniper-srx']
 VALID_OVERLAY_ROLES = ['dc-gateway', 'crb-access', 'dci-gateway',
                        'ar-client', 'crb-gateway', 'erb-ucast-gateway',
-                       'crb-mcast-gateway', 'ar-replicator']
+                       'crb-mcast-gateway', 'ar-replicator','route-reflector']
 
 class FabricUtils(object):
     def __init__(self, connections):
@@ -47,11 +47,17 @@ class FabricUtils(object):
         else:
             self.logger.info("ZTP without image upgrade")
             os_version = ''
+        #update supplymental config to payload 
         payload = {'fabric_fq_name': ["default-global-system-config", name],
                    'fabric_display_name': name,
+                   "supplemental_day_0_cfg":[{"name": dct["supplemental_day_0_cfg"]["name"],\
+                                              "cfg": dct["supplemental_day_0_cfg"]["cfg"]}
+                        for dct in list(self.inputs.physical_routers_data.values()) \
+                           if dct.get('supplemental_day_0_cfg')], 
                    'device_to_ztp': [{"serial_number": dct['serial_number'], \
-                                      "hostname": dct['name']} \
-                       for dct in self.inputs.physical_routers_data.values() \
+                                      "hostname": dct['name'],
+                                      "supplemental_day_0_cfg": dct.get("supplemental_day_0_cfg",{}).get('name','')} \
+                       for dct in list(self.inputs.physical_routers_data.values()) \
                            if dct.get('serial_number')],
                    'node_profiles': [{"node_profile_name": profile}
                        for profile in fabric_dict.get('node_profiles')\
@@ -63,7 +69,7 @@ class FabricUtils(object):
                    'overlay_ibgp_asn': dc_asn or fabric_dict['namespaces']['overlay_ibgp_asn'],
                    'fabric_asn_pool': [{"asn_max": fabric_dict['namespaces']['asn'][0]['max'],
                                        "asn_min": fabric_dict['namespaces']['asn'][0]['min']}]
-                   }
+                   }      
         if os_version:
             payload['os_version'] = os_version
         self.logger.info('Onboarding new fabric %s %s'%(name, payload))

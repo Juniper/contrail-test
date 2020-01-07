@@ -15,7 +15,8 @@ class ZtpBaseTest(BaseFabricTest):
                 cls.netconf_sessions[device['name']] = cls.get_connection_obj(
                     host=device['console'],
                     username=device['ssh_username'],
-                    password=device['ssh_password'])
+                    password=device['ssh_password'],
+                    port=device.get('console_port',None))
                 filepath = '/tmp/'+str(device['name'])+'.conf'
                 try:
                     cls.backup_config(device['name'], filepath=filepath)
@@ -24,16 +25,16 @@ class ZtpBaseTest(BaseFabricTest):
                 cls.zeroize_device(device['name'])
                 cls.netconf_sessions[device['name']].disconnect()
         except:
-            cls.tearDownClass()
+           cls.tearDownClass()
         # Wait for zeroize (takes 10+ mins, onboard will wait for the rest)
-        time.sleep(360)
+        time.sleep(1100)
     #end setUpClass
 
     @staticmethod
-    def get_connection_obj(host, username, password):
+    def get_connection_obj(host, username, password,port=None):
         conn_obj = ConnectionFactory.get_connection_obj(
             'juniper', host=host, username=username,
-            password=password, mode='telnet')
+            password=password, mode='telnet',port=port)
         conn_obj.connect()
         return conn_obj
     # end get_connection_obj
@@ -58,7 +59,7 @@ class ZtpBaseTest(BaseFabricTest):
     @classmethod
     def tearDownClass(cls):
         super(ZtpBaseTest, cls).tearDownClass()
-        for device in cls.inputs.physical_routers_data.values():
+        '''for device in cls.inputs.physical_routers_data.values():
             filepath = '/tmp/'+str(device['name'])+'.conf'
             cls.netconf_sessions[device['name']] = cls.get_connection_obj(
                 host=device['console'],
@@ -67,5 +68,5 @@ class ZtpBaseTest(BaseFabricTest):
             try:
                 cls.restore_config(device['name'], filepath=filepath)
             finally:
-                cls.netconf_sessions[device['name']].disconnect()
+                cls.netconf_sessions[device['name']].disconnect()'''
     #end tearDownClass
