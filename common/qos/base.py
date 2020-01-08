@@ -190,6 +190,12 @@ class QosTestBase(BaseNeutronTest):
                 ipv6 = {'tc':tos, 'src':ipv6_src, 'dst':ipv6_dst}
                 ## WA for Bug 1614472. Internal protocol inside IPv6 is must
                 udp_header = {'sport' : 1234}
+            if queue_id:
+                if "bond" in interface:
+                    interface = self.get_active_bond_intf(src_compute_fixture.ip,
+                                                          interface)
+                init_pkt_count = self.get_queue_count(src_vm_fixture.vm_node_ip,
+                                                      interface, queue_id)
             traffic_obj, scapy_obj = self._generate_scapy_traffic(
                                                         src_vm_fixture, 
                                                         src_compute_fixture,
@@ -209,15 +215,15 @@ class QosTestBase(BaseNeutronTest):
                                     bytes_to_match = 8,
                                     min_length = 100,
                                     max_length = 250)
-            else:
+        elif traffic_generator == "hping":
+            if interval != 1:
+                interval = 'u' + str(interval*1000000)
+            if queue_id:
                 if "bond" in interface:
                     interface = self.get_active_bond_intf(src_compute_fixture.ip,
                                                           interface)
                 init_pkt_count = self.get_queue_count(src_vm_fixture.vm_node_ip,
                                                       interface, queue_id)
-        elif traffic_generator == "hping":
-            if interval != 1:
-                interval = 'u' + str(interval*1000000)
             traffic_obj, hping_obj = self._generate_hping_traffic(
                                                         src_vm_fixture,
                                                         src_compute_fixture,
@@ -236,12 +242,7 @@ class QosTestBase(BaseNeutronTest):
                 session,pcap = traffic_obj.packet_capture_start(
                                     traffic_between_diff_networks =
                                      traffic_between_diff_networks)
-            else:
-                if "bond" in interface:
-                    interface = self.get_active_bond_intf(src_compute_fixture.ip,
-                                                          interface)
-                init_pkt_count = self.get_queue_count(src_vm_fixture.vm_node_ip,
-                                                      interface, queue_id)
+            
         sleep(traffic_duration)
         if queue_id == None:
             traffic_obj.packet_capture_stop()
@@ -1310,7 +1311,7 @@ class TestQosSVCBase(QosTestExtendedBase):
                 project_name=cls.inputs.project_name,
                 connections=cls.connections,
                 vm_name="service_vm",
-                image_name='ubuntu-in-net',
+                image_name='tiny_in_net',
                 flavor='contrail_flavor_2cpu',
                 vn_objs=vn_objs,
                 count=1,
