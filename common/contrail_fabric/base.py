@@ -16,9 +16,11 @@ from future.utils import with_metaclass
 
 class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, GenericTestBase), {}))):
     def __init__(self, connections):
-        super(FabricSingleton, self).__init__(connections)
         self.vnc_h = connections.orch.vnc_h
         self.invoked = False
+        self.connections = connections
+        self.inputs = connections.inputs
+        self.logger = connections.logger
 
     def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False, dc_asn=None):
         self.invoked = True
