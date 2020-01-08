@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "77d49041_932c2e90",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-08T15:33:34Z",
+      "side": 1,
+      "message": "you can also plan for agent restart testcases on all the master,infra and computes \nand also apiserver restart if possible",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "47f64328_ebaa5f92",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-08T15:33:34Z",
+      "side": 1,
+      "message": "Hey Sarath , \n   since these testcases are meant for HA setup ,instead of checking for HA topology  in each testcase  ,you can use is_test_appliable() which does the check before entering the testcases .\nyou can refer  serial_scripts/k8s_scripts/test_km_ha.py",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1041ca34_a84e7bf5",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-08T15:33:34Z",
+      "side": 1,
+      "message": "can you just create workloads (pods/deployments/service)  and check  the rateability before and after the restart, since the traffic flow should not impacted",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2edd5af4_47d5b92c",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-08T15:33:34Z",
+      "side": 1,
+      "message": "Can you create a common routine and  move all pod status check into that , to avoid code duplication",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "147ad7c6_94aabb12",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 367,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-08T15:33:34Z",
+      "side": 1,
+      "message": "you can also plan for agent restart   testcases on all the master,infra and computes  with work loads and also apiserver restart if possible",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
