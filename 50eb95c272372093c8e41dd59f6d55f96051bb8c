@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "64a4508d_9bf2b4e4",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2020-01-09T08:18:00Z",
+      "side": 1,
+      "message": "As such this is about System level docker restart impacting all containers on the system and your request is more of individual component/container restart and mostly your k8s related tests cover this..",
+      "parentUuid": "77d49041_932c2e90",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "47f64328_ebaa5f92",
         "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
         "patchSetId": 3
@@ -33,6 +51,24 @@
       "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "edd225ed_35f3e616",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2020-01-09T08:18:00Z",
+      "side": 1,
+      "message": "Sure, have modified scripts for this and please find new patch.",
+      "parentUuid": "47f64328_ebaa5f92",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "014cb9c1_bd6ca1ef",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2020-01-09T08:18:00Z",
+      "side": 1,
+      "message": "As this is whole system level docker restart with many of active components also and this not apply. the component level restart will cover this.",
+      "parentUuid": "1041ca34_a84e7bf5",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "2edd5af4_47d5b92c",
         "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
         "patchSetId": 3
@@ -70,6 +124,24 @@
     },
     {
       "key": {
+        "uuid": "4198b634_3feffb0b",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2020-01-09T08:18:00Z",
+      "side": 1,
+      "message": "Sure, have modified/created new procedure to accommodate this. Please find the patch",
+      "parentUuid": "2edd5af4_47d5b92c",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "147ad7c6_94aabb12",
         "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
         "patchSetId": 3
@@ -84,6 +156,24 @@
       "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "996d9ca4_7caf29cf",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 367,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2020-01-09T08:18:00Z",
+      "side": 1,
+      "message": "same as first comment.",
+      "parentUuid": "147ad7c6_94aabb12",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
