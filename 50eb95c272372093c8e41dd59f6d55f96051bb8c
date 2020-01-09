@@ -37,6 +37,24 @@
     },
     {
       "key": {
+        "uuid": "e8f82e51_4f0dd0fb",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-09T14:30:38Z",
+      "side": 1,
+      "message": "Hi Sarath , as discussed offline,, the  k8s setup and the oc setups are different . in case of oc ,the vrouter agent  runs on all the cluster nodes  but no in k8s ...\nplease add the cases during your next review",
+      "parentUuid": "64a4508d_9bf2b4e4",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "47f64328_ebaa5f92",
         "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
         "patchSetId": 3
@@ -66,6 +84,24 @@
       "side": 1,
       "message": "Sure, have modified scripts for this and please find new patch.",
       "parentUuid": "47f64328_ebaa5f92",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e2e018e3_69c98b94",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-09T14:30:38Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "edd225ed_35f3e616",
       "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": false
@@ -107,6 +143,24 @@
     },
     {
       "key": {
+        "uuid": "179ce608_bb6931c2",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-09T14:30:38Z",
+      "side": 1,
+      "message": "just the Status check really doesn\u0027t really guarantee unless we have the work loads  as I mentioned the k8s and the oc environments are different .\n\njust try with atleast two pods . but i still leave it to you ...",
+      "parentUuid": "014cb9c1_bd6ca1ef",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "2edd5af4_47d5b92c",
         "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
         "patchSetId": 3
@@ -142,6 +196,24 @@
     },
     {
       "key": {
+        "uuid": "df424167_77d73916",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-09T14:30:38Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "4198b634_3feffb0b",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "147ad7c6_94aabb12",
         "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
         "patchSetId": 3
@@ -171,6 +243,24 @@
       "side": 1,
       "message": "same as first comment.",
       "parentUuid": "147ad7c6_94aabb12",
+      "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1398c2c5_8895603e",
+        "filename": "serial_scripts/k8s_scripts/test_docker_restart.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 367,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-01-09T14:30:38Z",
+      "side": 1,
+      "message": "if this is the current customer requirement . ..its fine .. docker restart will restart all the service dockers  on the node but where as the service container alone is different ..may be you can take as part of your next script review ..",
+      "parentUuid": "996d9ca4_7caf29cf",
       "revId": "50eb95c272372093c8e41dd59f6d55f96051bb8c",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": false
