@@ -363,13 +363,18 @@ class BMSFixture(fixtures.Fixture):
             self.logger.info('BMS interface: %s' % self._interface)
         self.run('ip link set dev %s up'%(self._interface))
         if self.vlan_id:
-            self.run('vconfig add %s %s'%(self._interface, self.vlan_id))
+            # self.run('vconfig add %s %s'%(self._interface, self.vlan_id))
+            # Removing the dependency on vconfig
+            self.run('ip link add link {ifc} name {ifc}.{vlan} type vlan id '
+                     '{vlan}'.format (ifc=self._interface, vlan=self.vlan_id))
             self.run('ip link set dev %s.%s up'%(self._interface, self.vlan_id))
         pvlanintf = '%s.%s'%(self._interface, self.vlan_id) if self.vlan_id\
                     else self._interface
         self.run('ip link set dev %s up'%pvlanintf)
-        self.mvlanintf = '%s-%s'%(pvlanintf,
+        mvlanintf = '%s-%s'%(pvlanintf,
             get_random_string(2, chars=string.ascii_letters))
+        # Truncate the interface name length to 15 char due to linux limitation
+        self.mvlanintf = mvlanintf[-15:]
         self.logger.info('BMS mvlanintf: %s' % self.mvlanintf)
         macaddr = 'address %s'%self.bms_mac if self.bms_mac else ''
         self.run('ip link add %s link %s %s type macvlan mode bridge'%(
@@ -402,7 +407,9 @@ class BMSFixture(fixtures.Fixture):
             self.run('ip netns pids %s | xargs kill -9 ' % (self.namespace))
             self.run('ip netns delete %s' % (self.namespace))
         if self.vlan_id:
-            self.run('vconfig rem %s.%s'%(self._interface, self.vlan_id))
+            # self.run('vconfig rem %s.%s'%(self._interface, self.vlan_id))
+            # Removing the dependency on vconfig
+            self.run('ip link delete %s.%s'%(self._interface, self.vlan_id))
         if len(interfaces) > 1 and self.bond_created:
             self.delete_bonding()
 
