@@ -305,7 +305,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         assert result, msg
         return secgrp_fixture
 
-    def create_logical_router(self, vn_fixtures, vni=None, devices=None, **kwargs):
+    def create_logical_router(self, vn_fixtures, vni=None, devices=None,
+                              assign_tospines=True, **kwargs):
         vn_ids = [vn.uuid for vn in vn_fixtures]
         vni = vni or str(get_random_vxlan_id(min=10000))
         self.logger.info('Creating Logical Router with VN uuids: %s, VNI %s'%(
@@ -314,7 +315,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             connections=self.connections,
             connected_networks=vn_ids, vni=vni, vxlan_enabled=True,
             **kwargs))
-        for spine in devices or self.spines:
+        for spine in devices or (self.spines if assign_tospines else []):
             if kwargs.get('is_public_lr') == True:
                 if 'dc_gw' not in self.inputs.get_prouter_rb_roles(spine.name):
                     continue
