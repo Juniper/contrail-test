@@ -368,8 +368,10 @@ class BMSFixture(fixtures.Fixture):
         pvlanintf = '%s.%s'%(self._interface, self.vlan_id) if self.vlan_id\
                     else self._interface
         self.run('ip link set dev %s up'%pvlanintf)
-        self.mvlanintf = '%s-%s'%(pvlanintf,
+        mvlanintf = '%s-%s'%(pvlanintf,
             get_random_string(2, chars=string.ascii_letters))
+        # Truncate the interface name length to 15 char due to linux limitation
+        self.mvlanintf = mvlanintf[-15:]
         self.logger.info('BMS mvlanintf: %s' % self.mvlanintf)
         macaddr = 'address %s'%self.bms_mac if self.bms_mac else ''
         self.run('ip link add %s link %s %s type macvlan mode bridge'%(
