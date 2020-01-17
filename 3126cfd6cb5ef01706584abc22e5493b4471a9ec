@@ -1,0 +1,293 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d45113d1_13dea671",
+        "filename": "common/contrail_fabric/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 309,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Do we really need this, since in other erb-testcases we send the devices list. We extend the LR to spine only if devices list is not provided.",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2aea0bcd_ae90e099",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "enterprise_style has to be True",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e1258c34_81628126",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Also assign \u0027lean\u0027 and \u0027RR\u0027 roles to the spine... the default would be \u0027CRB-Gw\u0027 and \u0027RR\u0027 on spines.",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6b7a1706_6c8204cb",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Add is_test_applicable with atleast 1 BMS device connected to erb-gw role.",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8844062e_9b00a98e",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Can we use \u0027cirros-0.4.0\u0027 in place of \u0027ubuntu\u0027",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2058c114_2bd8612a",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Fetch only the BMS connected to the ERB-Ucast-Gw leaf.",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3ccf0746_7676c6b3",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "You need to fetch the BMS connected to the erb nodes alone.",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f52f978b_08a4c56f",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 77,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Can we use \u0027cirros-0.4.0\u0027 in place of \u0027ubuntu\u0027",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1267550c_ec1f63b0",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Same here.",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ee86b219_df0813bb",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "devices is already set to erb_devices so no need to set assign_tospines\u003dFalse",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7b6d4a21_a402648e",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Add is_test_applicable with atleast 2 BMS devices connected to erb-gw role.",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "70ff8b27_6569109d",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "is both v4 and v6 reqd for this usecase?",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ae7b0334_c46f3082",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Needs to fetch only the BMS nodes connected to erb-gw-nodes",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b15b92df_8ec3cba6",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 125,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Can we use \u0027cirros-0.4.0\u0027 in place of \u0027ubuntu\u0027",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "750066c0_0dd4a080",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 128,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Needs to fetch only the BMS nodes connected to erb-gw-nodes",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "22c7c52f_c217e24b",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 165,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "Can add a addCleanup for restoring the service after calling stop_container",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7d27f2ec_34cf2d2d",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_erb.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 180,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-17T18:13:04Z",
+      "side": 1,
+      "message": "This would be python3 incompatible. BTW why do we expect an exception?",
+      "revId": "3126cfd6cb5ef01706584abc22e5493b4471a9ec",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
