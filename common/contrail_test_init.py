@@ -1085,9 +1085,9 @@ class ContrailTestInit(object):
         '''
         return ContrailStatusChecker(self).get_service_status(svc, state)
 
-    def verify_state(self, retries=1):
+    def verify_state(self, retries=1, rfsh=False):
         result, failed_services = ContrailStatusChecker(self
-            ).wait_till_contrail_cluster_stable(tries=retries)
+            ).wait_till_contrail_cluster_stable(tries=retries, refresh=rfsh)
         if not result and failed_services:
             self.logger.info("Failed services are : %s" % (failed_services))
         return result

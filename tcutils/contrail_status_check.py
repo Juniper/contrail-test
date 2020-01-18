@@ -65,7 +65,6 @@ class ContrailStatusChecker(object):
             expected_state=None, keyfile=None, certfile=None, cacert=None,
             refresh=False):
         exp = 'up' if expectation else 'down'
-        refresh= 'True' if tries > 1 else 'False'
         for i in range(0, tries):
             status_dict = contrail_status(self.inputs, nodes, roles, services,
                 keyfile=keyfile, certfile=certfile, cacert=cacert, refresh=refresh)
