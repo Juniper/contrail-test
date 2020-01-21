@@ -17,7 +17,7 @@ from tcutils.verification_util import *
 from .opserver_results import *
 from .opserver_util import OpServerUtils
 from tcutils.util import *
-from cfgm_common.exceptions import PermissionDenied
+from vnc_api.exceptions import PermissionDenied
 
 class VerificationOpsSrv (VerificationUtilBase):
 

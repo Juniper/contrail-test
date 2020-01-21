@@ -15,7 +15,7 @@ import socket
 import subprocess
 
 from vnc_api.vnc_api import *
-import cfgm_common.exceptions
+import vnc_api.exceptions
 
 import json
 from pprint import pformat
@@ -101,7 +101,7 @@ class VnCfg(object):
         vn_fq_name = VirtualNetwork(vn_name, self._proj_obj).get_fq_name()
         try:
             self._vnc_lib.virtual_network_delete(fq_name=vn_fq_name)
-        except cfgm_common.exceptions.NoIdError:
+        except vnc_api.exceptions.NoIdError:
             pass
     # end _delete_vn
 

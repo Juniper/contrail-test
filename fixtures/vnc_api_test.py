@@ -6,7 +6,7 @@ import os
 import uuid
 
 from vnc_api.vnc_api import *
-from cfgm_common.exceptions import NoIdError
+from vnc_api.exceptions import NoIdError
 
 from contrailapi import ContrailVncApi
 from tcutils.util import get_dashed_uuid

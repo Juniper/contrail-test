@@ -13,7 +13,7 @@ from tcutils.util import retry
 from time import sleep
 from openstack import OpenstackAuth
 from vcenter import VcenterAuth
-from cfgm_common.exceptions import NoIdError
+from vnc_api.exceptions import NoIdError
 
 
 class ProjectFixture(fixtures.Fixture):
