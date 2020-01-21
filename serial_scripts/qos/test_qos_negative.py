@@ -1,6 +1,6 @@
 from tcutils.wrappers import preposttest_wrapper
 from common.qos.base import *
-from cfgm_common.exceptions import BadRequest
+from vnc_api.exceptions import BadRequest
 from common.neutron.base import BaseNeutronTest
 
 class TestQosNegative(QosTestBase):

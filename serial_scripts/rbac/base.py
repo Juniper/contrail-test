@@ -10,7 +10,7 @@ from lbaasv2_fixture import LBaasV2Fixture
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from tcutils.util import get_random_name
 from tcutils.config.vnc_introspect_utils import VNCApiInspect
-from cfgm_common.exceptions import PermissionDenied
+from vnc_api.exceptions import PermissionDenied
 from common.openstack_libs import neutron_forbidden
 from vnc_api.vnc_api import VirtualNetworkType
 import test_v1

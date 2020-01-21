@@ -1,7 +1,7 @@
 netaddr==0.7.19
 lxml==4.4.1
-# testresources==2.0.1
-# testrepository==0.0.20
+testresources==2.0.1
+testrepository==0.0.20
 pexpect==4.7.0
 linecache2==1.0.0
 xmltodict==0.12.0
@@ -21,3 +21,5 @@ dpkt==1.9.2
 jxmlease==1.0.1
 pycrypto==2.6.1
 fabric==2.5.0
+future==0.18.2
+#? gevent-1.4.0

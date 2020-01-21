@@ -2,7 +2,7 @@ from builtins import str
 from builtins import range
 import fixtures
 from vnc_api.vnc_api import *
-from cfgm_common import exceptions as vncExceptions
+from vnc_api import exceptions as vncExceptions
 from project_test import *
 import time
 from contrail_fixtures import *
