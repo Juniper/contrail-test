@@ -2797,6 +2797,7 @@ class VMFixture(fixtures.Fixture):
 
     def reboot(self, type='SOFT'):
         self.vm_obj.reboot(type)
+        self.orch.wait_till_vm_is_active(self.vm_obj)
 
     def wait_till_vm_status(self, status='ACTIVE'):
         return self.orch.wait_till_vm_status(self.vm_obj, status)
