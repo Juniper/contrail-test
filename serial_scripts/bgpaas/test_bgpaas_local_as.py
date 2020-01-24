@@ -38,19 +38,19 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
         1. Create a bgpaas vm. Configure same local-as on vm and contrail side.
         2. Make sure BGP with vm comes up.
         '''
-        ret_dict = self.config_basic()
+        ret_dict = self.config_basic(image_name='ubuntu-bird')
         vn_fixture = ret_dict['vn_fixture']
         test_vm = ret_dict['test_vm']
         bgpaas_vm1 = ret_dict['bgpaas_vm1']
 
-        local_autonomous_system = random.randint(200, 800)
+        cluster_local_autonomous_system = random.randint(200, 800)
         bgpaas_fixture = self.create_bgpaas(
             bgpaas_shared=True,
             autonomous_system=64500,
             bgpaas_ip_address=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system)
+            cluster_local_autonomous_system=cluster_local_autonomous_system)
         self.attach_port_to_bgpaas_obj(bgpaas_vm1, bgpaas_fixture)
-        self.configure_bgpaas_obj_and_vsrx(
+        self.configure_bgpaas_obj_and_bird(
             bgpaas_fixture=bgpaas_fixture,
             bgpaas_vm1=bgpaas_vm1,
             vn_fixture=vn_fixture,
@@ -58,7 +58,7 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             dst_vm=bgpaas_vm1,
             bgp_ip=bgpaas_vm1.vm_ip,
             lo_ip=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system)
+            local_autonomous_system=cluster_local_autonomous_system)
 
         agent = bgpaas_vm1.vm_node_ip
         assert bgpaas_fixture.verify_in_control_node(

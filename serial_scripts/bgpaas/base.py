@@ -36,7 +36,7 @@ class LocalASBase(test_v1.BaseTestCase_v1):
         super(LocalASBase, self).tearDown()
 
     # create test vm and bgpaas vm.
-    def config_basic(self):
+    def config_basic(self,image_name='vsrx'):
         vn_name = get_random_name('bgpaas_vn')
         vn_subnets = [get_random_cidr()]
         vn_fixture = self.create_vn(vn_name, vn_subnets)
@@ -44,7 +44,7 @@ class LocalASBase(test_v1.BaseTestCase_v1):
                                  image_name='ubuntu-traffic')
         assert test_vm.wait_till_vm_is_up()
         bgpaas_vm1 = self.create_vm(
-            vn_fixture, 'bgpaas_vm1', image_name='vsrx')
+            vn_fixture, 'bgpaas_vm1', image_name=image_name)
         assert bgpaas_vm1.wait_till_vm_is_up()
         ret_dict = {
             'vn_fixture': vn_fixture,
@@ -64,6 +64,35 @@ class LocalASBase(test_v1.BaseTestCase_v1):
             self.detach_vmi_from_bgpaas,
             port1['id'],
             bgpaas_fixture)
+
+    def configure_bgpaas_obj_and_bird(
+            self,
+            bgpaas_fixture,
+            bgpaas_vm1,
+            vn_fixture,
+            src_vm,
+            dst_vm,
+            bgp_ip,
+            lo_ip,
+            cluster_local_autonomous_system,
+            peer_local=''):
+
+        address_families = []
+        address_families = ['inet', 'inet6']
+        autonomous_system = 64500
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('We will configure BGP on the bird')
+        self.config_bgp_on_bird(
+            bgpaas_vm=bgpaas_vm1,
+            local_ip=bgp_ip,
+            peer_ip=gw_ip,
+            peer_as=cluster_local_autonomous_system,
+            local_as=autonomous_system)
+
+        bgpaas_vm1.wait_for_ssh_on_vm()
 
     # configure vsrx with correct families and local as/peer as if necessary
     def configure_bgpaas_obj_and_vsrx(
