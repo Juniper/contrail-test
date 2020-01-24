@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "82dd130f_96e2ba1f",
+        "filename": "serial_scripts/bgpaas/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-24T18:28:49Z",
+      "side": 1,
+      "message": "For test-vm, can we use cirros-0.4.0 or cirros-traffic rather than ubuntu-traffic.",
+      "revId": "6deff4cd5847d96e1b34de96418e53844aff83d5",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "31e54584_cb1c80d5",
+        "filename": "serial_scripts/bgpaas/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-24T18:28:49Z",
+      "side": 1,
+      "message": "Please move this wait below the bgpaas_vm1 creation so VM launch will be in parallel.",
+      "revId": "6deff4cd5847d96e1b34de96418e53844aff83d5",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "02a214ff_9acbaf63",
+        "filename": "serial_scripts/bgpaas/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-24T18:28:49Z",
+      "side": 1,
+      "message": "Cosmetic, Rather than \u0027We will configure\u0027 can you please rename it to \u0027Configuring\u0027.",
+      "revId": "6deff4cd5847d96e1b34de96418e53844aff83d5",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "580bd5ec_a73a0bab",
+        "filename": "serial_scripts/bgpaas/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-01-24T18:28:49Z",
+      "side": 1,
+      "message": "Believe the wait has to happen before the config and not after.",
+      "revId": "6deff4cd5847d96e1b34de96418e53844aff83d5",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
