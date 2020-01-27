@@ -474,6 +474,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
+        self.sleep(5)
         servers_in_use, status, ports = self.get_all_in_use_servers("xmpp",
                                         "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -507,6 +508,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
+        self.sleep(5)
         servers_in_use, status, ports = self.get_all_in_use_servers(
                                         "xmpp", "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -560,6 +562,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
+        self.sleep(5)
         servers_in_use, status, ports = self.get_all_in_use_servers("collector",
                                         "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -593,6 +596,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
+        self.sleep(5)
         servers_in_use, status, ports = self.get_all_in_use_servers("collector",
                                         "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -646,6 +650,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
+        self.sleep(5)
         servers_in_use, status, ports = self.get_all_in_use_servers("collector",
                                         "control", "contrail-control",
                                         self.inputs.bgp_control_ips[0])
@@ -679,6 +684,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
+        self.sleep(5)
         servers_in_use, status, ports = self.get_all_in_use_servers(
                                         "collector", "control", "contrail-control",
                                         self.inputs.bgp_control_ips[0])
