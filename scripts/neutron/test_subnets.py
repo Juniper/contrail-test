@@ -66,9 +66,9 @@ class TestSubnets(BaseNeutronTest):
         vn1_subnet_dict = {'host_routes': []}
         vn1_fixture.update_subnet(vn1_fixture.vn_subnet_objs[0]['id'],
                                   vn1_subnet_dict)
-        time.sleep(5)
         vm1_fixture.reboot()
-        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up(refresh=True)
+        time.sleep(5)
         output = vm1_fixture.run_cmd_on_vm(['route -n'])
         route_output = list(output.values())[0]
         assert dest_ip not in route_output, 'Route pushed from DHCP is still '\
@@ -112,8 +112,8 @@ class TestSubnets(BaseNeutronTest):
         vn1_fixture.update_subnet(vn1_fixture.vn_subnet_objs[0]['id'],
                                   vn1_subnet_dict)
         vm1_fixture.reboot()
+        assert vm1_fixture.wait_till_vm_is_up(refresh=True)
         time.sleep(5)
-        assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
         dns_output = list(output.values())[0]
         assert dns1_ip not in dns_output, 'DNS Server IP %s still seen '\
@@ -270,7 +270,6 @@ class TestSubnets(BaseNeutronTest):
         vn1_fixture.update_subnet(vn1_fixture.vn_subnet_objs[0]['id'],
                                   vn1_subnet_dict)
         vm1_fixture.reboot()
-        time.sleep(5)
         assert vm1_fixture.wait_till_vm_is_active(), 'VM is not up on reboot!'
         time.sleep(30)
         console_log = vm1_fixture.get_console_output()
@@ -284,8 +283,8 @@ class TestSubnets(BaseNeutronTest):
         vn1_fixture.update_subnet(vn1_fixture.vn_subnet_objs[0]['id'],
                                   vn1_subnet_dict)
         vm1_fixture.reboot()
+        assert vm1_fixture.wait_till_vm_is_up(refresh=True), 'VM is not up on reboot!'
         time.sleep(5)
-        assert vm1_fixture.wait_till_vm_is_up(), 'VM is not up on reboot!'
         result_output = vm1_fixture.run_cmd_on_vm(['ifconfig -a'])
         output = list(result_output.values())[0]
         assert vm1_fixture.vm_ip in output,\

@@ -73,7 +73,7 @@ class TestVirtualNetwork(BaseNeutronTest):
         assert net_rsp['network'][
             'admin_state_up'] == False, 'Failed to update admin_state_up'
 
-        ret = vn1_vm1_fixture.wait_till_vm_is_up()
+        ret = vn1_vm1_fixture.wait_till_vm_is_up(refresh=True)
         if ret == True:
             self.logger.error( 'Test Failed. VMI is up after making network admin down')
             raise Exception('Test Failed. VMI is up after making network admin down')
