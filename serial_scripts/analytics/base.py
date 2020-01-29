@@ -160,68 +160,21 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
                         result = result and False
         return result
     #end verify_vna_stats
-    
-    def setup_and_create_streams(self, src_vn_fix, dst_vn_fix, src_vm_fix, dst_vm_fix, sport=8000, dport=9000, count=100):
-        
-        src_vm_node_ip = src_vm_fix.vm_node_ip
-        dst_vm_node_ip = dst_vm_fix.vm_node_ip
-        src_local_host = Host(
-            src_vm_node_ip, self.inputs.host_data[
-                src_vm_node_ip]['username'], self.inputs.host_data[
-                dst_vm_node_ip]['password'])
-        dst_local_host = Host(
-            dst_vm_node_ip, self.inputs.host_data[
-                dst_vm_node_ip]['username'], self.inputs.host_data[
-                dst_vm_node_ip]['password'])
-        send_host = Host(src_vm_fix.local_ip,
-                              src_vm_fix.vm_username,
-                              src_vm_fix.vm_password)
-        recv_host = Host(dst_vm_fix.local_ip,
-                              dst_vm_fix.vm_username,
-                              dst_vm_fix.vm_password)
-        send_file_name = 'sendudp'
-        recv_file_name = 'recvudp'
-        # Create traffic stream
+
+    def setup_and_create_streams(self, src_vm, dst_vm, sport=8000, dport=9000, count=100):
+
+        traffic_objs = list()
         for i in range(3):
-            sport = sport 
+            sport = sport
             dport = dport + i
-            print('count=%s' % (count))
-            print('dport=%s' % (dport))
+            traffic_objs.append(self.start_traffic(src_vm, dst_vm, 'udp',
+                        sport, dport, fip_ip=dst_vm.vm_ip, count=100))
+        time.sleep(10)
+        for traffic_obj in traffic_objs):
+            self.stop_traffic(traffic_obj)
 
-            self.logger.info("Creating streams...")
-            stream = Stream(
-                protocol="ip",
-                proto='udp',
-                src=src_vm_fix.vm_ip,
-                dst=dst_vm_fix.vm_ip,
-                dport=dport,
-                sport=sport)
-
-            profile = StandardProfile(
-                stream=stream,
-                size=100,
-                count=count,
-                listener=dst_vm_fix.vm_ip)
-            sender = Sender(
-                send_file_name,
-                profile,
-                src_local_host,
-                send_host,
-                self.inputs.logger)
-            receiver = Receiver(
-                recv_file_name,
-                profile,
-                dst_local_host,
-                recv_host,
-                self.inputs.logger)
-            receiver.start()
-            sender.start()
-            sender.stop()
-            receiver.stop()
-            print(sender.sent, receiver.recv)
-            time.sleep(1)
     #end setup_create_streams
-            
+    
     def creat_bind_policy(self,policy_name, rules, src_vn_fix, dst_vn_fix):
         #method to avoid redundant code for binding
         policy_fixture = self.useFixture(
@@ -534,7 +487,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         
         #query session record table for teardown bytes/pkts
         self.logger.info('wait for the flows to get expire')
-        sleep(200)
+        time.sleep(200)
         flow_record = self.analytics_obj.get_flows_vrouter_uve(
             vrouter=vm_host)
         assert not flow_record,'flows not got deleted even after 240 sec'
