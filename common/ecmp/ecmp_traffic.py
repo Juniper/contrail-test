@@ -53,7 +53,7 @@ class ECMPTraffic(VerifySvcChain):
         svm_list = si_fix.svm_list
         svm_index = 0
         vm_fix_pcap_pid_files = []
-
+        pcap_dict = {}
         # Capturing packets based upon source port
         sports = [str(SPORT+index) for index in range(flow_count)]
         filters = '\'(src port '+' or src port '.join(sports)+')\''
@@ -77,10 +77,12 @@ class ECMPTraffic(VerifySvcChain):
                     vm_fix_pcap_pid_files.append(tcpdump_files)
                 else:
                     host_ip = svm_fixture.vm_node_ip
-                    cmd = 'timeout %s tcpdump -nni %s %s -w /tmp/%s.pcap'%(
-                           timeout, tapintf, filters, tapintf)
-                    self.inputs.run_cmd_on_server(host_ip, cmd,
-                        as_sudo=True, as_daemon=True)
+                    username = self.inputs.host_data[host_ip]['username']
+                    password = self.inputs.host_data[host_ip]['password']
+                    session, pcap = start_tcpdump_for_intf(host_ip, username, password, tapintf, filters)
+                    sleep(5)
+                    stop_tcpdump_for_intf(session, pcap)
+                    pcap_dict[svm_fixture] = pcap
             else:
                 self.logger.info('%s is not in ACTIVE state' % svm.name)
         sleep(timeout+1)
@@ -102,10 +104,10 @@ class ECMPTraffic(VerifySvcChain):
                         svm_fixture.tap_intf[si_fix.left_vn_fq_name])
                 if not self.inputs.pcap_on_vm:
                     host_ip = svm_fixture.vm_node_ip
-                    cmd = 'tcpdump -nnr /tmp/%s.pcap'%(tapintf)
+                    cmd = 'tcpdump -nnr /tmp/%s'%(pcap_dict[svm_fixture])
                     out = self.inputs.run_cmd_on_server(host_ip,
                         cmd, as_sudo=True)
-                    cmd = 'rm -f /tmp/%s.pcap'%(tapintf)
+                    cmd = 'rm -f /tmp/%s'%(pcap_dict[svm_fixture])
                     self.inputs.run_cmd_on_server(host_ip, cmd, as_sudo=True)
                 else:
                     out, pkt_count = stop_tcpdump_for_vm_intf(
