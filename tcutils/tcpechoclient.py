@@ -77,7 +77,7 @@ class TcpEchoClient(object):
                 self.stats[server_port][server_address]['sent'] += 1
             for s in self.sockets[:]:
                 try:
-                    s.settimeout(1)
+                    s.settimeout(4)
                     data = s.recv(1024)
                     s.settimeout(None)
                 except socket.timeout:
