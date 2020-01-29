@@ -80,10 +80,11 @@ class ECMPTraffic(VerifySvcChain):
                     vm_fix_pcap_pid_files.append(tcpdump_files)
                 else:
                     host_ip = svm_fixture.vm_node_ip
-                    cmd = 'timeout %s tcpdump -nni %s %s -w /tmp/%s.pcap'%(
-                           timeout, tapintf, filters, tapintf)
-                    self.inputs.run_cmd_on_server(host_ip, cmd,
-                        as_sudo=True, as_daemon=True)
+                    username = self.inputs.host_data[host_ip]['username']
+                    password = self.inputs.host_data[host_ip]['password']
+                    session, pcap = start_tcpdump_for_intf(host_ip, username, passwoord, tapintf, filters)
+                    sleep(5)
+                    stop_tcpdump_for_intf(session, pcap)
             else:
                 self.logger.info('%s is not in ACTIVE state' % svm.name)
         sleep(timeout+1)
