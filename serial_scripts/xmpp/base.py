@@ -128,9 +128,9 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
 
     def enable_auth_on_cluster(self):
         for node in self.inputs.bgp_control_ips:
-            self.inputs.add_knob_to_container(node, 'control_control_1', '', 'xmpp_auth_enable=True')
+            self.inputs.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=True')
         for node in self.inputs.compute_ips:
-            self.inputs.add_knob_to_container(node, 'vrouter_vrouter-agent_1', '', 'xmpp_auth_enable=True')
+            self.inputs.add_knob_to_container(node, 'vrouter_vrouter-agent_1', 'DEFAULT', 'xmpp_auth_enable=True')
 
     def update_contrail_conf(
         self,
