@@ -48,7 +48,7 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             bgpaas_shared=True,
             autonomous_system=64500,
             bgpaas_ip_address=bgpaas_vm1.vm_ip,
-            cluster_local_autonomous_system=cluster_local_autonomous_system)
+            local_autonomous_system=cluster_local_autonomous_system)
         self.attach_port_to_bgpaas_obj(bgpaas_vm1, bgpaas_fixture)
         self.configure_bgpaas_obj_and_bird(
             bgpaas_fixture=bgpaas_fixture,
@@ -58,7 +58,7 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             dst_vm=bgpaas_vm1,
             bgp_ip=bgpaas_vm1.vm_ip,
             lo_ip=bgpaas_vm1.vm_ip,
-            local_autonomous_system=cluster_local_autonomous_system)
+            cluster_local_autonomous_system=cluster_local_autonomous_system)
 
         agent = bgpaas_vm1.vm_node_ip
         assert bgpaas_fixture.verify_in_control_node(
