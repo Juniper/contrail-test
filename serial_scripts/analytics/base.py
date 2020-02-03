@@ -15,8 +15,9 @@ from traffic.core.profile import create, ContinuousProfile, StandardProfile, Bur
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 from tcutils.util import Singleton
+from common.base import GenericTestBase
 
-class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
+class AnalyticsBaseTest(GenericTestBase):
 
     @classmethod
     def setUpClass(cls):

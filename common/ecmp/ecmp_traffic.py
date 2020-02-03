@@ -82,7 +82,7 @@ class ECMPTraffic(VerifySvcChain):
                     host_ip = svm_fixture.vm_node_ip
                     username = self.inputs.host_data[host_ip]['username']
                     password = self.inputs.host_data[host_ip]['password']
-                    session, pcap = start_tcpdump_for_intf(host_ip, username, passwoord, tapintf, filters)
+                    session, pcap = start_tcpdump_for_intf(host_ip, username, password, tapintf, filters)
                     sleep(5)
                     stop_tcpdump_for_intf(session, pcap)
                     pcap_dict[svm_fixture] = pcap
