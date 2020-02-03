@@ -362,7 +362,7 @@ class PodFixture(fixtures.Fixture):
         return ret_val
     # end ping_with_certainty
 
-    def ping_to_ip(self, ip, count='3', expectation=True ,jumboframe=None, container=None):
+    def ping_to_ip(self, ip, count='3', expectation=True ,jumboframe=None, container=None, hbf_enabled=False):
         """Ping from a POD to an IP specified.
         This method logs into the POD from kubernets master using kubectl and runs ping test to an IP.
         """
@@ -371,13 +371,17 @@ class PodFixture(fixtures.Fixture):
         cmd = "ping -c %s %s %s" % (count, pkt_size, ip)
         try:
             output = self.run_cmd_on_pod(cmd, container=container)
-        except Exception as e:
+        except Exception, e:
             self.logger.exception(
                 'Exception occured while trying ping from pod')
             return False
-
-        expected_result = ' 0% packet loss'
-        result = expectation == (expected_result in output)
+        #the check is due to  CEM-11144
+        if hbf_enabled:
+           expected_result = ' 100% packet loss'
+           result = expectation == (expected_result not in output)
+        else:
+           expected_result = ' 0% packet loss'
+           result = expectation == (expected_result in output)
         if not result:
             self.logger.warn("Ping check to IP %s from pod %s failed. "
                              "Expectation: %s, Got: %s" % (ip, self.name,

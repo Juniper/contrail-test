@@ -1,5 +1,5 @@
-from __future__ import print_function
-from builtins import object
+from __future__ import print_function                                                             
+from builtins import object 
 import time
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -32,6 +32,7 @@ class Client(object):
         self.v1_beta_h = client.ExtensionsV1beta1Api(self.api_client)
         self.v1_networking = client.NetworkingV1Api(self.api_client)
         self.apps_v1_beta1_h = client.AppsV1beta1Api(self.api_client)
+        self.apps_v1_h = client.AppsV1Api(self.api_client)
 
         self.logger = logger or contrail_logging.getLogger(__name__)
     # end __init__
@@ -430,7 +431,8 @@ class Client(object):
             container_objs.append(self._get_container(container_name, item))
         spec['containers'] = container_objs
         spec_obj = client.V1PodSpec(**spec)
-        return spec
+        #return spec
+        return spec_obj
     # end create_spec
 
     def get_pods(self, namespace='default', **kwargs):
@@ -523,6 +525,9 @@ class Client(object):
         except ApiException:
             return False
     # end is_namespace_present
+    def _get_selector(self, label_selector):
+        if label_selector:
+           return client.V1LabelSelector(match_labels=label_selector.get('match_labels'))
 
     def _get_rollback_config(self, rollback_to=None):
         if rollback_to:
@@ -574,6 +579,7 @@ class Client(object):
             template=template)
         return spec_obj
     # end _get_deployment_spec
+
 
     def create_deployment(self,
                           namespace='default',
@@ -809,6 +815,69 @@ class Client(object):
             print("Exception when calling CustomObjectsApi->get_namespaced_custom_object: %s\n" % e)
             return None
         return api_response
+    #Create te daemonset 
+    def create_daemonset(self, namespace='default',
+                         name=None, metadata=None,
+                         spec=None):
+        '''
+        Returns AppsV1beta1DaemonSet object
+        '''
+        if metadata is None: metadata = {}
+        if spec is None: spec = {}
+        metadata_obj = self._get_metadata(metadata)
+        if name:
+            metadata_obj.name = name
+
+        spec_obj = self._get_daemonset_spec(spec)
+        body = client.V1beta1DaemonSet(
+            metadata=metadata_obj,
+            spec=spec_obj)
+        self.logger.info('Creating DaemonSet %s' % (metadata_obj.name))
+        resp = self.v1_beta_h.create_namespaced_daemon_set(namespace, body , pretty ='true')
+        return resp
+    #read the spec of te deamonset object
+    def _get_daemonset_spec(self, spec_dict):
+        '''
+          build the daemon set spec and return the spec object
+        '''
+        if not spec_dict:
+            return None
+        selector = self._get_label_selector(spec_dict.get('selector'))
+        template = self._get_pod_template(spec_dict.get('template'))
+        spec_obj = client.V1beta1DaemonSetSpec(
+            selector=selector,
+            template=template)
+        return spec_obj
+
+    def delete_daemonset(self,
+                         name,
+                         namespace="default"):
+        '''Delete the  daemonset ''' 
+        try:
+           api_response = self.apps_v1_h.read_namespaced_daemon_set(name, namespace)
+           pprint(api_response)
+           self.logger.info('Deleting Daemonset : %s' % (name))
+           body = client.V1DeleteOptions()
+           return self.apps_v1_h.delete_namespaced_daemon_set(name,
+                  namespace,body,orphan_dependents=False)
+        except ApiException as e:
+           self.logger.info('Deamonset %s not found' % (name))
+           return None
+    def get_kubernetes_compute_labels(self):
+        '''
+           Get list of all nodes with label computenode, and no of computes
+        '''
+        compute_count=0;
+        compute_label_list = []
+        nodes = self.v1_h.list_node()
+
+        for node in nodes.items:
+            label = node.metadata.labels.get('computenode', None)
+            if label:
+                compute_label_list.append(label)
+                compute_count+=1
+
+        return compute_label_list, compute_count
 
 if __name__ == '__main__':
     c1 = Client()

@@ -118,7 +118,7 @@ class VncLibFixture(fixtures.Fixture):
             self.auth_server_ip = self.inputs.auth_ip
             self.auth_client = self.connections.auth
             self.project_id = self.connections.project_id
-            self.vnc_h = self.orch.vnc_h
+            self.vnc_h = self.orch.vnc_h if self.orch else kwargs.get('vnc_h', None)
     # end __init__
 
     # Create tmp ini file as workaround for insecure
