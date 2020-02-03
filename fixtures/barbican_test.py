@@ -33,7 +33,7 @@ class BarbicanHelper(object):
         container.delete()
         
     def add_users_to_refs_acl(self, auth_token, users, entity_ref):
-	url = entity_ref + '/acl'
+        url = entity_ref + '/acl'
         DEFAULT_HEADERS = {'Content-type': 'application/json; charset="UTF-8"'}
         headers = DEFAULT_HEADERS.copy()
         headers['X-AUTH-TOKEN'] = auth_token

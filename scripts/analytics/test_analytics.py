@@ -146,7 +146,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],
 				self.inputs.cfgm_names[0],process)
         assert result
-    	return True
+        return True
     
     @preposttest_wrapper
     def test_verify_hrefs(self):

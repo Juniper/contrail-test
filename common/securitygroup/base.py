@@ -186,9 +186,9 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
 
 
     def config_sec_group(self, name, secgrpid=None, entries=None):
-	option = self.option
-	if self.option == 'openstack':
-	    option = 'neutron'
+        option = self.option
+        if self.option == 'openstack':
+            option = 'neutron'
         secgrp_fixture = self.useFixture(SecurityGroupFixture(
             self.connections, self.inputs.domain_name,
             self.inputs.project_name, secgrp_name=name,
@@ -208,8 +208,8 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
                 break
 
     def config_policy_and_attach_to_vn(self, rules):
-	randomname = get_random_name()
-	policy_name = "sec_grp_policy_" + randomname
+        randomname = get_random_name()
+        policy_name = "sec_grp_policy_" + randomname
         policy_fix = self.config_policy(policy_name, rules)
         assert policy_fix.verify_on_setup()
         policy_vn1_attach_fix = self.attach_policy_to_vn(

@@ -437,15 +437,15 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
         for server in server_fixtures:
             server.read()
         server_ip = server_fixtures[0].vm_ips[0]
-	if vn_policy:
+        if vn_policy:
             policy_name_vn1_vn2 = get_random_name("vn1_vn2_pass")
             vn1_name = vn_fixtures[0].vn_fq_name.split(':')[2]
             vn2_name = vn_fixtures[1].vn_fq_name.split(':')[2]
             rules = []
             if policy_deny:
-		source_subnet1 = client1_ip + '/32'
-		source_subnet2 = client2_ip + '/32'
-		dst_subnet = server_ip + '/32'
+                source_subnet1 = client1_ip + '/32'
+                source_subnet2 = client2_ip + '/32'
+                dst_subnet = server_ip + '/32'
                 self.create_policy_rule(rules, src_subnet=source_subnet2, dst_subnet=dst_subnet, proto=proto, action='deny')
             if not self.policy_fixture_vn1_vn2:
                 self.create_policy_rule(rules, src_vn=vn1_name, dst_vn=vn2_name, proto=proto)
