@@ -381,10 +381,10 @@ class ConfigSvcChain(object):
         if self.inputs.is_ci_setup() and self.inputs.get_af() == 'v4':
             image_name = self.inputs.get_ci_image()
         else:
-	    if self.inputs.vcenter_dc:
-		image_name = 'ubuntu'
-	    else:
-	        image_name = image_name or 'ubuntu-traffic'
+            if self.inputs.vcenter_dc:
+                image_name = 'ubuntu'
+            else:
+                image_name = image_name or 'ubuntu-traffic'
         return image_name
     # end _get_end_vm_image
 

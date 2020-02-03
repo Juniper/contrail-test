@@ -64,7 +64,7 @@ def get_esxi_to_vrouter_mapping(vcenterclient,query_value):
 
 def get_vrouter_details(vcenterclient,query_value):
     try:
-    	inspect = vcenterclient.get_vcenter_plugin_vrouter_details(query_value)
+        inspect = vcenterclient.get_vcenter_plugin_vrouter_details(query_value)
         return VRouterDetails(inspect[0])
     except Exception as e:
         LOG.exception(e)
@@ -72,7 +72,7 @@ def get_vrouter_details(vcenterclient,query_value):
 
 def get_vm_details(vcenterclient,query_value):
     try:
-    	inspect = vcenterclient.get_vcm_vm_details(query_value)
+        inspect = vcenterclient.get_vcm_vm_details(query_value)
         return VirtualMachinesInVcenter(inspect)
     except Exception as e:
         LOG.exception(e)

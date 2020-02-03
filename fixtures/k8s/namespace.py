@@ -22,7 +22,7 @@ class NamespaceFixture(fixtures.Fixture):
         self.k8s_client = connections.k8s_client
         self.vnc_api_h = connections.vnc_lib
         self.isolation = isolation
-	self.ip_fabric_snat = ip_fabric_snat
+        self.ip_fabric_snat = ip_fabric_snat
         self.ip_fabric_forwarding = ip_fabric_forwarding
         self.custom_isolation = custom_isolation
         self.fq_network_name = fq_network_name
@@ -46,7 +46,7 @@ class NamespaceFixture(fixtures.Fixture):
        
         if self.inputs.slave_orchestrator == 'kubernetes':
             self.logger.info('Skipping Namespace API server validation in nested mode')
-        else: 
+        else:
             if not self.verify_namespace_in_contrail_api():
                 self.logger.error('Namespace %s not seen in Contrail API' % (
                 self.name))

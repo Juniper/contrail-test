@@ -63,20 +63,20 @@ class TestOcDockerRestart(BaseK8sTest):
             4. Verify contrail-status are active for all contrail processes
         '''
 
-    	contrail_k8s_backup_nodes = self.inputs.get_contrail_status(svc='contrail-kube-manager', state='backup')
-    	if len(contrail_k8s_backup_nodes) != 2:
-    	    assert False, "This is not HA setup"
+        contrail_k8s_backup_nodes = self.inputs.get_contrail_status(svc='contrail-kube-manager', state='backup')
+        if len(contrail_k8s_backup_nodes) != 2:
+            assert False, "This is not HA setup"
 
     	# Avoid restarting Docker on test-container node
-    	if contrail_k8s_backup_nodes[0] != socket.gethostbyaddr(socket.gethostname())[2][0]:
-    	    restart_node = contrail_k8s_backup_nodes[0]
-    	else:
-    	    restart_node = contrail_k8s_backup_nodes[1]
+        if contrail_k8s_backup_nodes[0] != socket.gethostbyaddr(socket.gethostname())[2][0]:
+            restart_node = contrail_k8s_backup_nodes[0]
+        else:
+            restart_node = contrail_k8s_backup_nodes[1]
     	
-    	# Restart the docker host
-    	self.inputs.run_cmd_on_server(restart_node, 'systemctl restart docker')
+        # Restart the docker host
+        self.inputs.run_cmd_on_server(restart_node, 'systemctl restart docker')
 
-    	# Verifications after restart
+        # Verifications after restart
         self.post_restart_verifications()
 
     ## end-of test_oc_docker_restart_k8s_backup 

@@ -149,7 +149,7 @@ def _OpResultGet(dct, p1, p2, match=None):
                                         if (match[0] in list(v.keys()) and (match[1] in list(v.values())or (int(match[1]) in list(v.values())))):
                                             ret2.append(elem)
                                             ret = ret2
-                                    	    return 	
+                                            return
                                     elif (isinstance(v,list)):
                                         for vl in v:
                                             if ((match[0] in list(vl.keys())) and (match[1] in list(vl.values()))):
@@ -450,9 +450,9 @@ class OpDbResult(Result):
     def get_attr(self, tier, attr=None, match=None):
         if tier == "Node":
             typ = 'NodeStatus'
-        elif tier == 'DatabasePurge':    
+        elif tier == 'DatabasePurge':
             typ = 'DatabasePurgeInfo'
-        elif tier == 'DatabaseUsage':    
+        elif tier == 'DatabaseUsage':
             typ = 'DatabaseUsageInfo'
         else:
             raise Exception("Invalid Arguments - bad tier")
