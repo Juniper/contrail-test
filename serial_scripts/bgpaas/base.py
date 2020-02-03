@@ -76,11 +76,10 @@ class LocalASBase(test_v1.BaseTestCase_v1):
             bgp_ip,
             lo_ip,
             cluster_local_autonomous_system,
-            peer_local=''):
+            local_as=64500):
 
         address_families = []
         address_families = ['inet', 'inet6']
-        autonomous_system = 64500
         gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
         dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
         neighbors = []
@@ -92,7 +91,7 @@ class LocalASBase(test_v1.BaseTestCase_v1):
             local_ip=bgp_ip,
             peer_ip=gw_ip,
             peer_as=cluster_local_autonomous_system,
-            local_as=autonomous_system)
+            local_as=local_as)
 
     # configure vsrx with correct families and local as/peer as if necessary
     def configure_bgpaas_obj_and_vsrx(

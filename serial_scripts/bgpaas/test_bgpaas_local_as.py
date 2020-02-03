@@ -70,20 +70,20 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
         1. Create a bgpaas vm. Configure different local-as on vm and contrail side.
         2. Make sure BGP with vm does not come up.
         '''
-        ret_dict = self.config_basic()
+        ret_dict = self.config_basic(image_name="ubuntu-bird")
         vn_fixture = ret_dict['vn_fixture']
         test_vm = ret_dict['test_vm']
         bgpaas_vm1 = ret_dict['bgpaas_vm1']
 
-        local_autonomous_system = random.randint(200, 800)
+        cluster_local_autonomous_system = random.randint(200, 800)
         bgpaas_fixture = self.create_bgpaas(
             bgpaas_shared=True,
             autonomous_system=64500,
             bgpaas_ip_address=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system + 1)
+            local_autonomous_system=cluster_local_autonomous_system + 1)
         self.attach_port_to_bgpaas_obj(bgpaas_vm1, bgpaas_fixture)
 
-        self.configure_bgpaas_obj_and_vsrx(
+        self.configure_bgpaas_obj_and_bird(
             bgpaas_fixture=bgpaas_fixture,
             bgpaas_vm1=bgpaas_vm1,
             vn_fixture=vn_fixture,
@@ -91,7 +91,7 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             dst_vm=bgpaas_vm1,
             bgp_ip=bgpaas_vm1.vm_ip,
             lo_ip=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system)
+            cluster_local_autonomous_system=cluster_local_autonomous_system)
 
         agent = bgpaas_vm1.vm_node_ip
         assert not bgpaas_fixture.verify_in_control_node(
@@ -103,21 +103,21 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
         1. Create a bgpaas vm. Configure same bgp router local-as on vm and contrail side.
         2. Make sure BGP with vm comes up.
         '''
-        ret_dict = self.config_basic()
+        ret_dict = self.config_basic(image_name="ubuntu-bird")
         vn_fixture = ret_dict['vn_fixture']
         test_vm = ret_dict['test_vm']
         bgpaas_vm1 = ret_dict['bgpaas_vm1']
 
-        local_autonomous_system = random.randint(200, 800)
+        cluster_local_autonomous_system = random.randint(200, 800)
         bgpaas_fixture = self.create_bgpaas(
             bgpaas_shared=True,
             autonomous_system=64500,
             bgpaas_ip_address=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system)
+            local_autonomous_system=cluster_local_autonomous_system)
         self.attach_port_to_bgpaas_obj(bgpaas_vm1, bgpaas_fixture)
 
         peer_local = self.update_bgp_router(bgpaas_vm1, bgpaas_fixture)
-        self.configure_bgpaas_obj_and_vsrx(
+        self.configure_bgpaas_obj_and_bird(
             bgpaas_fixture=bgpaas_fixture,
             bgpaas_vm1=bgpaas_vm1,
             vn_fixture=vn_fixture,
@@ -125,12 +125,12 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             dst_vm=bgpaas_vm1,
             bgp_ip=bgpaas_vm1.vm_ip,
             lo_ip=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system,
-            peer_local=peer_local)
+            cluster_local_autonomous_system=cluster_local_autonomous_system,
+            local_as=peer_local)
         agent = bgpaas_vm1.vm_node_ip
         # ToDO skiranh: some setups take a lot of time for bgpaas connection to
         # be up, hence the sleep. Need to figure out if this is expected.
-        sleep(90)
+        #sleep(90)
         assert bgpaas_fixture.verify_in_control_node(
             bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
 
@@ -140,21 +140,21 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
         1. Create a bgpaas vm. Configure different bgp router local-as on vm and contrail side.
         2. Make sure BGP with vm comes up.
         '''
-        ret_dict = self.config_basic()
+        ret_dict = self.config_basic(image_name="ubuntu-bird")
         vn_fixture = ret_dict['vn_fixture']
         test_vm = ret_dict['test_vm']
         bgpaas_vm1 = ret_dict['bgpaas_vm1']
 
-        local_autonomous_system = random.randint(200, 800)
+        cluster_local_autonomous_system = random.randint(200, 800)
         bgpaas_fixture = self.create_bgpaas(
             bgpaas_shared=True,
             autonomous_system=64500,
             bgpaas_ip_address=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system)
+            local_autonomous_system=cluster_local_autonomous_system)
         self.attach_port_to_bgpaas_obj(bgpaas_vm1, bgpaas_fixture)
 
         peer_local = self.update_bgp_router(bgpaas_vm1, bgpaas_fixture)
-        self.configure_bgpaas_obj_and_vsrx(
+        self.configure_bgpaas_obj_and_bird(
             bgpaas_fixture=bgpaas_fixture,
             bgpaas_vm1=bgpaas_vm1,
             vn_fixture=vn_fixture,
@@ -162,12 +162,12 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             dst_vm=bgpaas_vm1,
             bgp_ip=bgpaas_vm1.vm_ip,
             lo_ip=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system,
-            peer_local=peer_local + 1)
+            cluster_local_autonomous_system=cluster_local_autonomous_system,
+            local_as=peer_local + 1)
         agent = bgpaas_vm1.vm_node_ip
         # ToDO skiranh: some setups take a lot of time for bgpaas connection to
         # be up, hence the sleep. Need to figure out if this is expected.
-        sleep(90)
+        #sleep(90)
         assert not bgpaas_fixture.verify_in_control_node(
             bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
 
@@ -177,20 +177,20 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
         1. Create a bgpaas vm. Configure local-as on bgpaas, bgp router and global AS on vm and contrail side.
         2. bgpaas > bgp router > global AS. COnfirm this precedence is correct.
         '''
-        ret_dict = self.config_basic()
+        ret_dict = self.config_basic(image_name="ubuntu-bird")
         vn_fixture = ret_dict['vn_fixture']
         test_vm = ret_dict['test_vm']
         bgpaas_vm1 = ret_dict['bgpaas_vm1']
 
-        local_autonomous_system = random.randint(200, 800)
+        cluster_local_autonomous_system = random.randint(200, 800)
         bgpaas_fixture = self.create_bgpaas(
             bgpaas_shared=True,
             autonomous_system=64500,
             bgpaas_ip_address=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system)
+            local_autonomous_system=cluster_local_autonomous_system)
         self.attach_port_to_bgpaas_obj(bgpaas_vm1, bgpaas_fixture)
 
-        self.configure_bgpaas_obj_and_vsrx(
+        self.configure_bgpaas_obj_and_bird(
             bgpaas_fixture=bgpaas_fixture,
             bgpaas_vm1=bgpaas_vm1,
             vn_fixture=vn_fixture,
@@ -198,7 +198,7 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             dst_vm=bgpaas_vm1,
             bgp_ip=bgpaas_vm1.vm_ip,
             lo_ip=bgpaas_vm1.vm_ip,
-            local_autonomous_system=local_autonomous_system)
+            cluster_local_autonomous_system=cluster_local_autonomous_system)
         agent = bgpaas_vm1.vm_node_ip
         present_as = self.get_present_as()
         # There was a bug recently where having a few seconds before changing global AS caused a crash
@@ -207,7 +207,7 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
         self.change_global_AS(random.randint(1300, 1400))
         # ToDO skiranh: some setups take a lot of time for bgpaas connection to
         # be up, hence the sleep. Need to figure out if this is expected.
-        sleep(90)
+        #sleep(90)
         assert bgpaas_fixture.verify_in_control_node(
             bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
         self.change_global_AS(present_as)
