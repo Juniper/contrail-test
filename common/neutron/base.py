@@ -339,18 +339,18 @@ conn.close_session()
         if device == 'junos':
             device_params = {'name': 'junos'}
         cmdList = cmd_string.split(';')
-	if reboot_required:
-	    reboot_cmd='conn.reboot()'
-	else:
-	    reboot_cmd=' '
+        if reboot_required:
+            reboot_cmd='conn.reboot()'
+        else:
+            reboot_cmd=' '
         python_code = python_code.substitute(ip=str(dst_vm.vm_ip), username=str(dst_vm.vm_username), password=str(
             dst_vm.vm_password), device_params=device_params, cmdList=cmdList, timeout=timeout, hostkey_verify=hostkey_verify, reboot_cmd=reboot_cmd)
         assert dst_vm.wait_for_ssh_on_vm(port='830')
         op = src_vm.run_python_code(python_code)
-	if op != None:
-	    return False
-	else:
-	    return True
+        if op != None:
+            return False
+        else:
+            return True
     # end set_config_via_netconf
 
     def get_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False", format='text'):

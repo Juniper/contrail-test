@@ -43,8 +43,8 @@ class BaseResource(fixtures.Fixture):
 
     def setup_common_objects(self, inputs , connections):
 
-	self.inputs = inputs
-	self.connections = connections
+        self.inputs = inputs
+        self.connections = connections
         (self.vn1_name, self.vn1_subnets)= (get_random_name("vn1"), ["192.168.1.0/24"])
         (self.vn2_name, self.vn2_subnets)= (get_random_name("vn2"), ["192.168.2.0/24"])
         (self.fip_vn_name, self.fip_vn_subnets)= (get_random_name("fip_vn"), ['100.1.1.0/24'])

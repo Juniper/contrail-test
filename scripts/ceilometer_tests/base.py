@@ -78,7 +78,7 @@ class BaseResource(fixtures.Fixture):
 
     def setup_common_objects(self, inputs , connections):
   
-    	self.inputs = inputs
+        self.inputs = inputs
         #self.inputs.set_af('dual')
         self.connections = connections
         self.logger = self.inputs.logger
@@ -142,7 +142,4 @@ class CeilometerTestResource (BaseResource):
     class Factory(object):
         def create(self): return CeilometerTestResource()
 
-
 #End resource
-
-

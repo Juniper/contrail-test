@@ -102,8 +102,8 @@ class VerifySecGroup(BaseVrouterTest):
         profile_kwargs = {'stream': stream}
         if fip:
             profile_kwargs.update({'listener': receiver_vm.vm_ip})
-	if payload:
-	    profile_kwargs.update({'payload': payload})
+        if payload:
+            profile_kwargs.update({'payload': payload})
         if count:
             profile_kwargs.update({'count': count})
             profile = StandardProfile(**profile_kwargs)
@@ -127,7 +127,7 @@ class VerifySecGroup(BaseVrouterTest):
                             proto, profile, recv_node, recv_host, self.inputs.logger)
 
         # start traffic
-	if recvr:
+        if recvr:
             receiver.start()
         sender.start()
 
@@ -137,7 +137,7 @@ class VerifySecGroup(BaseVrouterTest):
 
         # stop traffic
         sender.stop()
-	if recvr:
+        if recvr:
             receiver.stop()
         self.logger.info("Sent: %s; Received: %s", sender.sent, receiver.recv)
         return (sender.sent, receiver.recv)
@@ -176,10 +176,10 @@ class VerifySecGroup(BaseVrouterTest):
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
-	if double_rule:
-	    exp = 'pass'
-	else:
-	    exp = 'fail'
+        if double_rule:
+            exp = 'pass'
+        else:
+            exp = 'fail'
         results.append(
             self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation=exp))
         if port_test:
@@ -414,8 +414,8 @@ class VerifySecGroup(BaseVrouterTest):
             else:
                 exp = expt
             results.append(self.assert_traffic(sender, receiver, proto, sport, dport, exp))
-	    if traffic_reverse:
-	       results.append(self.assert_traffic(receiver, sender, proto, sport, dport, exp))
+            if traffic_reverse:
+                results.append(self.assert_traffic(receiver, sender, proto, sport, dport, exp))
 
         errmsg = ''
         for (rc, msg) in results:

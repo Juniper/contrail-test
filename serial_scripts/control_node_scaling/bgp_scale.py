@@ -24,6 +24,7 @@ import socket
 from .commands import Command
 from .cn_introspect_bgp import ControlNodeInspect
 from .ssh_interactive_commnds import *
+from .test_flap_agent_scale import *
 
 #
 # Used to kill any residual bgp_stress_test processes including zombies
@@ -827,7 +828,6 @@ def get_kernel_routes_light(self):
 
 def get_localhost_ip():
     local_host = socket.gethostname()
-    from .test_flap_agent_scale import *
     return TestBGPScale.inputs.host_data[local_host]['host_control_ip']
 #    cmd = 'resolveip -s `hostname`'
 #    cmd = "ip addr show | \grep 192.168.200 | awk '{print $2}' | cut -d '/' -f 1"

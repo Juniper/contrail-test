@@ -2,4 +2,7 @@
 .*sw*
 contrail.repo
 Dockerfile.nofromargs
-
+*.tar
+*.tgz
+*.gz
+*.zip

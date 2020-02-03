@@ -49,7 +49,7 @@ class VnCfg(object):
             self._quantum = client.Client(
                 '2.0', endpoint_url=OS_URL, token=OS_TOKEN)
 
-	    self._vnc_lib = VncApi(username=self._args.admin_user,
+            self._vnc_lib = VncApi(username=self._args.admin_user,
                                    password=self._args.admin_password,
                                    tenant_name=self._args.admin_tenant_name,
                                    api_server_host=self._args.api_server_ip,

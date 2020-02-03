@@ -217,7 +217,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         vn1_name = "bulk_test_vn1"
         vn1_name = get_random_name(vn1_name)
-	vn1_fixture = self.create_vn(vn_name= vn1_name)
+        vn1_fixture = self.create_vn(vn_name= vn1_name)
         assert vn1_fixture.verify_on_setup(), "Verification of VN %s failed" % (
             vn1_name)
 
@@ -479,7 +479,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             ProjectFixture(
                 project_name=projects[0], username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
-	project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
+        project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = ContrailTestInit(
             self.input_file, stack_user=project_fixture1.project_username,
@@ -493,7 +493,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             ProjectFixture(
                 project_name=projects[1], username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
-	project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
+        project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = ContrailTestInit(
             self.input_file, stack_user=project_fixture2.project_username,
@@ -607,7 +607,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 project_name=projects[0], username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
-	user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
+        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = ContrailTestInit(
             self.input_file, stack_user=project_fixture1.project_username,
             stack_password=project_fixture1.project_user_password,
@@ -621,7 +621,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             ProjectFixture(
                 project_name=projects[1], username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
-	project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
+        project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = ContrailTestInit(
             self.input_file, stack_user=project_fixture2.project_username,
