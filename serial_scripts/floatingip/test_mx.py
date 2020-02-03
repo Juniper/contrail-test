@@ -106,12 +106,12 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
 	    "BGP Peer configuraion done and trying to outside the VN cluster")
 
         if not vm1_fixture.ping_to_ip('www-int.juniper.net'):
-	    self.logger.info(
+            self.logger.info(
 	        "Here ping should fail as VN  is configured with wrong RT values" )
         else:
-	    self.logger.error(
+            self.logger.error(
 	        "Ping should fail. But ping is successful even with wrong RT values")
-	    result = result and False
+        result = result and False
 
         # Change the RT value to correct one.
         routing_instance = self.public_vn_obj.public_vn_fixture.ri_name
@@ -124,7 +124,7 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
 
         self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
         if not vm1_fixture.ping_with_certainty(self.inputs.public_host):
-	    result = result and False
+            result = result and False
 
         # Reverting the RT value for fixture cleanup.
         self.public_vn_obj.public_vn_fixture.del_route_target(
@@ -140,9 +140,9 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
                     (self.inputs.project_name)
 
         if not result:
-	    self.logger.error(
+            self.logger.error(
 	        'Test  ping outside VN cluster from VM %s failed' % (vm1_name))
-	    assert result
+            assert result
 
         return True
 

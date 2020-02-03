@@ -15,7 +15,6 @@ import getpass
 import configparser
 import ast
 from netaddr import *
-from itertools import ifilterfalse, ifilter
 
 import fixtures
 from fabric.api import env, run, local, sudo
@@ -807,10 +806,8 @@ class TestInputs(with_metaclass(Singleton, object)):
             return
         containers = [x.strip('\r') for x in output.split('\n')]
 
-        pod_containers = ifilter(lambda x: 'k8s_POD' in x, containers)
-        containers = set(containers) - set(pod_containers)
-        tmp_containers = ifilterfalse(lambda x: 'nodemgr' in x, containers)
-        nodemgr_cntrs = set(containers) - set(tmp_containers)
+        containers = filter(lambda x: 'k8s_POD' not in x, containers)
+        nodemgr_cntrs = filter(lambda x: 'nodemgr' in x, containers)
         containers = set(containers) - set(nodemgr_cntrs)
         for service, names in get_contrail_services_map(self).iteritems():
             if 'nodemgr' in service:

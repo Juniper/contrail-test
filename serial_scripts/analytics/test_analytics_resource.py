@@ -88,7 +88,7 @@ class AnalyticsTestSanityWithMin(
         dst_vm_ip = self.res.vn1_vm2_fixture.get_vm_ips()[0]
         vm_ips = [src_vm_ip, dst_vm_ip]
         vmi_uuid = list(self.res.vn1_vm1_fixture.get_vmi_ids().values())[0]
-	vmi_objs = self.res.vn1_vm1_fixture.get_vmi_objs()
+        vmi_objs = self.res.vn1_vm1_fixture.get_vmi_objs()
         vmi_fq_name_list = vmi_objs[self.inputs.cfgm_ip][0]['virtual-machine-interface']['fq_name']
         vmi_fq_name = ":".join(vmi_fq_name_list)
 
