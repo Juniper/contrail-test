@@ -163,6 +163,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
         interfaces.remove(interface1)
         interface2 = interfaces[0]
         if 'dual' == self.inputs.get_af():
+            time.sleep(10)
             intf_conf_cmd = "ifconfig %s inet6 add %s" % (interface2,
                                        multivn_vm_ip_list[3])
         else:
@@ -173,6 +174,7 @@ class TestBasicPolicyConfig(BasePolicyTest):
             cmd_to_output = [cmd]
             vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
             output = vm1_fixture.return_output_cmd_dict[cmd]
+            time.sleep(10)
         for ip in multivn_vm_ip_list:
             if ip not in output:
                 self.logger.error(

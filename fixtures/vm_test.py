@@ -2797,7 +2797,6 @@ class VMFixture(fixtures.Fixture):
 
     def reboot(self, type='SOFT'):
         self.vm_obj.reboot(type)
-        self.orch.wait_till_vm_is_active(self.vm_obj)
 
     def wait_till_vm_status(self, status='ACTIVE'):
         return self.orch.wait_till_vm_status(self.vm_obj, status)
@@ -2915,10 +2914,14 @@ class VMFixture(fixtures.Fixture):
             cmd = cmd + '| grep %s -A2 -B4' % (ip)
         cmd = cmd + \
             '| grep -i \'hwaddr\|flags\' | awk \'{print $1}\' | cut -d \':\' -f 1'
-        output = self.run_cmd_on_vm([cmd])
-
-        if output and output[cmd]:
-            name = output[cmd].splitlines()
+        time.sleep(5)
+        for trial in range(6):
+            output = self.run_cmd_on_vm([cmd])
+            if output and output[cmd] is not None:
+                name = output[cmd].splitlines()
+                break
+            else:
+                time.sleep(10)
         return name
 
     def arping(self, ip, interface=None):
