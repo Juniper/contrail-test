@@ -3,7 +3,7 @@ import pprint
 import vnc_api_test
 from vnc_api.vnc_api import QosQueue, ForwardingClass,\
     QosIdForwardingClassPairs, QosIdForwardingClassPair, QosConfig
-from cfgm_common.exceptions import NoIdError
+from vnc_api.exceptions import NoIdError
 try:
     from webui_test import *
 except ImportError:

@@ -62,7 +62,7 @@ class sdn_4vn_xvm_config(object):
         self.vnet4_prefix = self.vnet4_subnets[0].split('/')[0]
         self.vnet4_prefix_len = int(self.vnet4_subnets[0].split('/')[1])
 
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.vn_nets=  {'vnet1': self.vnet1_subnets,
                             'vnet2': self.vnet2_subnets,
                             'vnet3': self.vnet3_subnets,
@@ -124,7 +124,7 @@ class sdn_4vn_xvm_config(object):
         self.rules= {}
         # Multiple policies are defined with different action for the test traffic streams..
         self.policy_test_order= ['policy0', 'policy1', 'policy0']
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.rules['policy0']= [
             {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
             self.rules['policy1']= [
@@ -140,7 +140,7 @@ class sdn_4vn_xvm_config(object):
             self.rules['policy1'] = [
             PolicyRuleType(direction='<>', protocol='udp', dst_addresses=[AddressType(virtual_network='vnet1')], src_addresses=[AddressType(
                 virtual_network='vnet0')], dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)]),
-	    PolicyRuleType(direction='<>', protocol='udp', dst_addresses=[AddressType(virtual_network='vnet2')], src_addresses=[AddressType(
+            PolicyRuleType(direction='<>', protocol='udp', dst_addresses=[AddressType(virtual_network='vnet2')], src_addresses=[AddressType(
                 virtual_network='vnet0')], dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)])
             ]
             self.rules['policy100'] = [
@@ -223,7 +223,7 @@ class sdn_topo_config(object):
         self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
         self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
 
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.vn_nets=  {'vnet1': self.vnet1_subnets, 'vnet2': self.vnet2_subnets}
         else:
             self.vn_nets = {
@@ -247,7 +247,7 @@ class sdn_topo_config(object):
         self.rules= {}
         # Multiple policies are defined with different action for the test traffic streams..
         self.policy_test_order= ['policy0']
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.rules['policy0']= [
             {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         else:
@@ -301,16 +301,16 @@ class sdn_topo_config_multiproject(object):
     def __init__(self, domain= 'default-domain', project= 'admin',
             username= None, password= None):
         print("building dynamic topo")
-	project1 = 'project1'
+        project1 = 'project1'
         project2 = 'admin'
         user1 = username or 'user1'
         user2 = username or 'user2'
         password1 = password or 'user123'
         password2 = password or 'user223'
         self.project_list = [project1, project2]
-	self.topo_of_project = {self.project_list[0]:'build_topo1', self.project_list[1]:'build_topo1'}
-	self.user_of_project = {self.project_list[0]:user1, self.project_list[1]:user2}
-	self.pass_of_project = {self.project_list[0]:password1, self.project_list[1]:password2}
+        self.topo_of_project = {self.project_list[0]:'build_topo1', self.project_list[1]:'build_topo1'}
+        self.user_of_project = {self.project_list[0]:user1, self.project_list[1]:user2}
+        self.pass_of_project = {self.project_list[0]:password1, self.project_list[1]:password2}
 
         ##
         # Define traffic profile.
@@ -345,22 +345,22 @@ class sdn_topo_config_multiproject(object):
         self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
         self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
 
-	if config_option == 'openstack':
-	    if self.project == self.project_list[1]:
+        if config_option == 'openstack':
+            if self.project == self.project_list[1]:
                 self.vn_nets=  {'vnet1': self.vnet1_subnets}
-	    else:
+            else:
                 self.vn_nets=  {'vnet1': self.vnet2_subnets}
-	else:
-	    if self.project == self.project_list[1]:
-		 self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
-                subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))]
-                           }
-	    else:
+        else:
+            if self.project == self.project_list[1]:
+                self.vn_nets = {
+                    'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                    subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))]
+                    }
+            else:
                  self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
-                subnet=SubnetType(self.vnet2_prefix, self.vnet2_prefix_len))]))]
-                           }
+                    'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                    subnet=SubnetType(self.vnet2_prefix, self.vnet2_prefix_len))]))]
+                    }
 
         ##
         # Define network policies
@@ -378,15 +378,15 @@ class sdn_topo_config_multiproject(object):
         self.rules= {}
         # Multiple policies are defined with different action for the test traffic streams..
         self.policy_test_order= ['policy0']
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.rules['policy0']= [
             {'direction': '<>', 'protocol': 'any', 'dest_network': ':'.join([self.domain,self.project_list[0],self.vnet_list[0]]), 'source_network': ':'.join([self.domain,self.project_list[1],self.vnet_list[0]]), 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
-	else:
+        else:
             self.rules['policy0'] = [
             PolicyRuleType(direction='<>', protocol='any',
-		dst_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project_list[0],self.vnet_list[0]]))],
-		src_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project_list[1],self.vnet_list[0]]))],
-		dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)])
+            dst_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project_list[0],self.vnet_list[0]]))],
+            src_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project_list[1],self.vnet_list[0]]))],
+            dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)])
             ]
 
         #Define the security_group and its rules
@@ -407,7 +407,7 @@ class sdn_topo_config_multiproject(object):
             get_sg_rule('ingress',af=self.af_test, proto='udp'),
             get_sg_rule('egress',af=self.af_test, proto='udp')]
 
-	return self
+        return self
         # end build_topo1
 # end class sdn_topo_config_multiproject
 ################################################################################
@@ -430,10 +430,10 @@ class sdn_topo_1vn_2vm_config(object):
         self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
         self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
 
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.vn_nets=  {'vnet1': self.vnet1_subnets}
-	else:
-	    self.vn_nets = {
+        else:
+            self.vn_nets = {
             'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
                 subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))]
         		   }
@@ -453,14 +453,14 @@ class sdn_topo_1vn_2vm_config(object):
         # Define network policy rules
         self.rules= {}
         self.policy_test_order= ['policy0']
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.rules['policy0']= [
             {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
-	else:
+        else:
             self.rules['policy0'] = [
             PolicyRuleType(direction='<>', protocol='any', dst_addresses=[AddressType(virtual_network='any')], src_addresses=[AddressType(
                 virtual_network='any')], dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)])
-        ]
+            ]
 
         #Define the security_group and its rules
         # Define security_group name
@@ -513,7 +513,7 @@ class sdn_topo_icmp_error_handling(object):
         self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
         self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
 
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.vn_nets=  {'vnet1': self.vnet1_subnets, 'vnet2': self.vnet2_subnets}
         else:
             self.vn_nets = {
@@ -539,10 +539,10 @@ class sdn_topo_icmp_error_handling(object):
         self.rules= {}
         # Multiple policies are defined with different action for the test traffic streams..
         self.policy_test_order= ['policy0']
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.rules['policy0']= [
             {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
-	else:
+        else:
             self.rules['policy0'] = [
             PolicyRuleType(direction='<>', protocol='any', dst_addresses=[AddressType(virtual_network='any')], src_addresses=[AddressType(
                 virtual_network='any')], dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)])
@@ -571,7 +571,7 @@ class sdn_topo_icmp_error_handling(object):
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],}]
 
-	return self
+        return self
         # end build_topo
 
     #1VN 2 VM
@@ -590,7 +590,7 @@ class sdn_topo_icmp_error_handling(object):
         self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
         self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
 
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.vn_nets=  {'vnet1': self.vnet1_subnets}
         else:
             self.vn_nets = {
@@ -636,7 +636,7 @@ class sdn_topo_icmp_error_handling(object):
         self.rules= {}
         # Multiple policies are defined with different action for the test traffic streams..
         self.policy_test_order= ['policy0']
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.rules['policy0']= [
             {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         else:
@@ -654,8 +654,8 @@ class sdn_topo_icmp_error_handling(object):
         self.sg_of_vm = {}
         for key in self.vn_of_vm:
            self.sg_of_vm[key] = []
-	self.sg_of_vm['vm1'] = [self.sg_list[0]]
-	self.sg_of_vm['vm2'] = [self.sg_list[1]]
+        self.sg_of_vm['vm1'] = [self.sg_list[0]]
+        self.sg_of_vm['vm2'] = [self.sg_list[1]]
         ##Define the security group rules
         self.sg_rules={}
         for sg in self.sg_list:
@@ -684,10 +684,10 @@ class sdn_topo_mx_with_si(object):
         self.vnet_list=  [get_random_name('vnet1'),get_random_name('public')]
         ##
         # Define network info for each VN:
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.vn_nets=  {self.vnet_list[0]: ['9.9.9.0/24'], self.vnet_list[1]: public_vn_info['subnet']}
-	else:
-             self.vn_nets = {
+        else:
+            self.vn_nets = {
             self.vnet_list[0]: [(NetworkIpam(),
                        VnSubnetsType([
                         IpamSubnetType(
@@ -707,8 +707,8 @@ class sdn_topo_mx_with_si(object):
                       )]
                            }
 
-	#Define diff. VN params
-	self.vn_params = {self.vnet_list[0]:{'router_asn':public_vn_info['router_asn'],
+        #Define diff. VN params
+        self.vn_params = {self.vnet_list[0]:{'router_asn':public_vn_info['router_asn'],
 					     'rt_number':public_vn_info['rt_number']
 					    }
 			 }
@@ -727,12 +727,12 @@ class sdn_topo_mx_with_si(object):
         # Define network policy rules
         self.rules= {}
         self.policy_test_order= ['policy0']
-	if config_option == 'openstack':
+        if config_option == 'openstack':
             self.rules['policy0']= [{'direction': '<>', 'protocol': 'any', 'dest_network': self.vnet_list[0],
                                 'source_network': self.vnet_list[1], 'dst_ports': 'any',
                                 'simple_action': 'pass', 'src_ports': 'any'
                                 }]
-	else:
+        else:
             self.rules['policy0'] = [
             PolicyRuleType(direction='<>', protocol='any',
 				dst_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[0]]))],

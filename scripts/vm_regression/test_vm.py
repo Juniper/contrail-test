@@ -217,7 +217,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         vn1_name = "bulk_test_vn1"
         vn1_name = get_random_name(vn1_name)
-	vn1_fixture = self.create_vn(vn_name= vn1_name)
+        vn1_fixture = self.create_vn(vn_name= vn1_name)
         assert vn1_fixture.verify_on_setup(), "Verification of VN %s failed" % (
             vn1_name)
 
@@ -282,7 +282,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vn_obj1 = self.create_vn()
         assert vn_obj1.verify_on_setup()
 
-        vn_obj2 = self.create_vn(vn_obj1.get_name(), vn_obj1.get_cidrs(af='dual'))
+        vn_obj2 = self.create_vn(vn_name=vn_obj1.get_name(), subnets=vn_obj1.get_cidrs(af='dual'))
         assert vn_obj2.verify_on_setup()
         assert vn_obj2, 'Duplicate VN cannot be created'
         if (vn_obj1.vn_id == vn_obj2.vn_id):
@@ -479,7 +479,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             ProjectFixture(
                 project_name=projects[0], username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
-	project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
+        project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = ContrailTestInit(
             self.input_file, stack_user=project_fixture1.project_username,
@@ -493,7 +493,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             ProjectFixture(
                 project_name=projects[1], username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
-	project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
+        project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = ContrailTestInit(
             self.input_file, stack_user=project_fixture2.project_username,
@@ -607,7 +607,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 project_name=projects[0], username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
         project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
-	user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
+        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = ContrailTestInit(
             self.input_file, stack_user=project_fixture1.project_username,
             stack_password=project_fixture1.project_user_password,
@@ -621,7 +621,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             ProjectFixture(
                 project_name=projects[1], username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
-	project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
+        project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = ContrailTestInit(
             self.input_file, stack_user=project_fixture2.project_username,
@@ -859,7 +859,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         vn1_vm2_name = get_random_name('vn1_vm2')
         vn1_vm3_name = get_random_name('vn1_vm3')
         vn1_vm4_name = get_random_name('vn1_vm4')
-        vn1_fixture = self.create_vn(vn_subnets=vn1_subnets[0])
+        vn1_fixture = self.create_vn(subnets=vn1_subnets)
         vm1_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm1_name)
         vm2_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm2_name)
         vm3_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm3_name)
@@ -1678,7 +1678,7 @@ class TestBasicVMVN5(BaseVnVmTest):
                 The same is not done for \
                  %s as it points to the default GW'%(other_interface,default_gateway_interface))
         self.logger.info('-' * 80)
-        vm1_intf = vm1_fixture.get_vm_interface_list()
+        vm1_intf = vm1_fixture.get_vm_interface_list()[1]
         vm1_intf.remove(other_interface)
         vm1_intf_local_ip = vm1_fixture.get_local_ip_vm_intf_name(vm1_intf[0])
         cmd = 'ifdown %s --force'%other_interface
@@ -1954,7 +1954,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         if 'v6' in af or 'dual' in af:
             subnets.append(get_random_cidr(af='v6',
                            mask=SUBNET_MASK['v6']['max']))
-        vn_fixture = self.create_vn(vn_subnets=subnets[0].replace(':', '.'))
+        vn_fixture = self.create_vn(subnets=subnets)
         assert vn_fixture.verify_on_setup()
         self.logger.info(
             'out of /29 block, we can have 5 usable addresses. Only 5 VMs should get launched properly.')

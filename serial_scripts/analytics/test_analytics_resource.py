@@ -88,7 +88,7 @@ class AnalyticsTestSanityWithMin(
         dst_vm_ip = self.res.vn1_vm2_fixture.get_vm_ips()[0]
         vm_ips = [src_vm_ip, dst_vm_ip]
         vmi_uuid = list(self.res.vn1_vm1_fixture.get_vmi_ids().values())[0]
-	vmi_objs = self.res.vn1_vm1_fixture.get_vmi_objs()
+        vmi_objs = self.res.vn1_vm1_fixture.get_vmi_objs()
         vmi_fq_name_list = vmi_objs[self.inputs.cfgm_ip][0]['virtual-machine-interface']['fq_name']
         vmi_fq_name = ":".join(vmi_fq_name_list)
 
@@ -1453,8 +1453,7 @@ class AnalyticsTestSanityWithResource(
         vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
         start_time = self.analytics_obj.getstarttime(vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
-        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
-                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        self.setup_and_create_streams(self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
         src_vn = self.res.vn1_fixture.vn_fq_name
         dst_vn = self.res.vn2_fixture.vn_fq_name
         
@@ -1491,8 +1490,7 @@ class AnalyticsTestSanityWithResource(
         vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
         start_time = self.analytics_obj.getstarttime(vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
-        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
-                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        self.setup_and_create_streams(self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
         time.sleep(100)
         src_vn = self.res.vn1_fixture.vn_fq_name
         dst_vn = self.res.vn2_fixture.vn_fq_name
@@ -1528,8 +1526,7 @@ class AnalyticsTestSanityWithResource(
         
         start_time = self.analytics_obj.getstarttime(vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
-        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
-                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        self.setup_and_create_streams(self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
         src_vn = self.res.vn1_fixture.vn_fq_name
         dst_vn = self.res.vn2_fixture.vn_fq_name
         
@@ -1622,9 +1619,7 @@ class AnalyticsTestSanityWithResource(
         
         start_time = self.analytics_obj.getstarttime(vm_node_ip)
         self.logger.info("start time= %s" % (start_time))
-        
-        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
-                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        self.setup_and_create_streams(self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
         time.sleep(100)
         
         # Verifying session series table

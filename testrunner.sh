@@ -222,6 +222,9 @@ docker_run () {
                        $arg_params_vol"
     fi
 
+    if [[ $py3 ]]; then
+        py3=" -e PYTHON3=1 "
+    fi
 
     # Leave shell
     if [[ $shell ]]; then
@@ -287,11 +290,11 @@ run_docker_cmd () {
     tempfile=$(mktemp /tmp/contrail_test_XXXXXXXXX)
     name=$(basename $tempfile)
     if [[ -n $background ]]; then
-        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $local_ssl_vol $key_vol $arg_testbed_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $local_ssl_vol $key_vol $arg_testbed_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg $py3 -e SCENARIOS=$scenarios -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $local_ssl_vol $key_vol $arg_testbed_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $local_ssl_vol $key_vol $arg_testbed_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg $py3 -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
     fi
     bash $tempfile | tee $run_log; rv=${PIPESTATUS[0]}
     return $rv
@@ -340,6 +343,7 @@ Run Contrail test suite in docker container
 $GREEN  -p, --run-path RUNPATH          $NO_COLOR Directory path on the host, in which contrail-test save all the
                                             results and other data. Default: $HOME/contrail-test-runs/
 $GREEN  -s, --shell                     $NO_COLOR Do not run tests, but leave a shell, this is useful for debugging.
+$GREEN  -t, --py3                       $NO_COLOR Run with python3.
 $GREEN  -H, --use-host-networking       $NO_COLOR Launch test docker container in host networking mode
 $GREEN  -S, --scenarios SCENARIOS       $NO_COLOR list of scenarios that need to run as part rally tests. If empty ,
                                             runs all the tests under ./rally/scenarios
@@ -371,7 +375,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:p:sHS:k:K:nrT:P:m:l:j:c:z:" flag; do
+    while getopts "ibhf:p:stHS:k:K:nrT:P:m:l:j:c:z:" flag; do
         case "$flag" in
             z) tempest_dir=$OPTARG;;
             P) params_file=$OPTARG;;
@@ -387,6 +391,7 @@ EOF
             r) rm=1;;
             h) usage; exit;;
             n) clear_colors ;;
+            t) py3=1;;
             T) test_tags=$OPTARG;;
             m) mount_local=$OPTARG;;
             l) mount_ssl=$OPTARG;;

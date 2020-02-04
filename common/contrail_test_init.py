@@ -15,7 +15,6 @@ import getpass
 import configparser
 import ast
 from netaddr import *
-from itertools import ifilterfalse, ifilter
 
 import fixtures
 from fabric.api import env, run, local, sudo
@@ -37,7 +36,7 @@ from common.contrail_services import *
 import subprocess
 from collections import namedtuple
 import random
-from cfgm_common import utils
+from vnc_api import utils
 import argparse
 import yaml
 from future.utils import with_metaclass
@@ -807,12 +806,10 @@ class TestInputs(with_metaclass(Singleton, object)):
             return
         containers = [x.strip('\r') for x in output.split('\n')]
 
-        pod_containers = ifilter(lambda x: 'k8s_POD' in x, containers)
-        containers = set(containers) - set(pod_containers)
-        tmp_containers = ifilterfalse(lambda x: 'nodemgr' in x, containers)
-        nodemgr_cntrs = set(containers) - set(tmp_containers)
+        containers = [x for x in containers if 'k8s_POD' not in x]
+        nodemgr_cntrs = [x for x in containers if 'nodemgr' in x]
         containers = set(containers) - set(nodemgr_cntrs)
-        for service, names in get_contrail_services_map(self).iteritems():
+        for service, names in get_contrail_services_map(self).items():
             if 'nodemgr' in service:
                 continue
             for name in names:
@@ -825,7 +822,7 @@ class TestInputs(with_metaclass(Singleton, object)):
                     containers.remove(container)
                     break
 
-        for service, names in get_contrail_services_map(self).iteritems():
+        for service, names in get_contrail_services_map(self).items():
             if 'nodemgr' in service:
                 for name in names:
                     container = next((container for container in nodemgr_cntrs

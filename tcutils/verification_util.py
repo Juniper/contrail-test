@@ -13,7 +13,7 @@ import logging as LOG
 from lxml import etree
 from tcutils.util import *
 from common import log_orig as contrail_logging
-from cfgm_common.exceptions import PermissionDenied
+from vnc_api.exceptions import PermissionDenied
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.INFO)
 

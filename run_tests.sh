@@ -4,6 +4,13 @@ declare -a pids
 trap resume_pids 10 1 2 3 6
 source tools/common.sh
 
+PYTHON=/usr/bin/python
+TESTR=/usr/bin/testr
+if [[ ${PYTHON3} ]]; then
+    PYTHON=/usr/bin/python3
+    TESTR=/usr/local/bin/testr
+fi
+
 function wait_till_process_state
 {
     local pid=$1
@@ -153,14 +160,14 @@ fi
 
 function testr_init {
   if [ ! -d .testrepository ]; then
-      ${wrapper} testr init
+      ${wrapper} ${TESTR} init
   fi
 }
 
 function send_mail {
   if [ $send_mail -eq 1 ] ; then
      if [ -f report/junit-noframes.html ]; then
-        ${wrapper} python tools/send_mail.py $1 $2 $3
+        ${wrapper} ${PYTHON} tools/send_mail.py $1 $2 $3
      fi
   fi
   echo "Sent mail to interested parties"
@@ -180,14 +187,14 @@ function run_tests_serial {
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
           testrargs="discover $OS_TEST_PATH"
-          ${wrapper} python -m subunit.run $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml
+          ${wrapper} ${PYTHON} -m subunit.run $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml
       else
           run_tagged_tests_in_debug_mode
       fi
       return $?
      
   fi
-  ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml > /dev/null 2>&1
+  ${wrapper} ${TESTR} run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml > /dev/null 2>&1
 }
 
 function check_test_discovery {
@@ -197,7 +204,7 @@ function check_test_discovery {
 
 function run_tagged_tests_in_debug_mode {
     list_tagged_tests
-    python tools/parse_test_file.py mylist
+    ${PYTHON} tools/parse_test_file.py mylist
     IFS=$'\n' read -d '' -r -a lines < mylist
     count=1
     for i in "${lines[@]}"
@@ -205,11 +212,11 @@ function run_tagged_tests_in_debug_mode {
         result_xml='result'$count'.xml'
         ((count++))
         if [ $upgrade -eq 1]; then
-            (exec ${wrapper} python -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml) &
+            (exec ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml) &
             pids[$i]=$!
             wait_till_process_state $! stop
         else
-            ${wrapper} python -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml
+            ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml
         fi
     done
     if [ $upgrade -eq 1]; then
@@ -218,7 +225,7 @@ function run_tagged_tests_in_debug_mode {
 }
 
 function list_tagged_tests {
-    testr list-tests | grep $testrargs > mylist
+    ${TESTR} list-tests | grep $testrargs > mylist
 }
 
 function get_result_xml {
@@ -239,7 +246,7 @@ function run_tests {
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
-          ${wrapper} python -m subunit.run $testrargs| ${wrapper} subunit2junitxml -f -o $result_xml
+          ${wrapper} ${PYTHON} -m subunit.run $testrargs| ${wrapper} subunit2junitxml -f -o $result_xml
       else
           #If the command is run_tests.sh -d -T abcxyz, we
           #need to take only those tests tagged with abcxyz.
@@ -258,33 +265,33 @@ function run_tests {
 
   if [ $parallel -eq 0 ]; then
       echo 'running in serial'
-      ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
+      ${wrapper} ${TESTR} run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
   fi
  
   if [ $parallel -eq 1 ]; then
       echo 'running in parallel'
         if [[ ! -z $concurrency ]];then
           echo 'concurrency:'$concurrency
-          ${wrapper} testr run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          ${wrapper} ${TESTR} run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
           sleep 2
         else
-          ${wrapper} testr run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          ${wrapper} ${TESTR} run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
           sleep 2
         fi
   fi
 }
 
 function convert_logs_to_html {
-  python tools/convert_logs_to_html.py logs/
+  ${PYTHON} tools/convert_logs_to_html.py logs/
   echo "Converted log files to html files"
 }
 
 function generate_html {
   if [ -f $result_xml ]; then
-      ${wrapper} python tools/update_testsuite_properties.py $REPORT_DETAILS_FILE $result_xml
+      ${wrapper} ${PYTHON} tools/update_testsuite_properties.py $REPORT_DETAILS_FILE $result_xml
       ant || die "ant job failed!"
   elif [ -f $serial_result_xml ]; then
-      ${wrapper} python tools/update_testsuite_properties.py $REPORT_DETAILS_FILE $serial_result_xml
+      ${wrapper} ${PYTHON} tools/update_testsuite_properties.py $REPORT_DETAILS_FILE $serial_result_xml
       ant || die "ant job failed!"
   fi
   echo "Generate HTML reports in report/ folder : $REPORT_FILE"
@@ -293,12 +300,12 @@ function generate_html {
 
 function collect_tracebacks {
     export PYTHONPATH=$PYTHONPATH:$PWD:$PWD/fixtures
-    python tools/collect_bts.py $TEST_CONFIG_FILE
+    ${PYTHON} tools/collect_bts.py $TEST_CONFIG_FILE
 }
 
 function upload_to_web_server {
   if [ $upload -eq 1 ] ; then
-      ${wrapper} python tools/upload_to_webserver.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE $REPORT_FILE
+      ${wrapper} ${PYTHON} tools/upload_to_webserver.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE $REPORT_FILE
   fi
   echo "Uploaded reports"
 }
@@ -312,21 +319,21 @@ then
   fi
   if [ $update -eq 1 ]; then
       echo "Updating virtualenv..."
-      python tools/install_venv.py $installvenvopts
+      ${PYTHON} tools/install_venv.py $installvenvopts
   fi
   if [ -e ${venv} ]; then
     wrapper="${with_venv}"
   else
     if [ $always_venv -eq 1 ]; then
       # Automatically install the virtualenv
-      python tools/install_venv.py $installvenvopts
+      ${PYTHON} tools/install_venv.py $installvenvopts
       wrapper="${with_venv}"
     else
       echo -e "No virtual environment found...create one? (Y/n) \c"
       read use_ve
       if [ "x$use_ve" = "xY" -o "x$use_ve" = "x" -o "x$use_ve" = "xy" ]; then
         # Install the virtualenv and run the test suite in it
-        python tools/install_venv.py $installvenvopts
+        ${PYTHON} tools/install_venv.py $installvenvopts
         wrapper=${with_venv}
       fi
     fi
@@ -381,7 +388,7 @@ function apply_junitxml_patch {
 function setup_physical_routers {
 ( 
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
-python tools/setup_physical_routers.py $TEST_CONFIG_FILE
+${PYTHON} tools/setup_physical_routers.py $TEST_CONFIG_FILE
 )
 }
 
@@ -418,28 +425,28 @@ function stop_on_failure {
 }
 
 function parse_results {
-    python tools/parse_result.py $result_xml $REPORT_DETAILS_FILE
-    python tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
+    ${PYTHON} tools/parse_result.py $result_xml $REPORT_DETAILS_FILE
+    ${PYTHON} tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
 }
 
 function load_vcenter_templates {
 (
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
-python tools/vcenter/load_vcenter_templates.py $TEST_CONFIG_FILE
+${PYTHON} tools/vcenter/load_vcenter_templates.py $TEST_CONFIG_FILE
 )
 }
 
 function create_vcenter_nas_datastore {
 ( 
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
-python tools/vcenter/manage_vcenter_datastore.py $TEST_CONFIG_FILE create
+${PYTHON} tools/vcenter/manage_vcenter_datastore.py $TEST_CONFIG_FILE create
 )
 }
  
 function delete_vcenter_nas_datastore {
 ( 
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
-python tools/vcenter/manage_vcenter_datastore.py $TEST_CONFIG_FILE delete
+${PYTHON} tools/vcenter/manage_vcenter_datastore.py $TEST_CONFIG_FILE delete
 )
 }
 
@@ -482,7 +489,7 @@ if [[ ! -z $path ]];then
             fi
             run_tests $p
             run_tests_serial $p
-            python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
+            ${PYTHON} tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
             parse_results
             generate_html 
             collect_tracebacks
@@ -517,7 +524,7 @@ sleep 2
 #vrouter gateway sanity
 delete_vcenter_nas_datastore
 
-python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
+${PYTHON} tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
 parse_results
 generate_html
