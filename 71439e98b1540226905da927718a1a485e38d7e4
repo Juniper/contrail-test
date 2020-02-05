@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "465c678d_addc332b",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 2800,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-02-05T08:40:19Z",
+      "side": 0,
+      "message": "The wait_till_vm_is_active() is called to wait for the VM to be fully up, before any further operations on it. Pls check with Vinod, he add this as part of https://review.opencontrail.org/c/Juniper/contrail-test/+/56303",
+      "revId": "71439e98b1540226905da927718a1a485e38d7e4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
