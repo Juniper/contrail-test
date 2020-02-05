@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "507fc836_c351f189",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 2907,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2020-02-05T08:56:47Z",
+      "side": 1,
+      "message": "I will make this change and update if it works. I will commit it in next patch.",
+      "parentUuid": "ad21b210_7936865e",
+      "revId": "8af88fd6cf9e382f43a187a88720d386fa2923d4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "cddcf536_c83c9bd0",
         "filename": "scripts/policy/test_policy.py",
         "patchSetId": 1
@@ -33,6 +51,24 @@
       "revId": "8af88fd6cf9e382f43a187a88720d386fa2923d4",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ba8c928b_c782d56b",
+        "filename": "scripts/policy/test_policy.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 166,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2020-02-05T08:56:47Z",
+      "side": 1,
+      "message": "Yes, actually wait_till_vm_is_active does not explicitly check for the interface state. Secondly in case of setting IPv6 IP address on the interface, I am seeing it\u0027s taking more time for it to reflect in ifconfig.",
+      "parentUuid": "cddcf536_c83c9bd0",
+      "revId": "8af88fd6cf9e382f43a187a88720d386fa2923d4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }

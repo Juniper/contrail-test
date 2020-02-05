@@ -16,6 +16,24 @@
       "revId": "71439e98b1540226905da927718a1a485e38d7e4",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "40d91ff2_3002aeb7",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 2800,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2020-02-05T08:56:47Z",
+      "side": 0,
+      "message": "Done",
+      "parentUuid": "465c678d_addc332b",
+      "revId": "71439e98b1540226905da927718a1a485e38d7e4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
