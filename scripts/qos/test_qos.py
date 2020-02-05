@@ -768,22 +768,22 @@ class TestQosSVC(TestQosSVCBase):
                     8: fc_ids[0], 9: fc_ids[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         # Getting the VMI of Service Instance
-        right_svmi = self.service_vm_fixture.cs_vmi_obj[\
-                                    self.vn2_fixture.vn_fq_name][\
+        left_svmi = self.service_vm_fixture.cs_vmi_obj[\
+                                    self.vn1_fixture.vn_fq_name][\
                                     'virtual-machine-interface']['uuid']
         si_source_compute_fixture = self.useFixture(ComputeNodeFixture(
                                     self.connections,
                                     self.service_vm_fixture.vm_node_ip))
         # Applying qos-config on right VMI of service instance
-        self.setup_qos_config_on_vmi(qos_fixture, right_svmi)
+        self.setup_qos_config_on_vmi(qos_fixture, left_svmi)
         si_right_vrf_id = self.agent_inspect[
                         self.service_vm_fixture.vm_node_ip].get_vna_vrf_objs(
                         project=self.project.project_name,
-                        vn_name=self.vn2_fixture.vn_name
+                        vn_name=self.vn1_fixture.vn_name
                         )['vrf_list'][0]['ucindex']
         assert self.validate_packet_qos_marking(
-            src_vm_fixture=self.vn1_vm1_fixture,
-            dest_vm_fixture=self.vn2_vm1_fixture,
+            src_vm_fixture=self.vn2_vm1_fixture,
+            dest_vm_fixture=self.vn1_vm2_fixture,
             dscp=list(dscp_map.keys())[9],
             expected_dscp=fcs[0]['dscp'],
             expected_exp=fcs[0]['exp'],
@@ -818,20 +818,20 @@ class TestQosSVC(TestQosSVCBase):
         si_source_compute_fixture = self.useFixture(ComputeNodeFixture(
             self.connections,
             si_vm_node_ip))
-        si_right_vrf_id = self.agent_inspect[
-            si_vm_node_ip].get_vna_vrf_objs(
+        src_right_vrf_id = self.agent_inspect[
+            self.vn1_vm2_compute_fixture.ip].get_vna_vrf_objs(
             project=self.project.project_name,
-            vn_name=self.vn2_fixture.vn_name
+            vn_name=self.vn1_fixture.vn_name
         )['vrf_list'][0]['ucindex']
         validate_method_args = {
-            'src_vm_fixture': self.vn1_vm1_fixture,
+            'src_vm_fixture': self.vn1_vm2_fixture,
             'dest_vm_fixture': self.vn2_vm1_fixture,
             'dscp': list(dscp_map.keys())[9],
             'expected_dscp': fcs[0]['dscp'],
             'expected_exp': fcs[0]['exp'],
             'expected_dot1p': fcs[0]['dot1p'],
-            'src_compute_fixture': si_source_compute_fixture,
-            'vrf_id': si_right_vrf_id}
+            'src_compute_fixture': self.vn1_vm2_compute_fixture,
+            'vrf_id': src_right_vrf_id}
         assert self.validate_packet_qos_marking(**validate_method_args)
         # verifying marking on packets from right VN to SI
         validate_method_args['src_vm_fixture'] = self.vn2_vm1_fixture
