@@ -330,7 +330,7 @@ class VcenterOrchestrator(Orchestrator):
                     #to the raw image and return the vmtx path
                         vmdk_file = self._images_info[image].get('vmdk', None)
                         url_vmdk_file = url + vmdk_file
-                        run('wget %s -P %s' % (url_vmdk_file, dst))
+                        run('wget %s -P %s' % (url_vmdk_file, dst),timeout=600)
                         #self._log.info("Unzipping the vmdk file.May take several minutes...")
                         #run('cd %s' % (dst))
                         #image_file = vmdk_file.split('/')[-1]

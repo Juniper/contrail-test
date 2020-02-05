@@ -67,7 +67,7 @@ class UdpEchoClient(object):
                 self.stats[sockaddr[1]][sockaddr[0]]['sent'] += 1
             for s, sockaddr in list(self.sockets.items()):
                 try:
-                    s.settimeout(1)
+                    s.settimeout(4)
                     data = s.recvfrom(1024)
                     s.settimeout(None)
                 except socket.timeout:
