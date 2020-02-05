@@ -407,7 +407,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
                 sport=sport,
                 dport='0',
                 protocol='1')
-	else:
+        else:
             flow_rec1 = None
         if flow_rec1 is not None:
             self.logger.info('Verifying NAT in flow records')

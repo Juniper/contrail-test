@@ -288,21 +288,21 @@ def createVNOrch(self):
     self.vn_fixture = {}
     self.vn_of_cn = {}
     for vn in self.topo.vnet_list:
-	router_asn = None
-	rt_number = None
-	if hasattr(self.topo, 'vn_params'):	
-	   if vn in self.topo.vn_params:
-  	       if 'router_asn' in self.topo.vn_params[vn]:
-		    router_asn = self.topo.vn_params[vn]['router_asn']
-               if 'rt_number' in self.topo.vn_params[vn]:
+        router_asn = None
+        rt_number = None
+        if hasattr(self.topo, 'vn_params'):
+            if vn in self.topo.vn_params:
+                if 'router_asn' in self.topo.vn_params[vn]:
+                    router_asn = self.topo.vn_params[vn]['router_asn']
+                if 'rt_number' in self.topo.vn_params[vn]:
                     rt_number = self.topo.vn_params[vn]['rt_number']
 
         self.vn_fixture[vn] = self.useFixture(
             VNFixture(project_name=self.topo.project,
                       connections=self.project_connections, vn_name=vn,
-		      inputs=self.project_inputs, subnets=self.topo.vn_nets[vn],
+                      inputs=self.project_inputs, subnets=self.topo.vn_nets[vn],
                       ipam_fq_name=self.conf_ipam_objs[vn], router_asn=router_asn,
-		      rt_number=rt_number))
+                      rt_number=rt_number))
         if self.skip_verify == 'no':
             ret = self.vn_fixture[vn].verify_on_setup()
             assert ret, "One or more verifications for VN:%s failed" % vn

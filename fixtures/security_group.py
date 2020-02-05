@@ -231,7 +231,7 @@ class SecurityGroupFixture(ContrailFixture):
             self.logger.info("Security group: %s deleted successfully." %
                              self.secgrp_fq_name)
 
-	errmsg = "Security group: %s still not removed" % self.secgrp_fq_name
+        errmsg = "Security group: %s still not removed" % self.secgrp_fq_name
         retval, msg = self.verify_secgrp_not_in_api_server()
         if not retval:
             return False, errmsg
@@ -260,11 +260,11 @@ class SecurityGroupFixture(ContrailFixture):
                 domain=self.domain_name,
                 project=self.project_name,
                 secgrp=self.secgrp_name)
-	    if not cn_secgrp_obj:
+            if not cn_secgrp_obj:
                 self.logger.warn(
                     'Security group %s not present in Control-node %s' %
                     (self.secgrp_name, cn))
-		return False
+                return False
             else:
                 self.logger.info(
                     "Validated that Security group %s is found in control node %s" % (
@@ -305,7 +305,7 @@ class SecurityGroupFixture(ContrailFixture):
                         'Security group %s present in Control-node %s' %
                         (self.secgrp_name, cn))
                 return False
-	    else:
+            else:
                 self.logger.info(
                         'security group %s removed from Control-node %s' %
                         (self.secgrp_name, cn))

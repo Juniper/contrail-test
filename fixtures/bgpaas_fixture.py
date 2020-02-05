@@ -182,7 +182,7 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
                 ctrl_node).get_cn_bgp_neigh_entry(encoding='BGP')
             for entry in cn_bgp_entry:
                 if entry['peer_address'] == self.ip and entry['state'] == 'Established':
-		    self.logger.info(
+                    self.logger.info(
                         'BGPaaS session seen in control-node %s' % ctrl_node)
                     result = True
         return result

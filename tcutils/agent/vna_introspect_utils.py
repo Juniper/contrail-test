@@ -874,8 +874,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             returns None if not found, a dict w/ attrib. eg:
 
         '''
-	query = 'Snh_SgListReq?sg_uuid=' + str(sg_uuid)
-	l = []
+        query = 'Snh_SgListReq?sg_uuid=' + str(sg_uuid)
+        l = []
         sg = self.dict_get(query)
         asg = sg.xpath('./SgListResp/sg_list/list/SgSandeshData') or \
                 sg.xpath('./sg_list/list/SgSandeshData')
@@ -894,12 +894,12 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 
         '''
 
-	sg_info = self.get_sg(sg_uuid)
-	acl_id_list = [sg_info[0]['ingress_acl_uuid'], sg_info[0]['egress_acl_uuid']]
+        sg_info = self.get_sg(sg_uuid)
+        acl_id_list = [sg_info[0]['ingress_acl_uuid'], sg_info[0]['egress_acl_uuid']]
 
         l = []
-	for acl_id in acl_id_list:
-	    query = 'Snh_AclReq?uuid=' + str(acl_id)
+        for acl_id in acl_id_list:
+            query = 'Snh_AclReq?uuid=' + str(acl_id)
             acl = self.dict_get(query)
             aacl = acl.xpath('./AclResp/acl_list/list/AclSandeshData') or \
                     acl.xpath('./acl_list/list/AclSandeshData')
