@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "08c3031a_9dd553a7",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-02-05T09:37:13Z",
+      "side": 1,
+      "message": "Variable bfd_enabled never modified, not required",
+      "revId": "4c226de0b56608fb1789eeaf679c99ada40f3161",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "72a558b5_ac9b9980",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-02-05T09:37:13Z",
+      "side": 1,
+      "message": "Not required, since wait_till_vm_is_up() is already called on these VMs",
+      "revId": "4c226de0b56608fb1789eeaf679c99ada40f3161",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e9ce9559_c61d55aa",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-02-05T09:37:13Z",
+      "side": 1,
+      "message": "Check not required, since bfd_enabled is always True",
+      "revId": "4c226de0b56608fb1789eeaf679c99ada40f3161",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
