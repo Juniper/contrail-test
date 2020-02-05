@@ -37,7 +37,7 @@ from common.contrail_services import *
 import subprocess
 from collections import namedtuple
 import random
-from cfgm_common import utils
+from vnc_api import utils
 import argparse
 import yaml
 from future.utils import with_metaclass

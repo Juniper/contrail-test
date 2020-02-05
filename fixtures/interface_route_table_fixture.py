@@ -1,7 +1,7 @@
 import pprint
 
 import vnc_api_test
-from cfgm_common.exceptions import NoIdError
+from vnc_api.exceptions import NoIdError
 
 from tcutils.util import get_random_name, retry, compare_dict, get_dashed_uuid
 try:

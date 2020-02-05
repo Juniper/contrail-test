@@ -15,7 +15,7 @@ import threading
 import sys
 from quantum_test import NetworkClientException
 from tcutils.test_lib.contrail_utils import get_interested_computes
-from cfgm_common.exceptions import PermissionDenied, RefsExistError
+from vnc_api.exceptions import PermissionDenied, RefsExistError
 try:
     from webui_test import *
 except ImportError:

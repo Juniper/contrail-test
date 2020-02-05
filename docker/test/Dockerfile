@@ -15,7 +15,7 @@ RUN /etc/yum.repos.d/prepare_repos.sh && \
       python-ceilometerclient python-cinderclient python-barbicanclient \
       python-glanceclient python-heatclient python-novaclient \
       python-ironicclient \
-      python-contrail contrail-test python-setuptools && \
+      python-contrail contrail-test python-setuptools python3-contrail && \
     yum --setopt=obsoletes=0 install -y python-neutronclient && \
     yum clean all -y && rm -rf /var/cache/yum && \
     pip install -r /requirements.txt && \

@@ -235,7 +235,7 @@ class ContrailPlugApi(object):
         try:
             self._vnc.virtual_network_delete(fq_name=vn_fq_name)
             return True
-        except cfgm_common.exceptions.NoIdError:
+        except vnc_api.exceptions.NoIdError:
             return True
     # end _delete_vn
  
@@ -244,7 +244,7 @@ class ContrailPlugApi(object):
         vn_fq_name = VirtualNetwork(vn_name, self._proj_obj).get_fq_name()
         try:
             vn_obj = self._vnc.virtual_network_read(fq_name=vn_fq_name)
-        except cfgm_common.exceptions.NoIdError:
+        except vnc_api.exceptions.NoIdError:
             pass
         return vn_obj
 
