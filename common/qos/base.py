@@ -102,6 +102,7 @@ class QosTestBase(BaseNeutronTest):
         self.remove_from_cleanups(qos_fixture.cleanUp)
     # end delete_qos_config
     
+    @retry(delay=2, tries=5)
     def validate_packet_qos_marking(self,
                                     src_vm_fixture,
                                     dest_vm_fixture,
