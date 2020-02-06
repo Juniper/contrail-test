@@ -174,7 +174,7 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
                     result = False
         return result
 
-    @retry(delay=6, tries=10) #vSRX takes a long time to come up and start rpd
+    @retry(delay=10, tries=20) #vSRX takes a long time to come up and start rpd
     def verify_in_control_node(self, bgpaas_vm):
         result = False
         for ctrl_node in  bgpaas_vm.get_control_nodes():
