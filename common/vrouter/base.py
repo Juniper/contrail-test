@@ -212,7 +212,7 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
             ip = get_random_ip(prefix)
         for vm_fixture in vm_fixtures:
             #Disable duplicate address detection before adding static IP on VMs
-            interface = vm_fixture.get_vm_interface_list(ip=vm_fixture.vm_ip)[0]
+            interface = vm_fixture.get_vm_interface_list(ip=vm_fixture.vm_ip)[1][0]
             cmd = 'sysctl net.ipv6.conf.%s.accept_dad=0' % (interface)
             vm_fixture.run_cmd_on_vm([cmd], as_sudo=True)
             vmi_ids = list(vm_fixture.get_vmi_ids().values())

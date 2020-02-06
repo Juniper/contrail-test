@@ -1678,7 +1678,7 @@ class TestBasicVMVN5(BaseVnVmTest):
                 The same is not done for \
                  %s as it points to the default GW'%(other_interface,default_gateway_interface))
         self.logger.info('-' * 80)
-        vm1_intf = vm1_fixture.get_vm_interface_list()
+        vm1_intf = vm1_fixture.get_vm_interface_list()[1]
         vm1_intf.remove(other_interface)
         vm1_intf_local_ip = vm1_fixture.get_local_ip_vm_intf_name(vm1_intf[0])
         cmd = 'ifdown %s --force'%other_interface
