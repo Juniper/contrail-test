@@ -924,6 +924,8 @@ class TestInputs(with_metaclass(Singleton, object)):
             ip = self.host_data[name]['host_ip']
         except KeyError:
             short_name = name.split('.')[0]
+            if not self.host_data.has_key(short_name):
+               return
             ip = self.host_data[short_name]['host_ip']
         return ip
 
