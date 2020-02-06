@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ec77bc90_06f7a7b4",
+        "filename": "common/contrail_test_init.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 927,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-02-06T07:18:26Z",
+      "side": 1,
+      "message": "In python3 dict doesn\u0027t have \"has_key\" method.\n+ if short_name not in self.host_data:\n+     return None",
+      "revId": "5561ded694d13c448b7c480929405c95dc2f9562",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
