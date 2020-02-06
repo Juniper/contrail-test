@@ -306,7 +306,9 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         for rt in rt_list:
             rt_group_entry = cn_inspect.get_cn_rtarget_group(rt)
             for peer in rt_group_entry['peers_interested'] or []:
-                peer_list.add(self.inputs.get_host_ip(peer))
+                peer_ip = self.inputs.get_host_ip(peer)
+                if peer_ip:
+                   peer_list.add(peer_ip)
         self.logger.debug('Interested control nodes for rt(%s) %s'%(
                           rt_list, peer_list))
         return list(peer_list)
