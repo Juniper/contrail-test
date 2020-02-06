@@ -10,34 +10,50 @@ from common import isolated_creds
 
 class TestBGPaaS(BaseBGPaaS):
     @preposttest_wrapper
-    def test_bgpaas_bird(self):
+    def test_bgpaas_bird_shared_flag(self):
         '''
         1. Create a BGPaaS object with shared attribute, IP address and ASN.
-        2. Launch ubuntu-bird vm which will act as the clients. 
-        3. Run VRRP among them. 
-        4. The VRRP master will claim the BGP Source Address of the BGPaaS object. 
-	Maintainer: vageesant@juniper.net
+        2. Launch 2 bird vms
+        3. Run VRRP among them.
+        4. The VRRP master will claim the BGP Source Address of the BGPaaS object.
+        5. Verify BGP session is Established with master
+        6. Kill vrrp process on master and now second VM will be master.
+        7. Verify BGP session is Established with second VM.
+        Maintainer: vageesant@juniper.net
         '''
         vn_name = get_random_name('bgpaas_vn')
         vn_subnets = [get_random_cidr()]
+
+        bgp_ip = get_an_ip(vn_subnets[0], offset=10)
+        lo_ip = get_an_ip(vn_subnets[0], offset=15)
+        bgpaas_shared = True
+        bgpaas_fixture = self.create_bgpaas(
+            bgpaas_shared=bgpaas_shared, autonomous_system=64500, bgpaas_ip_address=bgp_ip)
+        current_bgpaas_shared_flag = bgpaas_fixture.get_current_shared_flag()
+
+        assert current_bgpaas_shared_flag==bgpaas_shared,"bgpaas_shared flag is not set correctly"
+
+        try:
+          bgpaas_fixture.update_shared_flag(False)
+          assert "BGPaaS sharing flag is editable"
+        except Exception as ex:
+          # ex.content = "BGPaaS sharing cannot be modified":
+          self.logger.info("BGPaaS sharing cannot be modified as expected")
+
         vn_fixture = self.create_vn(vn_name, vn_subnets)
         port1_obj = self.create_port(net_id=vn_fixture.vn_id)
         port2_obj = self.create_port(net_id=vn_fixture.vn_id)
         test_vm = self.create_vm(vn_fixture, 'test_vm',
                                  image_name='cirros-traffic')
         bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',
-                                     image_name='ubuntu-bird',
+                                     image_name='bird-vrrp',
                                      port_ids=[port1_obj['id']])
         bgpaas_vm2 = self.create_vm(vn_fixture, 'bgpaas_vm2',
-                                     image_name='ubuntu-bird',
+                                     image_name='bird-vrrp',
                                      port_ids=[port2_obj['id']])
-        bgp_ip = get_an_ip(vn_subnets[0], offset=10)
-        bfd_enabled = True
-        lo_ip = get_an_ip(vn_subnets[0], offset=15)
-        bgpaas_fixture = self.create_bgpaas(
-            bgpaas_shared=True, autonomous_system=64500, bgpaas_ip_address=bgp_ip)
-        self.logger.info('Configure two ports and configure AAP between them')
-        port_list = [port1_obj, port2_obj]
+
+        self.logger.info('Configuring two ports and configure AAP between them')
+        port_list = [port1_obj, port2_obj,port3_obj]
         for port in port_list:
             self.config_aap(port['id'], bgp_ip, mac=port['mac_address'])
 
@@ -45,15 +61,12 @@ class TestBGPaaS(BaseBGPaaS):
         assert bgpaas_vm1.wait_till_vm_is_up()
         assert bgpaas_vm2.wait_till_vm_is_up()
 
-        self.logger.info('We will configure VRRP on the two ubuntu-bird vm')
+        self.logger.info('Configuring VRRP on the two bird VM')
         self.config_vrrp(bgpaas_vm1, bgp_ip, '20')
         self.config_vrrp(bgpaas_vm2, bgp_ip, '10')
-        
+
         assert self.vrrp_mas_chk(dst_vm=bgpaas_vm1, vn=vn_fixture, ip=bgp_ip)
 
-        self.logger.info('Will wait for both the bird-vms to come up')
-        bgpaas_vm1.wait_for_ssh_on_vm()
-        bgpaas_vm2.wait_for_ssh_on_vm()
         address_families = []
         address_families = ['inet', 'inet6']
         autonomous_system = 64500
@@ -61,7 +74,7 @@ class TestBGPaaS(BaseBGPaaS):
         dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
         neighbors = []
         neighbors = [gw_ip, dns_ip]
-        self.logger.info('Configuring BGP on the two bird')
+        self.logger.info('Configuring BGP on the two bird VM')
         self.config_bgp_on_bird(
             bgpaas_vm=bgpaas_vm1,
             local_ip=bgp_ip,
@@ -74,6 +87,7 @@ class TestBGPaaS(BaseBGPaaS):
             peer_ip=gw_ip,
             peer_as='64512',
             local_as=autonomous_system)
+
         self.logger.info('Attaching both the VMIs to the BGPaaS object')
         port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
         port2 = bgpaas_vm2.vmi_ids[bgpaas_vm2.vn_fq_name]
@@ -84,19 +98,25 @@ class TestBGPaaS(BaseBGPaaS):
         self.addCleanup(self.detach_vmi_from_bgpaas,
                         port2, bgpaas_fixture)
 
-        if bfd_enabled:
-            shc_fixture = self.create_hc(
-                probe_type='BFD', http_url=bgp_ip, timeout=1, delay=1, max_retries=3)
-            self.attach_shc_to_bgpaas(shc_fixture, bgpaas_fixture)
-            self.addCleanup(self.detach_shc_from_bgpaas,
-                            shc_fixture, bgpaas_fixture)
-            agent = bgpaas_vm1.vm_node_ip
-            shc_fixture.verify_in_agent(agent)
-            assert bgpaas_fixture.verify_in_control_node(
-                bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
-            assert self.verify_bfd_packets(
-                bgpaas_vm1, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
-        # end test_bgpaas_vsrx
+        shc_fixture = self.create_hc(
+            probe_type='BFD', http_url=bgp_ip, timeout=1, delay=1, max_retries=3)
+        self.attach_shc_to_bgpaas(shc_fixture, bgpaas_fixture)
+        self.addCleanup(self.detach_shc_from_bgpaas,
+                        shc_fixture, bgpaas_fixture)
+        agent = bgpaas_vm1.vm_node_ip
+        shc_fixture.verify_in_agent(agent)
+        assert bgpaas_fixture.verify_in_control_node(
+            bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
+        assert self.verify_bfd_packets(
+            bgpaas_vm1, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
+
+        self.detach_vmi_from_bgpaas(port1, bgpaas_fixture)
+        bgpaas_vm1.run_cmd_on_vm(["sudo pkill vrrpd"])
+
+        assert bgpaas_fixture.verify_in_control_node(
+            bgpaas_vm2), 'BGPaaS Session not seen in the control-node'
+        assert self.verify_bfd_packets(
+            bgpaas_vm2, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
 
 
     @preposttest_wrapper
