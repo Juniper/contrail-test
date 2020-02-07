@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import range
 from fabric.api import local, settings
 import time
 import re
@@ -12,6 +10,7 @@ from tcutils.gevent_lib import exec_in_parallel
 from tcutils.verification_util import *
 from lxml import etree
 from k8s.pod import PodFixture
+from k8s.hbs import HbsFixture
 from k8s.service import ServiceFixture
 from k8s.ingress import IngressFixture
 from k8s.namespace import NamespaceFixture
@@ -90,6 +89,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                            backend_port=80):
         '''
         A simple helper method to create a service
+
         Noticed that nginx continues to listen on port 80 even if target port
         is different. So, recommended not to change backend_port for now
         '''
@@ -99,7 +99,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         metadata.update({'name': name})
         selector_dict = {}
         labels = labels or {}
-        d1 = {'protocol': 'TCP', 'port': int(frontend_port), 'targetPort': int(backend_port)}
+        d1 =  {'protocol': 'TCP','port': int(frontend_port),'targetPort': int(backend_port) }
         if nodePort:
             d1['nodePort'] = int(nodePort)
         spec.update({
@@ -146,15 +146,12 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                       **kwargs):
         '''
         A very basic helper method to create an ingress
+
         '''
-        if metadata is None:
-            metadata = {}
-        if spec is None:
-            spec = {}
-        if default_backend is None:
-            default_backend = {}
-        if rules is None:
-            rules = []
+        if metadata is None: metadata = {}
+        if spec is None: spec = {}
+        if default_backend is None: default_backend = {}
+        if rules is None: rules = []
         tls = kwargs.get('tls', None)
         name = name or get_random_name('nginx-ingress')
         metadata.update({'name': name})
@@ -173,14 +170,14 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             spec=spec,
             tls=tls))
     # end setup_ingress
-
+    #@classmethod
     def setup_namespace(self,
                         name=None,
-                        isolation=None,
-                        ip_fabric_snat=None,
-                        ip_fabric_forwarding=None,
-                        custom_isolation=False,
-                        fq_network_name=None):
+                        isolation = None,
+                        ip_fabric_snat = None,
+                        ip_fabric_forwarding = None,
+                        custom_isolation = False,
+                        fq_network_name = None):
         isolation = isolation or self.setup_namespace_isolation
         if custom_isolation == False:
             vn_fq_name = None
@@ -189,18 +186,29 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             name=name, isolation=isolation,
             ip_fabric_snat=ip_fabric_snat,
             ip_fabric_forwarding=ip_fabric_forwarding,
-            custom_isolation=custom_isolation,
-            fq_network_name=fq_network_name))
+            custom_isolation = custom_isolation,
+            fq_network_name = fq_network_name))
     # end create_namespace
 
+    def setup_hbs(self, name=None,
+                 namespace='default',
+                 project_name='k8s-default',
+                 domain_name='default-domain'):
+        fq_name = [domain_name , project_name]
+        return self.useFixture(HbsFixture(
+                               connections=self.connections,
+                               name=name, 
+                               fqname=fq_name,
+                               namespace=namespace))
+    # end create_Hbs_Object
     def setup_pod(self,
                   name=None,
                   namespace='default',
                   metadata=None,
                   spec=None,
                   labels=None,
-                  custom_isolation=False,
-                  fq_network_name={},
+                  custom_isolation = False,
+                  fq_network_name = {},
                   **kwargs):
         name = name or get_random_name('pod')
         metadata = metadata or {}
@@ -215,8 +223,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             namespace=namespace,
             metadata=metadata,
             spec=spec,
-            custom_isolation=custom_isolation,
-            fq_network_name=fq_network_name,
+            custom_isolation = custom_isolation,
+            fq_network_name = fq_network_name,
             **kwargs))
     # end setup_pod
 
@@ -227,8 +235,9 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                         container_port=80,
                         labels=None,
                         spec=None,
-                        custom_isolation=False,
-                        fq_network_name={}):
+                        custom_isolation = False,
+			compute_node_selector = None,
+                        fq_network_name = {}):
         '''
         Noticed that nginx continues to listen on port 80 even if target port
         (container_port) is different
@@ -249,13 +258,15 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                  }
             ]
         }
+        if compute_node_selector:
+           spec['node_selector'] = compute_node_selector
         return self.setup_pod(name=name,
                               namespace=namespace,
                               metadata=metadata,
                               spec=spec,
                               shell='/bin/bash',
-                              custom_isolation=custom_isolation,
-                              fq_network_name=fq_network_name)
+                              custom_isolation = custom_isolation,
+                              fq_network_name = fq_network_name)
 
     # end setup_nginx_pod
 
@@ -263,14 +274,12 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         result = pod.verify_on_setup()
         if result:
             if path:
-                pod.run_cmd(
-                    'echo %s > /usr/share/nginx/html/index.html' % (pod.name))
-                cmd = "cp /usr/share/nginx/html/index.html /usr/share/nginx/html/%s" % (
-                    path)
+                pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (pod.name))
+                cmd = "cp /usr/share/nginx/html/index.html /usr/share/nginx/html/%s" %(path)
                 pod.run_cmd(cmd)
             else:
                 pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (
-                    pod.name))
+                pod.name))
         return result
     # end verify_nginx_pod
 
@@ -280,8 +289,9 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                           metadata=None,
                           spec=None,
                           labels=None,
-                          custom_isolation=False,
-                          fq_network_name={}):
+                          custom_isolation = False,
+                          fq_network_name = {},
+                          compute_node_selector=None):
         metadata = metadata or {}
         spec = spec or {}
         labels = labels or {}
@@ -295,22 +305,25 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             ],
             'restart_policy': 'Always',
         }
+        if compute_node_selector:
+           spec['node_selector'] = compute_node_selector
+
         return self.setup_pod(name=name,
                               namespace=namespace,
                               metadata=metadata,
                               spec=spec,
                               labels=labels,
                               shell='/bin/sh',
-                              custom_isolation=custom_isolation,
-                              fq_network_name=fq_network_name)
+                              custom_isolation = custom_isolation,
+                              fq_network_name = fq_network_name)
     # end setup_busybox_pod
 
     def setup_ubuntuapp_pod(self,
-                            name=None,
-                            namespace='default',
-                            metadata=None,
-                            spec=None,
-                            labels=None):
+                          name=None,
+                          namespace='default',
+                          metadata=None,
+                          spec=None,
+                          labels=None):
         metadata = metadata or {}
         spec = spec or {}
         labels = labels or {}
@@ -360,7 +373,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         if 'https' in link and not cert:
             cert_str = ' --no-check-certificate'
         cmd = 'wget %s %s -O %s -T %s -t %s %s' % (link, host_str, output_file,
-                                                   timeout, tries, cert_str)
+                                                timeout, tries, cert_str)
         if not pod:
             with settings(warn_only=True):
                 output = local(cmd, capture=True)
@@ -383,7 +396,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             return result
     # end do_wget
 
-    @retry(delay=2, tries=25)
+    @retry(delay=2, tries=15)
     def validate_nginx_lb(self,
                           lb_pods,
                           service_ip,
@@ -400,6 +413,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         From test_pod , run wget on http://<service_ip>:<port> and check
         if the all the lb_pods respond to atleast one of the requests over
         3*len(lb_pods) attempts
+
         barred_pods : pods where the http requests should never be seen
         '''
         host_str = ''
@@ -427,26 +441,26 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             for pod in barred_pods:
                 if pod.name in output:
                     hit_me_not[pod.name] += 1
-            if hit_me_not and 0 not in list(hit_me_not.values()):
+            if hit_me_not and 0 not in hit_me_not.values():
                 self.logger.warn('HTTP request seem to have hit an unexpected '
                                  ' pod. Stats : %s' % (hit_me_not))
                 return False
 
-            if 0 not in list(hit.values()) and expectation==True:
+            if 0 not in hit.values() and expectation==True:
                 self.logger.info('Responses seen from all pods, lb seems fine.'
                                  'Hits : %s' % (hit))
                 return True
-        if 0 in list(hit.values()):
+        if 0 in hit.values():
             if expectation==False:
                 self.logger.info('As expected, responses not seen from pods'
                                  'Hits : %s' % (hit))
                 return True
             else:
                 self.logger.warn('No http hit seen for one or more pods.'
-                                 'Pls check. Hits: %s' % (hit))
+                   'Pls check. Hits: %s' % (hit))
                 return False
         else:
-            if expectation == False:
+            if expectation==False:
                 self.logger.warn('Pods responding even if expectation was False'
                                  'Hits : %s' % (hit))
                 return False
@@ -526,7 +540,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                     ingress_ip_block = None
 
                     from_item_dict = from_item.get('pod_selector') or {}
-                    for k, v in from_item_dict.items():
+                    for k, v in from_item_dict.iteritems():
                         if not ingress_pod_dict:
                             ingress_pod_dict = {'match_labels': {}}
                         ingress_pod_dict['match_labels'].update({k: v})
@@ -534,7 +548,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'pod_selector': ingress_pod_dict}
 
                     from_item_dict = from_item.get('namespace_selector') or {}
-                    for k, v in from_item_dict.items():
+                    for k, v in from_item_dict.iteritems():
                         if not ingress_ns_dict:
                             ingress_ns_dict = {'match_labels': {}}
                         ingress_ns_dict['match_labels'].update({k: v})
@@ -542,7 +556,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'namespace_selector': ingress_ns_dict}
 
                     from_item_dict = from_item.get('ip_block') or {}
-                    for k, v in from_item_dict.items():
+                    for k, v in from_item_dict.iteritems():
                         if not ingress_ip_block_dict:
                             ingress_ip_block_dict = {'cidr': ""}
                         if k == "cidr":
@@ -550,7 +564,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                         if k == "_except":
                             ingress_ip_block_dict.update({k: v})
                     ingress_ip_block = {
-                        'ip_block': ingress_ip_block_dict}
+                            'ip_block': ingress_ip_block_dict}
 
                     from_entries.append(ingress_pod_selector or
                                         ingress_ns_selector or
@@ -562,7 +576,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                     protocol, port = port_str.split('/')
                     port_list.append({'protocol': protocol, 'port': int(port)})
                 # end for port_str
-                if len(from_entries) > 0:
+                if len(from_entries)>0:
                     ingress_item_dict = {'from': from_entries}
                 if port_list:
                     ingress_item_dict.update({'ports': port_list})
@@ -585,7 +599,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                     egress_ns_selector = None
                     egress_ip_block = None
                     to_item_dict = to_item.get('pod_selector') or {}
-                    for k, v in to_item_dict.items():
+                    for k, v in to_item_dict.iteritems():
                         if not egress_pod_dict:
                             egress_pod_dict = {'match_labels': {}}
                         egress_pod_dict['match_labels'].update({k: v})
@@ -593,7 +607,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'pod_selector': egress_pod_dict}
 
                     to_item_dict = to_item.get('namespace_selector') or {}
-                    for k, v in to_item_dict.items():
+                    for k, v in to_item_dict.iteritems():
                         if not egress_ns_dict:
                             egress_ns_dict = {'match_labels': {}}
                         egress_ns_dict['match_labels'].update({k: v})
@@ -601,7 +615,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'namespace_selector': egress_ns_dict}
 
                     to_item_dict = to_item.get('ip_block') or {}
-                    for k, v in to_item_dict.items():
+                    for k, v in to_item_dict.iteritems():
                         if not egress_ip_block_dict:
                             egress_ip_block_dict = {'cidr': ""}
                         if k == "cidr":
@@ -609,7 +623,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                         if k == "_except":
                             egress_ip_block_dict.update({k: v})
                     egress_ip_block = {
-                        'ip_block': egress_ip_block_dict}
+                            'ip_block': egress_ip_block_dict}
 
                     to_entries.append(egress_pod_selector or
                                       egress_ns_selector or
@@ -646,28 +660,28 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 spec=spec))
         else:
             return np_fixture.update(metadata=np_fixture.metadata,
-                                     spec=spec)
+                          spec=spec)
     # end setup_policy
 
     def setup_update_simple_policy(self,
-                                   pod_selector=None,
-                                   name=None,
-                                   namespace='default',
-                                   metadata=None,
-                                   spec=None,
-                                   ingress_pods=None,
-                                   ingress_namespaces=None,
-                                   ingress_ipblock=None,
-                                   egress_pods=None,
-                                   egress_namespaces=None,
-                                   egress_ipblock=None,
-                                   ingress_all=False,
-                                   egress_all=False,
-                                   policy_types=None,
-                                   ports=None,
-                                   egress_ports=None,
-                                   update=False,
-                                   np_fixture=None):
+                            pod_selector=None,
+                            name=None,
+                            namespace='default',
+                            metadata=None,
+                            spec=None,
+                            ingress_pods=None,
+                            ingress_namespaces=None,
+                            ingress_ipblock=None,
+                            egress_pods=None,
+                            egress_namespaces=None,
+                            egress_ipblock=None,
+                            ingress_all = False,
+                            egress_all = False,
+                            policy_types=None,
+                            ports=None,
+                            egress_ports=None,
+                            update = False,
+                            np_fixture = None):
         '''
         A simple helper method to create a network policy with a single
         ingress entry and a single from condition
@@ -681,6 +695,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         ports = ['tcp/80']
         egress_ports = ['tcp/80']
         policy_types = ["Ingress"] or ["Egress"]
+
         '''
         metadata = metadata or {}
         spec = spec or {}
@@ -714,13 +729,13 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
         if ingress_pods is not None:
             ingress_pod_dict = {'match_labels': {}}
-            for k, v in ingress_pods.items():
+            for k, v in ingress_pods.iteritems():
                 ingress_pod_dict['match_labels'].update({k: v})
             ingress_pod_selector = {'pod_selector': ingress_pod_dict}
 
         if ingress_namespaces is not None:
             ingress_ns_dict = {'match_labels': {}}
-            for k, v in ingress_namespaces.items():
+            for k, v in ingress_namespaces.iteritems():
                 ingress_ns_dict['match_labels'].update({k: v})
             ingress_ns_selector = {'namespace_selector': ingress_ns_dict}
 
@@ -729,13 +744,13 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
         if egress_pods is not None:
             egress_pod_dict = {'match_labels': {}}
-            for k, v in egress_pods.items():
+            for k, v in egress_pods.iteritems():
                 egress_pod_dict['match_labels'].update({k: v})
             egress_pod_selector = {'pod_selector': egress_pod_dict}
 
         if egress_namespaces is not None:
             egress_ns_dict = {'match_labels': {}}
-            for k, v in egress_namespaces.items():
+            for k, v in egress_namespaces.iteritems():
                 egress_ns_dict['match_labels'].update({k: v})
             egress_ns_selector = {'namespace_selector': egress_ns_dict}
 
@@ -750,34 +765,33 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         if egress_ports is not None:
             for port_str in egress_ports:
                 protocol, port = port_str.split('/')
-                egress_port_list.append(
-                    {'protocol': protocol, 'port': int(port)})
+                egress_port_list.append({'protocol': protocol, 'port': int(port)})
 
         if ingress_all == True:
             spec.update({
                 'ingress': [{}]
-            })
+                })
         elif ingress_pod_selector or ingress_ns_selector or ingress_ipblock_selector:
             spec.update({
                 'ingress': [
                     {'from': [ingress_pod_selector or ingress_ns_selector or ingress_ipblock_selector],
-                     }
+                    }
                 ]
             })
         elif egress_all == True:
             spec.update({
                 'egress': [{}]
-            })
+                })
         elif egress_pod_selector or egress_ns_selector or egress_ipblock_selector:
             spec.update({
                 'egress': [
                     {'to': [egress_pod_selector or egress_ns_selector or egress_ipblock_selector],
-                     }
+                    }
                 ]
             })
         #space
         spec.update({'pod_selector': pod_selector_dict})
-        if ports is not None and (policy_types == ["Ingress"] or policy_types == []):
+        if ports is not None and (policy_types == ["Ingress"] or policy_types == [] ):
             spec['ingress'][0]['ports'] = port_list
         if egress_ports is not None and policy_types == ["Egress"]:
             spec['egress'][0]['egress_ports'] = egress_port_list
@@ -793,7 +807,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 spec=spec))
         else:
             return np_fixture.update(metadata=np_fixture.metadata,
-                                     spec=spec)
+                          spec=spec)
     # end setup_simple_policy
 
     def setup_isolation(self, namespace_fixture):
@@ -816,7 +830,9 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                          template=None):
         '''
         A helper method to create a deployment
+
         Ref https://github.com/kubernetes-incubator/client-python/blob/master/kubernetes/docs/AppsV1beta1DeploymentSpec.md
+
         '''
         metadata = metadata or {}
         spec = spec or {}
@@ -850,6 +866,60 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             spec=spec))
         return obj
     # end setup_deployment
+    def setup_daemonset(self,
+                         name=None,
+                         namespace='default',
+                         metadata=None,
+                         spec=None,
+                         connections=None,
+                         min_ready_seconds=None,
+                         paused=None,
+                         progress_deadline_seconds=None,
+                         revision_history_limit=None,
+                         rollback_to=None,
+                         strategy=None,
+                         template=None):
+        '''
+        A helper method to create a daemonset
+
+        Ref https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1DaemonSet.md 
+
+        '''
+        metadata = metadata or {}
+        spec = spec or {}
+        name = name or get_random_name('ds-')
+        metadata.update({'name': name})
+
+        if min_ready_seconds:
+            spec.update({'min_ready_seconds': min_ready_seconds})
+        if paused:
+            spec.update({'paused': paused})
+        if progress_deadline_seconds:
+            spec.update(
+                {'progress_deadline_seconds': progress_deadline_seconds})
+        if revision_history_limit:
+            spec.update({'revision_history_limit': revision_history_limit})
+        if revision_history_limit:
+            spec.update({'revision_history_limit': revision_history_limit})
+        if rollback_to:
+            spec.update({'rollback_to': rollback_to})
+        if strategy:
+            spec.update({'strategy': strategy})
+        if template:
+            spec.update({'template': template})
+        if not connections:
+           connection = connections
+        else:
+           connections = self.connections
+
+        obj = self.useFixture(DaemonsetFixture(
+            connections=connections,
+            namespace=namespace,
+            metadata=metadata,
+            spec=spec))
+        return obj
+    # end setup_deployment
+
 
     def setup_nginx_deployment(self,
                                name=None,
@@ -902,17 +972,12 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         ips = ips or self.inputs.kube_manager_ips
 
         self.logger.info('Will restart contrail-kube-manager  services now on'
-                         ' %s' % (ips))
+            ' %s' %(ips))
         self.inputs.restart_service('contrail-kube-manager', ips,
-                                    container='contrail-kube-manager',
-                                    verify_service=True)
-        time.sleep(30)  # wait time to stabilize the cluster
+                                     container='contrail-kube-manager',
+                                     verify_service=True)
+        time.sleep(30)#wait time to stabilize the cluster
     # end restart_kube_manager
-
-
-    def invalidate_kube_manager_inspect(self):
-        if getattr(self.connections, '_kube_manager_inspect'):
-            del self.connections._kube_manager_inspect
 
     def restart_vrouter_agent(self, ips=None):
         '''
@@ -922,10 +987,10 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         ips = ips or self.inputs.compute_ips
 
         self.logger.info('Will restart contrail-vrouter-agent  services now on'
-                         ' %s' % (ips))
+            ' %s' %(ips))
         self.inputs.restart_service('contrail-vrouter-agent', ips,
-                                    container='agent',
-                                    verify_service=True)
+                                     container='agent',
+                                     verify_service=True)
     # end restart_vrouter_agent
 
     def restart_pod(self, pod_fixture):
@@ -936,9 +1001,9 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         username = self.inputs.host_data[host]['username']
         password = self.inputs.host_data[host]['password']
         cmd = "docker ps -f NAME=%s -f status=running 2>/dev/null | grep -v POD | sed -n 2p | awk '{print $1}'" \
-            % (pod_fixture.name + "_" + pod_fixture.namespace)
+                % (pod_fixture.name + "_" + pod_fixture.namespace)
         self.logger.info('Running %s on %s' %
-                         (cmd, self.inputs.host_data[host]['name']))
+                             (cmd, self.inputs.host_data[host]['name']))
         container_id = self.inputs.run_cmd_on_server(host, cmd, username, password,
                                                      as_sudo=True)
         if not container_id:
@@ -946,16 +1011,16 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 return False
         issue_cmd = 'docker restart %s -t 60' % (container_id)
         self.logger.info('Running %s on %s' %
-                         (issue_cmd, self.inputs.host_data[host]['name']))
+                             (issue_cmd, self.inputs.host_data[host]['name']))
         self.inputs.run_cmd_on_server(host, issue_cmd, username, password, pty=True,
                                       as_sudo=True)
         verify_command = "docker ps -f NAME=%s -f status=running 2>/dev/null | grep -v POD" \
                          % (pod_fixture.name + "_" + pod_fixture.namespace)
         for i in range(3):
             output = self.inputs.run_cmd_on_server(host, verify_command, username,
-                                                   password, as_sudo=True)
+                                                    password, as_sudo=True)
             if not output or 'Up' not in output:
-                self.logger.warn('Container is not up on host %s' % (host))
+                self.logger.warn('Container is not up on host %s'%(host))
                 return False
             time.sleep(3)
         return True
@@ -963,11 +1028,10 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
     def create_snat_router(self, name):
 
-        obj = self.connections.vnc_lib_fixture.vnc_h.create_router(name=name,
-                                                                   project_obj=self.connections.vnc_lib_fixture.get_project_obj())
+        obj =  self.connections.vnc_lib_fixture.vnc_h.create_router(name=name,
+                                          project_obj=self.connections.vnc_lib_fixture.get_project_obj())
 
-        self.addCleanup(
-            self.connections.vnc_lib_fixture.vnc_h.delete_router, obj)
+        self.addCleanup(self.connections.vnc_lib_fixture.vnc_h.delete_router, obj)
         return obj
 
     def connect_vn_with_router(self, router_obj, vn_fq_name):
@@ -976,7 +1040,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
         # Read VN from API
         vn_fq_name_str = ':'.join(vn_fq_name)
-        vn_obj = self.vnc_lib.virtual_network_read(fq_name_str=vn_fq_name_str)
+        vn_obj=self.vnc_lib.virtual_network_read(fq_name_str=vn_fq_name_str)
 
         # To associate VN to logical router need to create a dummy port
         vmi_id = str(uuid.uuid4())
@@ -984,13 +1048,11 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                                                        parent_obj=self.connections.vnc_lib_fixture.get_project_obj())
         vmi_obj.add_virtual_network(vn_obj)
         self.vnc_lib.virtual_machine_interface_create(vmi_obj)
-        self.addCleanup(
-            self.vnc_lib.virtual_machine_interface_delete, id=vmi_obj.uuid)
+        self.addCleanup(self.vnc_lib.virtual_machine_interface_delete, id=vmi_obj.uuid)
 
         # Connect namespace VN to router
         router_obj.add_virtual_machine_interface(vmi_obj)
-        self.addCleanup(self._remove_namespace_from_router,
-                        router_obj, vmi_obj)
+        self.addCleanup(self._remove_namespace_from_router,router_obj,vmi_obj)
 
         # Update logical router object
         self.vnc_lib.logical_router_update(router_obj)
@@ -1002,7 +1064,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         # Update logical router object
         self.vnc_lib.logical_router_update(router_obj)
 
-    def configure_snat_for_pod(self, pod):
+
+    def configure_snat_for_pod (self, pod):
 
         # Create logical router
         router_obj = self.create_snat_router(get_random_name("snat_router"))
@@ -1011,8 +1074,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         self.connect_vn_with_router(router_obj, pod.vn_fq_names[0])
 
         # Configure external_gateway
-        self.connections.vnc_lib_fixture.vnc_h.connect_gateway_with_router(router_obj,
-                                                                           self.public_vn.public_vn_fixture.obj)
+        self.connections.vnc_lib_fixture.vnc_h.connect_gateway_with_router(router_obj,\
+                                                  self.public_vn.public_vn_fixture.obj)
     # end configure_snat_for_pod
 
     def verify_reachability(self, source_pod, dest_pods):
@@ -1028,11 +1091,11 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
     # end verify_reachability
 
     def setup_tls_secret(self,
-                         name=None,
-                         namespace='default',
-                         metadata=None,
-                         data=None,
-                         **kwargs):
+                  name=None,
+                  namespace='default',
+                  metadata=None,
+                  data=None,
+                  **kwargs):
         name = name or get_random_name('secret')
         metadata = metadata or {}
         data = data or {}
@@ -1046,21 +1109,24 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
     # end setup_tls_secret
 
     def setup_vn(self,
-                 project_name=None,
-                 connections=None,
-                 inputs=None,
-                 vn_name=None,
-                 option="contrail"):
-        connections = self.connections
-        inputs = self.inputs
+                 project_name = None,
+                 connections = None,
+                 inputs = None,
+                 vn_name = None,
+                 option = "contrail"):
+        connections = connections if connections else self.connections
+        inputs = inputs if inputs else self.inputs
+        #connections = self.connections
+        #inputs =  self.inputs
         vn_name = vn_name or get_random_name('vn_test')
         return self.useFixture(VNFixture(
-            connections=connections,
-            inputs=inputs,
-            vn_name=vn_name,
-            option=option))
+                                        connections=connections,
+					project_name=project_name,
+                                        inputs=inputs,
+                                        vn_name=vn_name,
+                                        option=option))
 
-    def modify_cluster_project(self, project_name=None):
+    def modify_cluster_project(self, project_name = None):
         """
         In case project isolation is disabled, it enables it.
         In case project isolation is enabled, it disables it.
@@ -1072,7 +1138,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             m = re.match('[ ]*cluster_project.*project(.*)', cp_line)
             if m:
                 self.logger.debug("Cluster_project is set in this sanity run. "
-                                  "Resetting it for few tests to validate project isolation")
+                            "Resetting it for few tests to validate project isolation")
                 project = m.group(1).strip("'\": }").split(",")[0].strip("'\"")
                 cmd = 'sed -i "/^cluster_project/d" /entrypoint.sh'
                 operation = "reset"
@@ -1081,7 +1147,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 no_match = True
         if not cp_line or no_match:
             self.logger.debug("Cluster_project not set in this sanity run. "
-                              "Setting it to default project for few tests")
+                        "Setting it to default project for few tests")
             project = self.inputs.admin_tenant
             cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'%s\'}\\"}'\
                   % project
@@ -1089,32 +1155,32 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         for kube_manager in self.inputs.kube_manager_ips:
             self.inputs.run_cmd_on_server(kube_manager, cmd,
                                           container='contrail-kube-manager',
-                                          shell_prefix=None)
+                                          shell_prefix = None)
         self.restart_kube_manager()
         self.addCleanup(self.revert_cluster_project,
-                        project_name=project,
-                        operation=operation)
+                         project_name = project,
+                         operation = operation)
         return operation
     #end modify_cluster_project
 
-    def revert_cluster_project(self, project_name=None, operation=None):
+    def revert_cluster_project(self, project_name = None, operation = None):
         """
         This method reverts the value of cluster_project after performing few
         sanity tests.
         """
-        if operation == "set":
+        if operation =="set":
             self.logger.debug("Cluster_project need to be reverted to Null value"
-                              "It was set to default project for few cases")
+                            "It was set to default project for few cases")
             cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{}\\"}'
         else:
             self.logger.debug("Cluster_project need to be reverted to a valid value"
-                              "It was set to Null for few cases")
+                            "It was set to Null for few cases")
             cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'%s\'}\\"}'\
-                % project_name
+              % project_name
         for kube_manager in self.inputs.kube_manager_ips:
             self.inputs.run_cmd_on_server(kube_manager, cmd,
                                           container='contrail-kube-manager',
-                                          shell_prefix=None)
+                                          shell_prefix = None)
         self.restart_kube_manager()
         #cmd = r'sed  -i "/KUBERNETES/a cluster_project = {\\"project\\": \\"%s\\", \\"domain\\": \\"default-domain\\"}" /etc/contrail/contrail-kubernetes.conf' \
         #        % project_name
@@ -1130,8 +1196,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         cls.name = cls.inputs.fabric_gw_info[0][0]
         cls.ip = cls.inputs.fabric_gw_info[0][1]
         cls.af = ["inet"]
-        assert cls.vnc_h.provision_bgp_router(
-            cls.name, cls.ip, cls.inputs.router_asn, cls.af)
+        assert cls.vnc_h.provision_bgp_router(cls.name, cls.ip, cls.inputs.router_asn, cls.af)
         time.sleep(40)
     #end setup_fabric_gw
 
@@ -1153,7 +1218,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         parallel_cleanup_list = list()
         for fn in self._cleanups[:]:
             try:
-                if fn[0].__self__.__class__.__name__ in fixture_type_list:
+                if fn[0].im_self.__class__.__name__ in fixture_type_list:
                     index = self._cleanups.index(fn)
                     parallel_cleanup_list.append(fn)
                     self._cleanups.pop(index)
@@ -1167,12 +1232,12 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             return
 
     def setup_csrx_pod(self,
-                       name=None,
-                       namespace='default',
-                       metadata=None,
-                       spec=None,
-                       csrx_version='18.1R1.9',
-                       labels=None):
+                          name=None,
+                          namespace='default',
+                          metadata=None,
+                          spec=None,
+                          csrx_version='18.1R1.9',
+                          labels=None):
 
         metadata = metadata or {}
         spec = spec or {}
@@ -1180,37 +1245,41 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         name = name or get_random_name('csrx-pod')
 
         pullsecret = 'secretcsrx'
-        username = self.inputs.host_data[host]['username']
-        password = self.inputs.host_data[host]['password']
+        username = self.inputs.host_data[self.inputs.cfgm_ip]['username']
+        password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         docker_username = 'JNPR-CSRXFieldUser12'
         docker_password = 'd2VbRJ8xPhSUAwzo7Lym'
-
+        #import pdb;pdb.set_trace()
         cmd = "kubectl create secret docker-registry %s " \
               "--docker-server=hub.juniper.net/security " \
-              "--docker-username=%s --docker-password=%s" % (
-                  pullsecret, docker_username, docker_password)
-        pullsecret = self.inputs.run_cmd_on_server(self.inputs.cfgm_ip, cmd, username, password,
+              "--docker-username=%s --docker-password=%s" %(pullsecret , docker_username ,docker_password)
+        secretoutput = self.inputs.run_cmd_on_server(self.inputs.cfgm_ip, cmd, username, password,
                                                    as_sudo=True)
         getsecret = "kubectl get secret"
-        secretkey = self.inputs.run_cmd_on_server(self.inputs.cfm_ip,
+        secretkey = self.inputs.run_cmd_on_server(self.inputs.k8s_master_ip,\
                                                   getsecret, username, password, as_sudo=True)
         if pullsecret not in secretkey:
             self.logger.warn("Pull secret can't be created")
             return False
 
-        spec["containers"]["securityContext"] = {}
         spec = spec or {
             'containers': [
-                {'image': 'hub.juniper.net/security/csrx:csrx_version',
+                {'image':'hub.juniper.net/security/csrx:'+csrx_version,
                  'image_pull_policy': 'IfNotPresent',
-                 'stdin': 'true',
-                 'tty': 'false',
-                 }
+                 'stdin': True,
+                 'tty': False,
+                 'env': [{
+                        "name": "CSRX_FORWARD_MODE",
+                        "value": "routing" }],
+                 'name':'csrx',
+                 'security_context': {"privileged": True}
+                }
             ],
-            'restart_policy': 'Always',
+            "image_pull_secrets": [{ "name": pullsecret}],
+            'restart_policy': 'Always'
         }
-        spec["containers"]["securityContext"].update({'privileged': 'true'})
-        spec["imagePullSecrets"].update({'privileged': 'true'})
+        #spec['containers']['securityContext'] = {}
+        #$spec['containers']['securityContext'].update({'privileged': 'true'})
 
         return self.setup_pod(name=name,
                               namespace=namespace,
@@ -1220,24 +1289,24 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                               shell='/bin/sh')
 
     def setup_cirros_pod(self,
-                         name=None,
-                         namespace='default',
-                         metadata=None,
-                         spec=None,
-                         labels=None,
-                         custom_isolation=False,
-                         fq_network_name={}):
+                          name=None,
+                          namespace='default',
+                          metadata=None,
+                          spec=None,
+                          labels=None,
+                          custom_isolation = False,
+                          fq_network_name = {}):
         metadata = metadata or {}
         spec = spec or {}
         labels = labels or {}
         name = name or get_random_name('cirros')
         cname = get_random_name('container')
-        spec = spec or {
-            'containers': [
-                {'image': 'cirros',
-                 "name": cname
-                 }
-            ]
+        spec = spec or  {
+                'containers': [
+                    {'image': 'cirros',
+                      "name": cname
+                    }
+              ]
         }
         return self.setup_pod(name=name,
                               namespace=namespace,
@@ -1245,87 +1314,82 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                               spec=spec,
                               labels=labels,
                               shell='/bin/sh',
-                              custom_isolation=custom_isolation,
-                              fq_network_name=fq_network_name)
+                              custom_isolation = custom_isolation,
+                              fq_network_name = fq_network_name)
 
     def setup_network_attachment(self,
                                  name=None,
                                  namespace='default',
                                  cidr=None,
-                                 ip_fabric_snat=False,                                                                                                                 ip_fabric_forwarding=False,
+                                 annotate=None,
+                                 ip_fabric_snat=False,
+                                 ip_fabric_forwarding=False,
                                  **kwargs):
         name = name or get_random_name('nad')
-        metadata = {}
+        metadata =  {} 
         spec = {}
-        metadata["annotations"] = {}
-        spec["config"] = {}
-        metadata["name"] = name
-        metadata["annotations"]["opencontrail.org/cidr"] = cidr
-
-        if ip_fabric_forwarding:
+        metadata["annotations"]={}
+        spec["config"]={}
+        metadata["name"] = name or get_random_name('net')
+        if cidr:
+           metadata["annotations"]["opencontrail.org/cidr"] = cidr
+        if annotate:
+           metadata["annotations"]["opencontrail.org/network"] = annotate
+        if ip_fabric_forwarding :
            metadata["annotations"]["opencontrail.org/ip_fabric_forwarding"] = "True"
-
         if ip_fabric_snat:
            metadata["annotations"]["opencontrail.org/ip_fabric_snat"] = "True"
 
         spec = {
-            "config":  '{ "cniVersion": "0.3.0", "type": "contrail-k8s-cni" }'
+                "config":  '{ "cniVersion": "0.3.0", "type": "contrail-k8s-cni" }'
         }
-
         return self.useFixture(NetworkAttachmentFixture(
-            connections=self.connections,
-            namespace=namespace,
-            metadata=metadata,
-            spec=spec))
+                              connections=self.connections,
+                              namespace=namespace,
+                              metadata=metadata,
+                              spec=spec))
     # end setup_network_attachment
+    def setup_csrx_daemonset(self,
+                               name=None,
+                               namespace='default',
+                               pod_labels=None,
+                               connections=None,
+                               container_port=80,
+                               metadata=None,
+                               spec=None,
+                               template_metadata=None,
+                               template_spec=None):
 
-    def verify_daemonset_status(self, namespace=''):
-        '''
-        Returns 
-           True, if Desired and available are same for all daemonsets
-           False, otherwise
-        '''
-        if namespace:
-            daemonset_info = self.connections.k8s_client.read_daemonsets(namespace=namespace)
-        else:
-            daemonset_info = self.connections.k8s_client.read_daemonsets()
-        #import pdb; pdb.set_trace()
-        for item in daemonset_info.items:
-            self.logger.info('daemonsets %s' % (item))
-            item_status = item.status
-            if item_status.desiredNumberScheduled == item_status.currentNumberScheduled == \
-                item_status.numberReady == item_status.numberAvailable:
-                continue
-            self.logger.error('One or more daemonsets not in expected state')
-            return False
-        self.logger.info('All daemonsets are in expected states')
-        return True
+        metadata = metadata or {}
+        spec = spec or {}
+        pod_labels = pod_labels or {}
+        name = name or get_random_name('csrx-ds')
+        template_metadata = template_metadata or {}
 
-    def get_daemonset_status(self, namespace=''):
-        if namespace:
-            daemonset_info = self.connections.k8s_client.read_daemonsets(namespace=namespace)
-        else:
-            daemonset_info = self.connections.k8s_client.read_daemonsets()
-        daemonset_status = {}
-        for item in daemonset_info.items:
-            daemonset_status[str(item.metadata.name)] = item.status
-        return daemonset_status
+        if pod_labels:
+            template_metadata['labels'] = template_metadata.get('labels', {})
+            template_metadata['labels'].update(pod_labels)
+        template_spec = template_spec or {
+            'containers': [
+                {'image': 'nginx',
+                 'ports': [
+                     {'container_port': int(container_port)}
+                 ],
+                 }
+            ]
+        }
+        if replicas:
+            spec.update({'replicas': replicas})
+        spec.update({
+            'template': {
+                'metadata': template_metadata,
+                'spec': template_spec
+            }
+        })
+        return self.setup_daemonset(name=name,
+                                     namespace=namespace,
+                                     connections=connections,
+                                     metadata=metadata,
+                                     spec=spec)
+    # end setup_nginx_deployment
 
-    def verify_pods_status(self, namespace=''):
-        '''
-        Returns
-          True, if all pods are in Running state
-          False, otherwise
-        '''
-        if namespace:
-            pods_info = self.connections.k8s_client.read_pods_namespace(namespace)
-        else:
-            pods_info = self.connections.k8s_client.read_pods_namespace()
-        for pod in pods_info.items:
-            if ('running' in pod.status.containerStatuses[0].state.keys()[0]) and ('Running' in pod.status.phase or 'Succeeded' in pod.status.phase):
-                self.logger.info('Pod is in %s' %(pod.status.phase))
-                self.logger.info("Pod {} is in Running or Succeeded state".format(pod.metadata.name))
-                continue
-            self.logger.error("Pod {} is not in Running or Succeeded state".format(pod.metadata.name))
-            return False
-        return True

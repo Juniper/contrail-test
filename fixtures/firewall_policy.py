@@ -22,6 +22,7 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         self.api_type = kwargs.get('api_type', 'contrail')
         self.created = False
         self.verify_is_run = False
+        self.vnc_h = self.vnc_h if self.vnc_h else kwargs.get('vnc_h', None)
         if self.api_type == 'neutron':
             self.client_h = self.neutron_handle
             self.scope = 'local'
