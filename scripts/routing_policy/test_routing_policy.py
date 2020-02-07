@@ -173,7 +173,10 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
         mx_rt = self.inputs.mx_rt
         
-        router_asn = self.inputs.bgp_asn
+        if self.inputs.config['test_configuration'].get('router_asn',False):
+           router_asn = self.inputs.config['test_configuration'].get('router_asn')
+        else:
+           router_asn = self.inputs.bgp_asn
 
         ret_dict = self.verify_svc_chain(service_mode='in-network',
                                          create_svms=True, max_inst=1)
