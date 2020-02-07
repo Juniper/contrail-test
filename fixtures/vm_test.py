@@ -2894,7 +2894,7 @@ class VMFixture(fixtures.Fixture):
         '''
         Wait till interface is found on VM and it has the given ip assigned
         '''
-        interface_list = self.get_vm_interface_list(ip=ip)
+        interface_list = self.get_vm_interface_list(ip=ip)[1]
 
         if interface in interface_list:
             self.logger.info("Interface %s is found on VM %s" % (interface,
@@ -2905,6 +2905,7 @@ class VMFixture(fixtures.Fixture):
                 self.vm_id))
             return (False, None)
 
+    @retry(delay=5, tries=12)
     def get_vm_interface_list(self, ip=None):
         '''if ip is None, returns all interfaces list.
            this method should work on ubuntu as well as redhat and centos'''
@@ -2917,9 +2918,11 @@ class VMFixture(fixtures.Fixture):
             '| grep -i \'hwaddr\|flags\' | awk \'{print $1}\' | cut -d \':\' -f 1'
         output = self.run_cmd_on_vm([cmd])
 
-        if output and output[cmd]:
+        if output and output[cmd] is not None:
             name = output[cmd].splitlines()
-        return name
+        else:
+            return (False, name)
+        return (True, name)
 
     def arping(self, ip, interface=None):
         if not interface:
@@ -3117,7 +3120,7 @@ class VMFixture(fixtures.Fixture):
             IPv4: Configures virtual interface on the VM for new IP
             IPv6: Adds the new ip in existing interface
         '''
-        interface = interface or self.get_vm_interface_list()[0]
+        interface = interface or self.get_vm_interface_list()[1][0]
         if is_v6(ip):
             intf_conf_cmd = "ifconfig %s inet6 add %s" % (interface,
                                        ip)
