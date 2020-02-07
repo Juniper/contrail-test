@@ -196,35 +196,47 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         4. Verify that connection is resumed.
         '''
         result = True
-        in_use_servers, status = self.get_all_in_use_servers("configdb" ,
-                                        "control", "contrail-control",
-                                        self.inputs.bgp_control_ips[0])
-        for server in in_use_servers:
-            self.add_remove_server("remove", server, "CONFIGDB",
-                        "config_db_server_list", "control", "contrail-control", "control_control_1")
-        self.add_remove_server("add", "254.254.254.254", "CONFIGDB",
-                        "config_db_server_list", "control", "contrail-control", "control_control_1",
-                        server_port = 9041)
-        new_in_use_servers, new_status = self.get_all_in_use_servers("configdb" ,
-                                        "control", "contrail-control",
-                                        self.inputs.bgp_control_ips[0])
-        if new_in_use_servers[0] != "254.254.254.254" or new_status == "true":
+        ctrl_ip = self.inputs.bgp_control_ips[0]
+        ip = self.inputs.bgp_ips[0]
+        conf_file = "/etc/contrail/contrail-control.conf"
+        in_use_servers, status, db_ports = self.get_all_in_use_servers(
+                              "configdb", "control", "contrail-control", ip)
+        server_list = [s+":"+p for s,p in zip(in_use_servers, db_ports)]
+        self.configure_server_list(ip, "contrail-control", "CONFIGDB",
+                                   "config_db_server_list",
+                                   ["254.254.254.254:%s" % db_ports[0]],
+                                   conf_file, "control_control_1", "control",
+                                   False)
+        self.addCleanup(self.configure_server_list, ip, "contrail-control",
+                        "CONFIGDB", "config_db_server_list", server_list, conf_file,
+                        "control_control_1", "control", True)
+        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
+                                self.inputs.host_data[ip]['username'],
+                                self.inputs.host_data[ip]['password'],
+                                pty=True, as_sudo=True)
+        self.sleep(10)
+        new_in_use_servers, new_status, _ = self.get_all_in_use_servers("configdb" ,
+                                        "control", "contrail-control", ip)
+        if new_in_use_servers[0] != "254.254.254.254" or new_status[0] == "Up":
             result = False
             self.logger.error("Config DB connection still UP even if no valid "
                               "entry mentioned in config db list")
         else:
             self.logger.info("As expected, connection to config DB is down as "
                               "there is no valid entry in config db list")
-        self.add_remove_server("remove", "254.254.254.254", "CONFIGDB",
-                        "config_db_server_list", "control", "contrail-control")
-        for server in in_use_servers:
-            self.add_remove_server("add", server, "CONFIGDB",
-                        "config_db_server_list", "control", "contrail-control",
-                        server_port = 9041)
-        new_in_use_servers, new_status = self.get_all_in_use_servers("configdb" ,
+
+        self.configure_server_list(ip, "contrail-control", "CONFIGDB",
+                                   "config_db_server_list", server_list,
+                                   conf_file, "control_control_1", "control", False)
+        self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
+                                self.inputs.host_data[ip]['username'],
+                                self.inputs.host_data[ip]['password'],
+                                pty=True, as_sudo=True)
+        self.sleep(10)
+        new_in_use_servers, new_status, _ = self.get_all_in_use_servers("configdb" ,
                                         "control", "contrail-control",
                                         self.inputs.bgp_control_ips[0])
-        if new_status != "true":
+        if not all(x == 'Up' for x in new_status):
             result = False
             self.logger.error("Config DB connection still Down even if valid "
                               "entries are mentioned in config db list")
@@ -459,7 +471,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
         self.inputs.stop_service('control', [in_use_servers[0]], container='control')
-        self.sleep(5)
+        self.sleep(15)
         self.inputs.start_service('control', [in_use_servers[0]], container='control')
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "xmpp", "agent", "contrail-vrouter-agent",
@@ -474,7 +486,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        self.sleep(5)
+        self.sleep(10)
         servers_in_use, status, ports = self.get_all_in_use_servers("xmpp",
                                         "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -490,7 +502,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
             assert False, "Unexpected Connection"
         # checking that restarting inactive collector doesnt affect the connections after SIGHUP
         self.inputs.stop_service('control', [new_in_use_servers[0]], container='control')
-        self.sleep(5)
+        self.sleep(15)
         self.inputs.start_service('control', [new_in_use_servers[0]], container='control')
         in_use_servers_new, status, ports = self.get_all_in_use_servers(
                                             "xmpp", "agent", "contrail-vrouter-agent",
@@ -508,7 +520,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        self.sleep(5)
+        self.sleep(10)
         servers_in_use, status, ports = self.get_all_in_use_servers(
                                         "xmpp", "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -547,7 +559,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
         self.inputs.stop_service('collector', [in_use_servers[0]], container='collector')
-        self.sleep(5)
+        self.sleep(15)
         self.inputs.start_service('collector', [in_use_servers[0]], container='collector')
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "collector", "agent", "contrail-vrouter-agent",
@@ -562,7 +574,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        self.sleep(5)
+        self.sleep(10)
         servers_in_use, status, ports = self.get_all_in_use_servers("collector",
                                         "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -578,7 +590,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
             assert False, "Unexpected Connection"
         # checking that restarting inactive collector doesnt affect the connections after SIGHUP
         self.inputs.stop_service('collector', [new_in_use_servers[0]], container='collector')
-        self.sleep(5)
+        self.sleep(15)
         self.inputs.start_service('collector', [new_in_use_servers[0]], container='collector')
         in_use_servers_new, status, ports = self.get_all_in_use_servers(
                                             "collector", "agent", "contrail-vrouter-agent",
@@ -596,7 +608,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-vrouter-agent`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        self.sleep(5)
+        self.sleep(10)
         servers_in_use, status, ports = self.get_all_in_use_servers("collector",
                                         "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
@@ -635,7 +647,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-control",
                                             self.inputs.bgp_control_ips[0])
         self.inputs.stop_service('collector', [in_use_servers[0]], container='collector')
-        self.sleep(5)
+        self.sleep(15)
         self.inputs.start_service('collector', [in_use_servers[0]], container='collector')
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "collector", "control", "contrail-control", 
@@ -650,7 +662,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        self.sleep(5)
+        self.sleep(10)
         servers_in_use, status, ports = self.get_all_in_use_servers("collector",
                                         "control", "contrail-control",
                                         self.inputs.bgp_control_ips[0])
@@ -666,7 +678,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
             assert False, "Unexpected Connection"
         # checking that restarting inactive collector doesnt affect the connections after SIGHUP
         self.inputs.stop_service('collector', [new_in_use_servers[0]], container='collector')
-        self.sleep(5)
+        self.sleep(15)
         self.inputs.start_service('collector', [new_in_use_servers[0]], container='collector')
         in_use_servers_new, status, ports = self.get_all_in_use_servers(
                                             "collector", "control", "contrail-control",
@@ -684,7 +696,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.run_cmd_on_server(ip, "kill -s HUP `pidof contrail-control`",
                                 self.inputs.host_data[ip]['username'],
                                 self.inputs.host_data[ip]['password'], pty=True, as_sudo=True)
-        self.sleep(5)
+        self.sleep(10)
         servers_in_use, status, ports = self.get_all_in_use_servers(
                                         "collector", "control", "contrail-control",
                                         self.inputs.bgp_control_ips[0])

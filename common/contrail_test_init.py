@@ -1662,6 +1662,7 @@ class ContrailTestInit(object):
                                     as_sudo=True)
 
         knob_list = [knob] if not isinstance(knob, list) else knob
+        local_file = file_name.split('/')[-1]
 
         for knob in knob_list:
             just_knob = knob[:knob.find('=')]
@@ -1669,31 +1670,31 @@ class ContrailTestInit(object):
                 #Delete the existing knob
                 issue_cmd = "awk 'BEGIN { section=0; doprint=1 } "
                 issue_cmd += "/\["+level+"\]/ { section=1 } "
-                issue_cmd += "/"+just_knob+"/ { if (section) {doprint=0} } "
+                issue_cmd += "/"+just_knob+"/ { if (section) {doprint=0; section=0} } "
                 issue_cmd += "{ if (doprint) {print} else {doprint=1} }' "
-                issue_cmd = "%s %s > %s.modified" % (issue_cmd, file_name, file_name)
+                issue_cmd = "%s %s > %s.modified" % (issue_cmd, local_file, local_file)
                 self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
                 self.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                             as_sudo=True)
-                issue_cmd = "mv %s.modified %s; chmod +x %s" % (file_name, file_name, file_name)
+                issue_cmd = "mv %s.modified %s; chmod +x %s" % (local_file, local_file, local_file)
                 self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
                 self.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                             as_sudo=True)
                 #Insert the new knob at given level
-                issue_cmd = 'grep -q -F \''+knob+'\' %s ||' % (file_name) + \
-                    'sed -i  \'/\['+level+'\]/a '+knob+'\' %s' % (file_name)
+                issue_cmd = 'grep -q -F \''+knob+'\' %s ||' % (local_file) + \
+                    'sed -i  \'/\['+level+'\]/a '+knob+'\' %s' % (local_file)
             else:
                 #Replace the existing knob with new value
                 #Append at next line of first match then delete first match
-                issue_cmd = 'sed -i \'/'+just_knob+'=.*/a %s\' %s' % (knob, file_name)
+                issue_cmd = 'sed -i \'/'+just_knob+'=.*/a %s\' %s' % (knob, local_file)
                 issue_cmd = issue_cmd + ';sed -i \'0,/%s=.*/{//d}\' %s' % (
-                    just_knob, file_name)
+                    just_knob, local_file)
 
             self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
             self.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                     as_sudo=True)
 
-        issue_cmd = 'docker cp %s %s:/%s' % (file_name, container_name,
+        issue_cmd = 'docker cp %s %s:/%s' % (local_file, container_name,
             file_name)
         self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
         self.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
