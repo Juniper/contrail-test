@@ -95,7 +95,7 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
                 str(local_autonomous_system))
         else:
             cmdList.append(
-                'set protocols bgp group bgpaas peer-as ' + str(self.inputs.router_asn))
+                'set protocols bgp group bgpaas peer-as ' + str(self.inputs.bgp_asn))
         if peer_local:
             cmdList.append(
                 'set protocols bgp group bgpaas local-as ' +
