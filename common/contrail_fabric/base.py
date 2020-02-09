@@ -187,7 +187,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         return bms and list(bms)
 
     def filter_bms_nodes(self, bms_type=None, no_of_interfaces=0,
-                         role='leaf', rb_role=None, devices=None):
+                         role='leaf', rb_role=None, devices=None,
+                         min_bms_count=1):
         device_names = set()
         for device in devices or list():
             device_names.add(device.name)
@@ -221,13 +222,20 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                 lag_nodes.add(name)
 
         if bms_type == "multi_homing":
-           return multi_homed_nodes.intersection(interfaces_filtered), msg
+           nodes = multi_homed_nodes.intersection(interfaces_filtered)
         elif bms_type == 'link_aggregation':
-           return lag_nodes.intersection(interfaces_filtered), msg
+           nodes = lag_nodes.intersection(interfaces_filtered)
         elif bms_type == 'single_interface':
-           return regular_nodes.intersection(interfaces_filtered), msg
+           nodes = regular_nodes.intersection(interfaces_filtered)
         else:
-           return interfaces_filtered, msg
+           nodes = interfaces_filtered
+
+        msg = "Unable to find %s BMS node of type %s with interfaces %s" % (
+               min_bms_count if min_bms_count > 1 else 'a',
+               bms_type, no_of_interfaces)
+        if len(nodes) < min_bms_count:
+            return None, msg
+        return nodes, msg
 
     def get_associated_prouters(self, bms_name, interfaces=None):
         bms_node = self.inputs.bms_data[bms_name]
@@ -305,7 +313,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         assert result, msg
         return secgrp_fixture
 
-    def create_logical_router(self, vn_fixtures, vni=None, devices=None, **kwargs):
+    def create_logical_router(self, vn_fixtures, vni=None, devices=None,
+                              **kwargs):
         vn_ids = [vn.uuid for vn in vn_fixtures]
         vni = vni or str(get_random_vxlan_id(min=10000))
         self.logger.info('Creating Logical Router with VN uuids: %s, VNI %s'%(
