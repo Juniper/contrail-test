@@ -789,7 +789,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                                   sport, dport, src_vn_fqname=src_vn_fqname,
                                   dst_vn_fqname=dst_vn_fqname, af=af,
                                   fip_ip=fip_ip)
-        self.sleep(2)
+        self.sleep(7)
         return self.stop_traffic(traffic_obj, expectation)
 
     @classmethod

@@ -104,10 +104,10 @@ class ECMPTraffic(VerifySvcChain):
                         svm_fixture.tap_intf[si_fix.left_vn_fq_name])
                 if not self.inputs.pcap_on_vm:
                     host_ip = svm_fixture.vm_node_ip
-                    cmd = 'tcpdump -nnr /tmp/%s'%(pcap_dict[svm_fixture])
+                    cmd = 'tcpdump -nnr %s'%(pcap_dict[svm_fixture])
                     out = self.inputs.run_cmd_on_server(host_ip,
                         cmd, as_sudo=True)
-                    cmd = 'rm -f /tmp/%s'%(pcap_dict[svm_fixture])
+                    cmd = 'rm -f %s'%(pcap_dict[svm_fixture])
                     self.inputs.run_cmd_on_server(host_ip, cmd, as_sudo=True)
                 else:
                     out, pkt_count = stop_tcpdump_for_vm_intf(
