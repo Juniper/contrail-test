@@ -20,7 +20,11 @@ logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
+    as4_ext_routers_dict = dict(init_obj.as4_ext_routers)
     for (device, device_dict) in init_obj.physical_routers_data.items():
+
+        if device in as4_ext_routers_dict:
+           continue
 
         if init_obj.deployer == 'rhosp':
             cfgm_ips = (init_obj.contrail_configs.get('CONTROL_NODES')).split(',')
