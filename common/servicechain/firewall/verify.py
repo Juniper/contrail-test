@@ -123,39 +123,15 @@ class VerifySvcFirewall(VerifySvcChain):
         vm1_fixture.install_pkg("Traffic")
         vm2_fixture.install_pkg("Traffic")
 
-        sport = 8001
-        dport = 9001
-        sent, recv = self.verify_traffic(vm1_fixture, vm2_fixture,
-                                         'udp', sport=sport, dport=dport)
-        errmsg = "UDP traffic with src port %s and dst port %s failed" % (
-            sport, dport)
-        assert sent and recv == sent, errmsg
-
-        sport = 8000
-        dport = 9000
-        sent, recv = self.verify_traffic(vm1_fixture, vm2_fixture,
-                                         'tcp', sport=sport, dport=dport)
-        errmsg = "TCP traffic with src port %s and dst port %s failed" % (
-            sport, dport)
-        assert sent and recv == sent, errmsg
-
+        self.verify_traffic(vm1_fixture, vm2_fixture,
+                                         'udp', sport=8001, dport=9001)
+        self.verify_traffic(vm1_fixture, vm2_fixture,
+                                         'tcp', sport=8000, dport=9000)
         self.delete_si_st(tcp_si_fixtures, tcp_st_fixture)
-
-        sport = 8001
-        dport = 9001
-        sent, recv = self.verify_traffic(vm1_fixture, vm2_fixture,
-                                         'udp', sport=sport, dport=dport)
-        errmsg = "UDP traffic with src port %s and dst port %s failed" % (
-            sport, dport)
-        assert sent and recv == sent, errmsg
-
-        sport = 8000
-        dport = 9000
-        sent, recv = self.verify_traffic(vm1_fixture, vm2_fixture,
-                                         'tcp', sport=sport, dport=dport)
-        errmsg = "TCP traffic with src port %s and dst port %s passed; Expected to fail" % (
-            sport, dport)
-        assert sent and recv == 0, errmsg
+        self.verify_traffic(vm1_fixture, vm2_fixture,
+                                         'udp', sport=8001, dport=9001)
+        self.verify_traffic(vm1_fixture, vm2_fixture,
+                                         'tcp', sport=8000, dport=9000)
 
         st_name = get_random_name("tcp_svc_template")
         si_prefix = "tcp_bridge_"
@@ -178,21 +154,10 @@ class VerifySvcFirewall(VerifySvcChain):
         assert result, msg
         self.verify_si(tcp_si_fixtures)
 
-        sport = 8001
-        dport = 9001
-        sent, recv = self.verify_traffic(vm1_fixture, vm2_fixture,
-                                         'udp', sport=sport, dport=dport)
-        errmsg = "UDP traffic with src port %s and dst port %s failed" % (
-            sport, dport)
-        assert sent and recv == sent, errmsg
-
-        sport = 8000
-        dport = 9000
-        sent, recv = self.verify_traffic(vm1_fixture, vm2_fixture,
-                                         'tcp', sport=sport, dport=dport)
-        errmsg = "TCP traffic with src port %s and dst port %s failed" % (
-            sport, dport)
-        assert sent and recv == sent, errmsg
+        self.verify_traffic(vm1_fixture, vm2_fixture,
+                                         'udp', sport=8001, dport=9001)
+        self.verify_traffic(vm1_fixture, vm2_fixture,
+                                         'tcp', sport=8000, dport=9000)
 
     def verify_multi_inline_svc_with_fate_share(self, si_list=None, si_list1=None, *args, **kwargs):
         ret_dict = self.config_multi_inline_svc(*args, si_list=si_list, **kwargs)
@@ -658,26 +623,15 @@ class VerifySvcFirewall(VerifySvcChain):
 
         self.logger.info(
             "Verify UDP traffic with allow udp only rule from new left VN to new right VN")
-        sport = 8000
-        dport = 9000
-        sent, recv = self.verify_traffic(new_left_vm_fix, new_right_vm_fix,
-                                         'udp', sport=sport, dport=dport)
-        errmsg = "UDP traffic with src port %s and dst port %s failed" % (
-            sport, dport)
-        assert sent and recv == sent, errmsg
-
+        self.verify_traffic(new_left_vm_fix, new_right_vm_fix,
+                                         'udp', sport=8000, dport=9000)
         self.logger.info("Verfiy ICMP traffic with allow all.")
         errmsg = "Ping to right VM ip %s from left VM failed" % right_vm_fixture.vm_ip
         assert left_vm_fixture.ping_with_certainty(
             right_vm_fixture.vm_ip), errmsg
         self.logger.info("Verify UDP traffic with allow all")
-        sport = 8001
-        dport = 9001
-        sent, recv = self.verify_traffic(left_vm_fixture, right_vm_fixture,
-                                         'udp', sport=sport, dport=dport)
-        errmsg = "UDP traffic with src port %s and dst port %s failed" % (
-            sport, dport)
-        assert sent and recv == sent, errmsg
+        self.verify_traffic(left_vm_fixture, right_vm_fixture,
+                                         'udp', sport=8001, dport=9001)
 
         # Delete policy
         self.delete_vm(new_left_vm_fix)
