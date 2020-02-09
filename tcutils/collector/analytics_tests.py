@@ -3726,6 +3726,7 @@ class AnalyticsVerification(fixtures.Fixture):
             for elem in columns:
                 column_names.append(elem['name'])
             table_schema_dct.update({'schema': column_names})
+<<<<<<< HEAD   (1edb8f Merge "Fix sanity issues caused due to code refactoring chan)
             if not 'Flow' in k:
                 column_value_key = '%s/column-values' % k
             else:
@@ -3766,6 +3767,9 @@ class AnalyticsVerification(fixtures.Fixture):
                     self.logger.debug("Got exception as %s " % (e))
             table_dct.update(
                 {k: [table_schema_dct, table_src_dct, table_mod_dct, table_name_dct]})
+=======
+            table_dct.update({k: [table_schema_dct]})
+>>>>>>> CHANGE (1a989f Fix regression failures)
             tables_lst.append(table_dct)
 
         return tables_lst
