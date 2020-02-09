@@ -171,10 +171,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_stats_tables(start_time= start_time , skip_tables = [u'StatTable.ConfigCpuState.\
-                                    cpu_info', u'StatTable.AnalyticsCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info',\
-                                     u'StatTable.QueryPerfInfo.query_stats', u'StatTable.UveVirtualNetworkAgent.vn_stats', \
-                                    u'StatTable.SandeshMessageStat.msg_info'])
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time)
         return True
     
     @preposttest_wrapper
@@ -366,14 +363,15 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_generator_connection_to_collector()
 
-    @preposttest_wrapper
-    def test_db_purge(self):
-        ''' Test to db purge
-
-        '''
-        start_time = self.analytics_obj.getstarttime(self.inputs.collector_ip)
-        purge_id = self.analytics_obj.get_purge_id(20)
-        assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id,start_time)
+    #stats table StatTable.DatabasePurgeInfo.stats no longer present so disabling testcase
+    #@preposttest_wrapper
+    #def test_db_purge(self):
+    #    ''' Test to db purge
+    #
+    #    '''
+    #    start_time = self.analytics_obj.getstarttime(self.inputs.collector_ip)
+    #    purge_id = self.analytics_obj.get_purge_id(20)
+    #    assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id,start_time)
     
     @test.attr(type=['sanity', 'vcenter', 'vcenter_compute'])
     @preposttest_wrapper
