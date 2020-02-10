@@ -2965,35 +2965,18 @@ class VMFixture(fixtures.Fixture):
         fh = open(filename, 'w')
         fh.write(code)
         fh.close()
-
-        host = self.inputs.host_data[self.vm_node_ip]
-        with settings(
-            host_string='%s@%s' % (host['username'], self.vm_node_ip),
-            password=host['password'],
-            warn_only=True, abort_on_prompts=False,
-            hide='everything'):
-            dest_gw_username = self.inputs.host_data[
-                                        self.vm_node_ip]['username']
-            dest_gw_password = self.inputs.host_data[
-                                        self.vm_node_ip]['password']
-            dest_gw_ip = self.vm_node_ip
-            dest_gw_login = "%s@%s" % (dest_gw_username,dest_gw_ip)
-            dest_login = '%s@%s' % (self.vm_username,self.local_ip)
-            dest_path = dest_login + ":/tmp"
-            remote_copy(filename, dest_path, dest_password=self.vm_password,
-                        dest_gw=dest_gw_login,dest_gw_password=dest_gw_password,
-                        with_sudo=True)
-            if as_daemon:
-                pidfile = pidfile or "/tmp/pidfile_%s.pid" % (get_random_name())
-                pidfilename = pidfile.split('/')[-1]
-                stdout_path = stdout_path or "/tmp/%s_stdout.log" % pidfilename
-                stderr_path = stderr_path or "/tmp/%s_stderr.log" % pidfilename
-                outputs = self.run_cmd_on_vm(\
+        self.copy_file_to_vm(filename,'/tmp')
+        if as_daemon:
+            pidfile = pidfile or "/tmp/pidfile_%s.pid" % (get_random_name())
+            pidfilename = pidfile.split('/')[-1]
+            stdout_path = stdout_path or "/tmp/%s_stdout.log" % pidfilename
+            stderr_path = stderr_path or "/tmp/%s_stderr.log" % pidfilename
+            outputs = self.run_cmd_on_vm(\
                         ['python /tmp/%s 1>%s 2>%s'\
                         % (filename_short,stdout_path,stderr_path)],
                         as_sudo=as_sudo, as_daemon=as_daemon, pidfile=pidfile)
-            else:
-                outputs = self.run_cmd_on_vm(\
+        else:
+            outputs = self.run_cmd_on_vm(\
                         ['python /tmp/%s'\
                         % (filename_short)],
                         as_sudo=as_sudo, as_daemon=as_daemon)
