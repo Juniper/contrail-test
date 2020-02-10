@@ -436,31 +436,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         3. Attach policy to VN and confirm if policy takes hold. 
         '''
 
-        vn_name = get_random_name('bgpaas_vn')
-        vn_subnets = [get_random_cidr()]
-        vn_fixture = self.create_vn(vn_name, vn_subnets)
-        test_vm = self.create_vm(vn_fixture, 'test_vm',
-                                 image_name='ubuntu-traffic')
-        assert test_vm.wait_till_vm_is_up()
-        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',image_name='vsrx')
-        assert bgpaas_vm1.wait_till_vm_is_up()
-        bgpaas_fixture = self.create_bgpaas(bgpaas_shared=True, autonomous_system=64500, bgpaas_ip_address=bgpaas_vm1.vm_ip)
-        bgpaas_vm1.wait_for_ssh_on_vm()
-        port1 = {}
-        port1['id'] = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
-        address_families = []
-        address_families = ['inet', 'inet6']
-        autonomous_system = 64500
-        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
-        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
-        neighbors = []
-        neighbors = [gw_ip, dns_ip]
-        self.logger.info('We will configure BGP on the two vSRX')
-        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm1, bgp_ip=bgpaas_vm1.vm_ip, lo_ip=bgpaas_vm1.vm_ip,
-                                address_families=address_families, autonomous_system=autonomous_system, neighbors=neighbors, bfd_enabled=False)
-        bgpaas_vm1.wait_for_ssh_on_vm()
-        self.attach_vmi_to_bgpaas(port1['id'], bgpaas_fixture)
-        self.addCleanup(self.detach_vmi_from_bgpaas,port1['id'], bgpaas_fixture)
+        ret_dict = self.create_bgpaas_routes()
+        vn_fixture = ret_dict["vn_fixture"]
+        test_vm    = ret_dict["test_vm"]
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'bgpaas', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
         sleep(90)
@@ -624,7 +602,7 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         ret_dict['test_vm'] = self.create_vm(ret_dict['vn_fixture'], 'test_vm',
                                  image_name='ubuntu-traffic')
         assert ret_dict['test_vm'].wait_till_vm_is_up()
-        bgpaas_vm1 = self.create_vm(ret_dict['vn_fixture'], 'bgpaas_vm1',image_name='vsrx')
+        bgpaas_vm1 = self.create_vm(ret_dict['vn_fixture'], 'bgpaas_vm1',image_name='ubuntu-bird')
         assert bgpaas_vm1.wait_till_vm_is_up()
         bgpaas_fixture = self.create_bgpaas(bgpaas_shared=True, autonomous_system=64500, bgpaas_ip_address=bgpaas_vm1.vm_ip)
         bgpaas_vm1.wait_for_ssh_on_vm()
@@ -637,10 +615,15 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         dns_ip = ret_dict['vn_fixture'].get_subnets()[0]['dns_server_address']
         neighbors = []
         neighbors = [gw_ip, dns_ip]
-        self.logger.info('We will configure BGP on the two vSRX')
-        self.config_bgp_on_vsrx(src_vm=ret_dict['test_vm'], dst_vm=bgpaas_vm1, bgp_ip=bgpaas_vm1.vm_ip, lo_ip=bgpaas_vm1.vm_ip,
-                                address_families=address_families, autonomous_system=autonomous_system, neighbors=neighbors, bfd_enabled=False)
-        bgpaas_vm1.wait_for_ssh_on_vm()
+        self.logger.info('Configuring BGP on the bird vm')
+        static_routes = []
+        static_routes.append({"network":ret_dict['vn_fixture'].get_subnets()[0]['cidr'],"nexthop":"blackhole"})
+        self.config_bgp_on_bird(
+            bgpaas_vm=bgpaas_vm1,
+            local_ip=bgpaas_vm1.vm_ip,
+            peer_ip=gw_ip,
+            peer_as=self.inputs.bgp_asn,
+            local_as=autonomous_system,static_routes=static_routes)
         self.attach_vmi_to_bgpaas(port1['id'], bgpaas_fixture)
         self.addCleanup(self.detach_vmi_from_bgpaas,port1['id'], bgpaas_fixture)
         return ret_dict

@@ -235,7 +235,14 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         result = search_in_pcap(session, pcap, '4784')
         return result
 
-    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as):
+    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as,static_routes=[]):
+        # Example: static_routes = [ {"network":"6.6.6.0/24","nexthop":"blackhole"} ]
+        static_route_cmd = ""
+        if static_routes:
+           static_route_cmd += "protocol static {\n"
+           for rt in static_routes:
+               static_route_cmd += "route %s %s;\n"%(rt["network"],rt["nexthop"])
+           static_route_cmd += "}\n"
         self.logger.info('Configuring BGP on %s ' % bgpaas_vm.vm_name)
         cmd = '''cat > /etc/bird/bird.conf << EOS
 router id %s;
@@ -243,6 +250,7 @@ protocol bgp {
         description "BGPaaS";
         local as %s;
         neighbor %s as %s;
+        export where source = RTS_STATIC;
         multihop;
         hold time 90;
         bfd on;
@@ -251,8 +259,9 @@ protocol bgp {
 protocol bfd {
     neighbor %s local %s multihop on;
 }
+%s
 EOS
-'''%(local_ip, local_as, peer_ip, peer_as, local_ip, peer_ip, local_ip)
+'''%(local_ip, local_as, peer_ip, peer_as, local_ip, peer_ip, local_ip,static_route_cmd)
         bgpaas_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         service_restart= "service bird restart"
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
