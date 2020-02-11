@@ -31,11 +31,11 @@ class BaseTraffic(object):
             tool = SCAPY
 
         if tool == NETCAT: 
-            from .netcat_traffic import Netcat    
+            from tcutils.traffic_utils.netcat_traffic import Netcat
             return Netcat()
         elif tool == SCAPY:
-            from .scapy_traffic import Scapy 
+            from tcutils.traffic_utils.scapy_traffic import Scapy
             return Scapy()
         elif tool == SOCKET:
-            from .socket_traffic import SocketTrafficUtil
+            from tcutils.traffic_utils.socket_traffic import SocketTrafficUtil
             return SocketTrafficUtil()
