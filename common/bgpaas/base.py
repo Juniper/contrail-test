@@ -11,6 +11,7 @@ from contrailapi import ContrailVncApi
 from common.base import GenericTestBase
 from common.neutron.base import BaseNeutronTest
 from common.svc_health_check.base import BaseHC
+from vnc_api.gen.resource_xsd import RouteOriginOverride
 
 
 class BaseBGPaaS(BaseNeutronTest, BaseHC):
@@ -267,3 +268,21 @@ EOS
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
 
+    def set_route_origin_override(self,bgpaas_fixture,origin_override,origin):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        routeorigin=session_attr.get_route_origin_override()
+        if not routeorigin :
+           routeorigin = RouteOriginOverride()
+        routeorigin.set_origin_override(True)
+        routeorigin.set_origin(origin)
+        session_attr.set_route_origin_override(routeorigin)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_route_origin_override(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        routeorigin=session_attr.get_route_origin_override()
+        return routeorigin
+ 
