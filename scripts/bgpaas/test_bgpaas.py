@@ -10,6 +10,130 @@ from common import isolated_creds
 
 class TestBGPaaS(BaseBGPaaS):
     @preposttest_wrapper
+    def test_bgpaas_route_origin(self):
+
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',image_name='ubuntu-bird')
+        assert bgpaas_vm1.wait_till_vm_is_up()
+
+        cluster_local_autonomous_system = random.randint(200, 800)
+        bgpaas_as = 64500
+        bgpaas_fixture = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=bgpaas_as, bgpaas_ip_address=bgpaas_vm1.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture)
+
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('Configuring BGP on the bird-vm')
+        static_routes = [ {"network":"0.0.0.0/0","nexthop":"blackhole"}]
+        
+        self.config_bgp_on_bird(
+            bgpaas_vm=bgpaas_vm1,
+            local_ip=bgpaas_vm1.vm_ip,
+            peer_ip=gw_ip,
+            peer_as=cluster_local_autonomous_system,
+            local_as=bgpaas_as,static_routes=static_routes)
+        bgpaas_fixture.verify_in_control_node(bgpaas_vm1)
+        cn_inspect_handle = {}
+        for cn in self.inputs.bgp_control_ips:
+           cn_inspect_handle[cn] = self.connections.get_control_node_inspect_handle(cn)
+
+        origin_from_bgpaas_vm = False
+        for cn in self.inputs.bgp_control_ips:
+            rt_entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+            for rt_entry in rt_entries:
+               if rt_entry['protocol'] == "BGP (bgpaas)":
+                  origin_from_bgpaas_vm = rt_entry["origin"]
+        assert origin_from_bgpaas_vm == "igp","route 0.0.0.0/0 is not seen in ri: %s"%vn_fixture.ri_name
+        self.logger.info("Unmodified Origin info for route 0.0.0.0/0 is : %s"%origin_from_bgpaas_vm)
+
+        origin_override = self.get_route_origin_override(bgpaas_fixture)
+
+        assert not origin_override,"ERROR: Origin Override is enabled by default"
+
+        self.set_route_origin_override(bgpaas_fixture,True,"IGP")
+
+        time.sleep(2)
+        bgpaas_fixture.verify_in_control_node(bgpaas_vm1)
+
+        origin_from_bgpaas_vm = False
+        for cn in self.inputs.bgp_control_ips:
+            rt_entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+            for rt_entry in rt_entries:
+               if rt_entry['protocol'] == "BGP (bgpaas)":
+                  origin_from_bgpaas_vm = rt_entry["origin"]
+
+        assert origin_from_bgpaas_vm=="igp","route 0.0.0.0/0 is not seen in ri: %s"%vn_fixture.ri_name
+        self.logger.info("Origin info for route 0.0.0.0/0 is : %s"%origin_from_bgpaas_vm)
+       
+        self.set_route_origin_override(bgpaas_fixture,True,"EGP")
+        time.sleep(2)
+        bgpaas_fixture.verify_in_control_node(bgpaas_vm1)
+
+        origin_override = self.get_route_origin_override(bgpaas_fixture)
+        origin = origin_override.get_origin() if origin_override else None
+        if origin_override and origin == "EGP":
+           origin_override_set = True
+        else:
+           origin_override_set = False
+        assert origin_override_set,"Origin Override is not set correctly,Expected: True,EGP"
+
+        origin_from_bgpaas_vm = False
+        for cn in self.inputs.bgp_control_ips:
+            rt_entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+            for rt_entry in rt_entries:
+               if rt_entry['protocol'] == "BGP (bgpaas)":
+                  origin_from_bgpaas_vm = rt_entry["origin"]
+        assert origin_from_bgpaas_vm == "egp","route 0.0.0.0/0 is not seen in ri: %s"%vn_fixture.ri_name
+        self.logger.info("Origin info for route 0.0.0.0/0 is : %s"%origin_from_bgpaas_vm)
+
+        self.set_route_origin_override(bgpaas_fixture,True,"INCOMPLETE")
+        time.sleep(5)
+        bgpaas_fixture.verify_in_control_node(bgpaas_vm1)
+
+        origin_override = self.get_route_origin_override(bgpaas_fixture)
+        origin = origin_override.get_origin() if origin_override else None
+        if origin_override and origin == "INCOMPLETE":
+           origin_override_set = True
+        else:
+           origin_override_set = False
+
+        assert origin_override_set,"Origin Override is not set correctly,Expected: True,INCOMPLETE"
+
+
+        origin_from_bgpaas_vm = False
+        for cn in self.inputs.bgp_control_ips:
+            rt_entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+            for rt_entry in rt_entries:
+               if rt_entry['protocol'] == "BGP (bgpaas)":
+                  origin_from_bgpaas_vm = rt_entry["origin"]
+        assert origin_from_bgpaas_vm=="incomplete","route 0.0.0.0/0 is not seen in ri: %s"%vn_fixture.ri_name
+        self.logger.info("Origin info for route 0.0.0.0/0 is : %s"%origin_from_bgpaas_vm)
+
+        self.set_route_origin_override(bgpaas_fixture,False,None)
+        time.sleep(5)
+        bgpaas_fixture.verify_in_control_node(bgpaas_vm1)
+
+        origin_from_bgpaas_vm = False
+        for cn in self.inputs.bgp_control_ips:
+            rt_entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+            for rt_entry in rt_entries:
+               if rt_entry['protocol'] == "BGP (bgpaas)":
+                  origin_from_bgpaas_vm = rt_entry["origin"]
+       
+        assert origin_from_bgpaas_vm=="igp","route 0.0.0.0/0 is not seen in ri: %s"%vn_fixture.ri_name
+        self.logger.info("Origin info for route 0.0.0.0/0 is : %s"%origin_from_bgpaas_vm)
+
+
+    @preposttest_wrapper
     def test_bgpaas_bird(self):
         '''
         1. Create a BGPaaS object with shared attribute, IP address and ASN.
