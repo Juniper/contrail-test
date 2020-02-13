@@ -169,6 +169,44 @@ class TestBGPaaS(BaseBGPaaS):
         self.attach_vmi_to_bgpaas(port2, bgpaas_fixture)
         self.addCleanup(self.detach_vmi_from_bgpaas,
                         port2, bgpaas_fixture)
+        assert bgpaas_fixture.verify_in_control_node(
+                bgpaas_vm1), 'BGPaaS Session for bgpaas_vm1 not seen in the control-node'
+
+        received_routes = self.get_config_via_netconf(test_vm,bgpaas_vm1,"show route receive-protocol bgp %s"%gw_ip)
+        routes_received = False
+        if re.search("inet.0",received_routes) and re.search(test_vm.vm_ip,received_routes):
+            routes_received = True
+       
+        assert routes_received,"ERROR: Routes are NOT received by BGPaaS VM correctly"
+
+        self.set_suppress_route_advt(bgpaas_fixture,True)
+        time.sleep(2)
+        assert bgpaas_fixture.verify_in_control_node(
+                bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
+
+        assert self.get_suppress_route_advt(bgpaas_fixture),"suppress route enable is not updated"
+
+        received_routes = self.get_config_via_netconf(test_vm,bgpaas_vm1,"show route receive-protocol bgp %s"%gw_ip)
+        routes_not_received = False
+        if re.search("inet.0",received_routes) and not re.search(test_vm.vm_ip,received_routes):
+            routes_not_received = True
+
+        assert routes_not_received,"ERROR: Routes are received by BGPaaS VM when suppress-advt is enabled"
+
+        self.set_suppress_route_advt(bgpaas_fixture,False)
+        time.sleep(2)
+        assert bgpaas_fixture.verify_in_control_node(
+                bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
+
+        assert not self.get_suppress_route_advt(bgpaas_fixture),"suppress route disable is not updated"
+
+        received_routes = self.get_config_via_netconf(test_vm,bgpaas_vm1,"show route receive-protocol bgp %s"%gw_ip)
+        routes_received = False
+        if re.search("inet.0",received_routes) and re.search(test_vm.vm_ip,received_routes):
+            routes_received = True
+
+        assert routes_received,"ERROR: Routes are NOT received by BGPaaS VM when suppress-advt is disabled"
+
 
         if bfd_enabled:
             shc_fixture = self.create_hc(
