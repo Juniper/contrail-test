@@ -10,6 +10,110 @@ from common import isolated_creds
 
 class TestBGPaaS(BaseBGPaaS):
     @preposttest_wrapper
+    def test_bgpaas_vsrx_as_override(self):
+ 
+        initial_4byte_enable = self.get_4byte_enable()
+        if initial_4byte_enable == False:
+           self.set_4byte_enable(True)
+           self.addCleanup(self.set_4byte_enable,initial_4byte_enable)
+       
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+        test_vm = self.create_vm(vn_fixture, 'test_vm',
+                                 image_name='ubuntu-traffic')
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',
+                                    image_name='vsrx')
+        bgpaas_vm2 = self.create_vm(vn_fixture, 'bgpaas_vm2',
+                                    image_name='vsrx')
+        assert test_vm.wait_till_vm_is_up()
+
+        autonomous_system = 645000
+        cluster_local_autonomous_system = 655000
+        bgpaas_fixture1 = self.create_bgpaas(bgpaas_shared=True,
+             autonomous_system=autonomous_system, bgpaas_ip_address=bgpaas_vm1.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+        bgpaas_fixture2 = self.create_bgpaas(bgpaas_shared=True,
+             autonomous_system=autonomous_system, bgpaas_ip_address=bgpaas_vm2.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        port2 = bgpaas_vm2.vmi_ids[bgpaas_vm2.vn_fq_name]
+        bgpaas_vm1_state = False
+        bgpaas_vm2_state = False
+        for i in range(5):
+            bgpaas_vm1_state = bgpaas_vm1.wait_till_vm_is_up()
+        assert bgpaas_vm1_state,"bgpaas_vm1 failed to come up" 
+        for i in range(5):
+            bgpaas_vm2_state = bgpaas_vm2.wait_till_vm_is_up()
+        assert bgpaas_vm2_state,"bgpaas_vm2 failed to come up" 
+        address_families = []
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('We will configure BGP on the two vSRX')
+        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm1, bgp_ip=bgpaas_vm1.vm_ip, lo_ip=bgpaas_vm1.vm_ip,
+                                address_families=address_families, autonomous_system=autonomous_system, neighbors=neighbors,local_autonomous_system=cluster_local_autonomous_system)
+        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm2, bgp_ip=bgpaas_vm2.vm_ip, lo_ip=bgpaas_vm2.vm_ip,
+                                address_families=address_families, autonomous_system=autonomous_system, neighbors=neighbors,local_autonomous_system=cluster_local_autonomous_system)
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture1)
+        self.attach_vmi_to_bgpaas(port2, bgpaas_fixture2)
+        self.addCleanup(self.detach_vmi_from_bgpaas,
+                        port1, bgpaas_fixture1)
+        self.addCleanup(self.detach_vmi_from_bgpaas,
+                        port2, bgpaas_fixture2)
+
+        self.configure_vsrx(srv_vm=test_vm,dst_vm=bgpaas_vm2,cmds=["set routing-options static route 0.0.0.0/0 discard"])
+
+        assert bgpaas_fixture1.verify_in_control_node(
+                bgpaas_vm1), 'BGPaaS Session for bgpaas_vm1 not seen in the control-node'
+
+        assert bgpaas_fixture2.verify_in_control_node(
+                bgpaas_vm2), 'BGPaaS Session for bgpaas_vm2 not seen in the control-node'
+
+        output = self.get_config_via_netconf(test_vm,bgpaas_vm1,"show route receive-protocol bgp %s"%gw_ip)
+
+        ret = re.search("0.0.0.0/0",(output))
+        if ret:
+           self.logger.error("ERROR: STEP-1: route advertised by other BGPaasVM with same ASN is seen when as-override flag is not set")
+           assert False
+        else:
+           self.logger.info("INFO: STEP-1: route advertised by other BGPaasVM with same ASN is NOT seen when as-override flag is not set,as expected")
+
+        self.set_as_override(bgpaas_fixture1,True)
+        assert self.get_as_override(bgpaas_fixture1),"bgpaas_fixture1: AS_Override flag is not updated to True"
+      
+        time.sleep(2)
+        assert bgpaas_fixture1.verify_in_control_node(
+                bgpaas_vm1), 'BGPaaS Session for bgpaas_vm1 not seen in the control-node'
+
+        output = self.get_config_via_netconf(test_vm,bgpaas_vm1,"show route receive-protocol bgp %s"%gw_ip)
+
+        ret = re.search("0.0.0.0/0\s+%s\s+%s %s I"%(gw_ip,cluster_local_autonomous_system,cluster_local_autonomous_system),output)
+        if ret:
+           self.logger.info("STEP-2: INFO: route advertised by other BGPaasVM with same ASN is seen when as-override flag is set,as expected.")
+        else:
+           self.logger.error("STEP-2: ERROR: route advertised by other BGPaasVM with same ASN is NOT seen when as-override flag is set")
+           assert False
+
+        self.set_as_override(bgpaas_fixture1,False)
+        assert not self.get_as_override(bgpaas_fixture1),"bgpaas_fixture1: AS_Override flag is not updated to False"
+
+        time.sleep(2)
+        assert bgpaas_fixture1.verify_in_control_node(
+                bgpaas_vm1), 'BGPaaS Session for bgpaas_vm1 not seen in the control-node'
+
+        output = self.get_config_via_netconf(test_vm,bgpaas_vm1,"show route receive-protocol bgp %s"%gw_ip)
+        ret = re.search("0.0.0.0/0",output)
+        if ret:
+           self.logger.error("ERROR: STEP-3: route advertised by other BGPaasVM with same ASN is seen when as-override flag is not set")
+           assert False
+        else:
+           self.logger.info("INFO: STEP-3: route advertised by other BGPaasVM with same ASN is NOT seen when as-override flag is not set,as expected")
+
+
+
+    @preposttest_wrapper
     def test_bgpaas_bird(self):
         '''
         1. Create a BGPaaS object with shared attribute, IP address and ASN.
