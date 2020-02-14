@@ -267,3 +267,33 @@ EOS
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
 
+    def set_as_override(self,bgpaas_fixture,as_override):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        session_attr.set_as_override(as_override)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_as_override(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        return session_attr.get_as_override()
+
+
+    def get_4byte_enable(self):
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        return gsc_obj.get_enable_4byte_as()
+
+    def set_4byte_enable(self, state):
+        if state in ['true','True',True]:
+           state = True
+        else:
+           state = False
+        self.logger.info("SET_4BYTE_ENABLE " + str(state ) )
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        gsc_obj.set_enable_4byte_as(state)
+        self.connections.vnc_lib.global_system_config_update(gsc_obj)
+
+
