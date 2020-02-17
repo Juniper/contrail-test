@@ -7,8 +7,148 @@ from tcutils.util import *
 from tcutils.tcpdump_utils import *
 from common import isolated_creds
 
-
 class TestBGPaaS(BaseBGPaaS):
+    def bgpaas_as_loop_count(self,four_byte=False):
+
+        if four_byte:
+           initial_4byte_enable = self.get_4byte_enable()
+           if initial_4byte_enable == False:
+              self.set_4byte_enable(True)
+              self.addCleanup(self.set_4byte_enable,initial_4byte_enable)
+           cluster_local_autonomous_system = random.randint(70000, 80000)
+           bgpaas_as1 = 645000
+           bgpaas_as2 = 645010
+        else:
+           cluster_local_autonomous_system = random.randint(7000, 8000)
+           bgpaas_as1 = 64500
+           bgpaas_as2 = 64501
+
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+
+        test_vm = self.create_vm(vn_fixture, 'test_vm',
+                                 image_name='ubuntu-traffic')
+
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',image_name='ubuntu-bird')
+        bgpaas_vm2 = self.create_vm(vn_fixture, 'bgpaas_vm2',image_name='vsrx')
+
+        bgpaas_fixture1 = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=bgpaas_as1, bgpaas_ip_address=bgpaas_vm1.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+        bgpaas_fixture2 = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=bgpaas_as2, bgpaas_ip_address=bgpaas_vm2.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture1)
+        port2 = bgpaas_vm2.vmi_ids[bgpaas_vm2.vn_fq_name]
+        self.attach_vmi_to_bgpaas(port2, bgpaas_fixture2)
+
+        cn_inspect_handle = {}
+
+        for cn in self.inputs.bgp_control_ips:
+           cn_inspect_handle[cn] = self.connections.get_control_node_inspect_handle(cn)
+
+        assert test_vm.wait_till_vm_is_up()
+        assert bgpaas_vm1.wait_till_vm_is_up()
+        bgpaas_vm2_state = False
+        for i in range(5):
+           bgpaas_vm2_state = bgpaas_vm2.wait_till_vm_is_up()
+           if bgpaas_vm2_state:
+              break
+        assert bgpaas_vm2_state,"bgpaas_vm2 failed to come up"
+
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('Configuring BGP on the bird-vm')
+        static_routes = [ {"network":"0.0.0.0/0","nexthop":"blackhole"}]
+
+        export_filter = [ "export filter bgp_out_uplink_a;",
+                          """filter bgp_out_uplink_a
+                             {
+                             bgp_path.prepend(%s);
+                             bgp_path.prepend(%s);
+                             bgp_path.prepend(%s);
+                             bgp_path.prepend(%s);
+                             accept;
+                             }
+                          """ %(cluster_local_autonomous_system,cluster_local_autonomous_system,cluster_local_autonomous_system,bgpaas_as1)
+                         ]
+
+        self.config_bgp_on_bird(
+            bgpaas_vm=bgpaas_vm1,
+            local_ip=bgpaas_vm1.vm_ip,
+            peer_ip=gw_ip,
+            peer_as=cluster_local_autonomous_system,
+            local_as=bgpaas_as1,static_routes=static_routes,export_filter=export_filter)
+
+        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm2, 
+                                bgp_ip=bgpaas_vm2.vm_ip, lo_ip=bgpaas_vm2.vm_ip,
+                                address_families=address_families, autonomous_system=bgpaas_as2,
+                                neighbors=neighbors,local_autonomous_system=cluster_local_autonomous_system)
+
+        bgpaas_fixture1.verify_in_control_node(bgpaas_vm1)
+        bgpaas_fixture2.verify_in_control_node(bgpaas_vm2)
+        output = self.get_config_via_netconf(test_vm,bgpaas_vm2,"show route receive-protocol bgp %s"%gw_ip)
+
+        as_path_looped = False
+        for cn in self.inputs.bgp_control_ips:
+           entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+           for entry in entries:
+              if entry["protocol"] == 'BGP (bgpaas)' and "AsPathLooped" in entry["flags"]:
+                as_path_looped = True
+        assert as_path_looped,"AsPathLooped not seen for route 0.0.0.0/0"
+ 
+        new_as_loop_count = 3
+        self.set_as_loop_count(bgpaas_fixture1,new_as_loop_count)
+        as_loop_count = self.get_as_loop_count(bgpaas_fixture1)
+        assert as_loop_count == new_as_loop_count , "AS Loop Count is not updated correctly to 3"
+        time.sleep(2)
+        bgpaas_fixture1.verify_in_control_node(bgpaas_vm1)
+        output = self.get_config_via_netconf(test_vm,bgpaas_vm2,"show route receive-protocol bgp %s"%gw_ip)
+
+        if not re.search("0.0.0.0/0",output):
+           assert False,"ERROR: route 0.0.0.0/0 is not seen in bgpaas_vm2 after updating as loop count"
+
+        as_path_looped = False
+        for cn in self.inputs.bgp_control_ips:
+           entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+           for entry in entries:
+               if entry["protocol"] == 'BGP (bgpaas)' and "AsPathLooped" in entry["flags"]:
+                  as_path_looped = True
+        assert not as_path_looped,"AsPathLooped seen for route 0.0.0.0/0 even after setting as_loop_count"
+
+        new_as_loop_count = 1
+        self.set_as_loop_count(bgpaas_fixture1,new_as_loop_count)
+        as_loop_count = self.get_as_loop_count(bgpaas_fixture1)
+        assert as_loop_count == new_as_loop_count , "AS Loop Count is not updated correctly to 1"
+        time.sleep(2)
+        bgpaas_fixture1.verify_in_control_node(bgpaas_vm1)
+        output = self.get_config_via_netconf(test_vm,bgpaas_vm2,"show route receive-protocol bgp %s"%gw_ip)
+
+        as_path_looped = False
+        for cn in self.inputs.bgp_control_ips:
+           entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+           for entry in entries:
+               if entry["protocol"] == 'BGP (bgpaas)' and "AsPathLooped" in entry["flags"]:
+                  as_path_looped = True
+        assert as_path_looped,"AsPathLooped NOT seen for route 0.0.0.0/0 even after re-setting as_loop_count"
+
+        output = self.get_config_via_netconf(test_vm,bgpaas_vm2,"show route receive-protocol bgp %s"%gw_ip)
+
+        if re.search("0.0.0.0/0",output):
+           assert False,"ERROR: route 0.0.0.0/0 is  seen in bgpaas_vm2 after re-setting as loop count"
+
+    @preposttest_wrapper
+    def test_bgpaas_as_loop_count_2byte(self):
+        self.bgpaas_as_loop_count(four_byte=False)
+
+    @preposttest_wrapper
+    def test_bgpaas_as_loop_count_4byte(self):
+        self.bgpaas_as_loop_count(four_byte=True)
+
     @preposttest_wrapper
     def test_bgpaas_bird(self):
         '''

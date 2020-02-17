@@ -235,7 +235,7 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         result = search_in_pcap(session, pcap, '4784')
         return result
 
-    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as,static_routes=[]):
+    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as,static_routes=[],export_filter=""):
         # Example: static_routes = [ {"network":"6.6.6.0/24","nexthop":"blackhole"} ]
         static_route_cmd = ""
         if static_routes:
@@ -243,14 +243,22 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
            for rt in static_routes:
                static_route_cmd += "route %s %s;\n"%(rt["network"],rt["nexthop"])
            static_route_cmd += "}\n"
+        if not export_filter:
+           export_cmd1 = "export where source = RTS_STATIC;\n" 
+           export_filter = ""
+        else:
+           export_cmd1 = export_filter[0]
+           export_filter = export_filter[1]
         self.logger.info('Configuring BGP on %s ' % bgpaas_vm.vm_name)
         cmd = '''cat > /etc/bird/bird.conf << EOS
 router id %s;
+%s
 protocol bgp {
         description "BGPaaS";
         local as %s;
         neighbor %s as %s;
         export where source = RTS_STATIC;
+        %s
         multihop;
         hold time 90;
         bfd on;
@@ -261,9 +269,35 @@ protocol bfd {
 }
 %s
 EOS
-'''%(local_ip, local_as, peer_ip, peer_as, local_ip, peer_ip, local_ip,static_route_cmd)
+'''%(local_ip,export_filter, local_as, peer_ip, peer_as,export_cmd1, local_ip, peer_ip, local_ip,static_route_cmd)
         bgpaas_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         service_restart= "service bird restart"
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
+
+    def set_as_override(self,bgpaas_fixture,as_override):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        session_attr.set_as_override(as_override)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_as_override(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        return session_attr.get_as_override()
+
+    def get_as_loop_count(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        return session_attr.get_loop_count()
+
+
+    def set_as_loop_count(self,bgpaas_fixture,loop_count):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        session_attr.set_loop_count(loop_count)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
 
