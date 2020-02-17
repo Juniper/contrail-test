@@ -10,6 +10,59 @@ from common import isolated_creds
 
 class TestBGPaaS(BaseBGPaaS):
     @preposttest_wrapper
+    def test_bgpaas_md5(self):
+
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+
+        test_vm = self.create_vm(vn_fixture, 'test_vm',
+                                 image_name='ubuntu-traffic')
+
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',image_name='vsrx')
+
+        cluster_local_autonomous_system = random.randint(7000, 8000)
+        bgpaas_as1 = 64500
+        bgpaas_fixture1 = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=bgpaas_as1, bgpaas_ip_address=bgpaas_vm1.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture1)
+
+        assert test_vm.wait_till_vm_is_up(),"test_vm is not up"
+
+        bgpaas_vm1_state = False
+        for i in range(5):
+            bgpaas_vm1_state = bgpaas_vm1.wait_till_vm_is_up()
+            if bgpaas_vm1_state :
+               break
+        assert bgpaas_vm1_state,"bgpaas_vm1 failed to come up" 
+
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('Configuring BGP on the bird-vm')
+
+        self.set_md5_auth_data(bgpaas_fixture1,"juniper")
+
+        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm1, 
+                                bgp_ip=bgpaas_vm1.vm_ip, lo_ip=bgpaas_vm1.vm_ip,
+                                address_families=address_families, autonomous_system=bgpaas_as1,
+                                neighbors=neighbors,local_autonomous_system=cluster_local_autonomous_system)
+
+        time.sleep(95)
+
+        assert not bgpaas_fixture1.verify_in_control_node(bgpaas_vm1) , "BGP session should not be up as authentication key is not configured on vsrx"
+
+        self.configure_vsrx(src_vm=test_vm,dst_vm=bgpaas_vm1,cmds = ["set protocols bgp authentication-key juniper"])
+
+        time.sleep(95)
+
+        assert bgpaas_fixture1.verify_in_control_node(bgpaas_vm1) , "BGP session is NOT up after configuring authentication key in vsrx"
+ 
+    @preposttest_wrapper
     def test_bgpaas_bird(self):
         '''
         1. Create a BGPaaS object with shared attribute, IP address and ASN.

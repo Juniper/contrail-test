@@ -267,3 +267,12 @@ EOS
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
 
+    def set_md5_auth_data(self,bgpaas_fixture,auth_password):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        auth_data={'key_items': [ { 'key':auth_password,"key_id":0 } ], "key_type":"md5"}
+        session_attr.set_auth_data(auth_data)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+
