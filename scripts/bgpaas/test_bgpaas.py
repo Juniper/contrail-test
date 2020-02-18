@@ -10,6 +10,82 @@ from common import isolated_creds
 
 class TestBGPaaS(BaseBGPaaS):
     @preposttest_wrapper
+    def test_bgpaas_as_update(self):
+
+        bgpaas_as = [ 64000,84000,54000]
+        cluster_local_as = [64100,84100,54100]
+        as4_flag  = [ False,True,True]
+         
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+
+        test_vm = self.create_vm(vn_fixture, 'test_vm',
+                                 image_name='ubuntu-traffic')
+
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',image_name='ubuntu-bird')
+
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+
+        cn_inspect_handle = {}
+
+        for cn in self.inputs.bgp_control_ips:
+           cn_inspect_handle[cn] = self.connections.get_control_node_inspect_handle(cn)
+
+        assert test_vm.wait_till_vm_is_up()
+        assert bgpaas_vm1.wait_till_vm_is_up()
+
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('Configuring BGP on the bird-vm')
+        static_routes = [ {"network":"0.0.0.0/0","nexthop":"blackhole"}]
+
+        bgpaas_fixture = None
+
+
+        existing_as4_flag = self.get_4byte_enable()
+        self.addCleanup(self.set_4byte_enable,existing_as4_flag)
+
+        for i,val in enumerate(bgpaas_as):
+            autonomous_system = bgpaas_as[i]
+            cluster_local_autonomous_system = cluster_local_as[i]
+            current_as_flag = as4_flag[i]
+            if existing_as4_flag != current_as_flag :
+              self.set_4byte_enable(current_as_flag)
+              existing_as4_flag = current_as_flag
+            if i == 0 : 
+               bgpaas_fixture = self.create_bgpaas(
+                                      bgpaas_shared=True, autonomous_system=autonomous_system,
+                                      bgpaas_ip_address=bgpaas_vm1.vm_ip,
+                                      local_autonomous_system=cluster_local_autonomous_system)
+               self.attach_vmi_to_bgpaas(port1, bgpaas_fixture)
+            else:
+               self.update_bgpaas_as(bgpaas_fixture=bgpaas_fixture,
+                                     autonomous_system=autonomous_system,
+                                     local_autonomous_system=cluster_local_autonomous_system)
+
+            self.config_bgp_on_bird(
+                     bgpaas_vm=bgpaas_vm1,
+                     local_ip=bgpaas_vm1.vm_ip,
+                     peer_ip=gw_ip,
+                     peer_as=cluster_local_autonomous_system,
+                     local_as=autonomous_system,
+                     static_routes=static_routes)
+
+            assert bgpaas_fixture.verify_in_control_node(bgpaas_vm1),"BGP Session is not established with Control node"
+
+            for cn in self.inputs.bgp_control_ips:
+                entries = cn_inspect_handle[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn_fixture.ri_name) or []
+                for entry in entries:
+                   if entry["protocol"] == 'BGP (bgpaas)':
+                     assert int(entry['as_path']) == autonomous_system , "as_path is not set correctly: as_path: %s vm as: %s "%(entry['as_path'],autonomous_system)
+                     break
+
+
+    @preposttest_wrapper
     def test_bgpaas_bird(self):
         '''
         1. Create a BGPaaS object with shared attribute, IP address and ASN.

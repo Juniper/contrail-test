@@ -267,3 +267,28 @@ EOS
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
 
+    def update_bgpaas_as(self,bgpaas_fixture,autonomous_system=None,local_autonomous_system=None):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        if autonomous_system:
+           bgpaas_obj.set_autonomous_system(autonomous_system)
+        if local_autonomous_system:
+           session = bgpaas_obj.get_bgpaas_session_attributes()
+           session.set_local_autonomous_system(local_autonomous_system)
+           bgpaas_obj.set_bgpaas_session_attributes(session)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_4byte_enable(self):
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        return gsc_obj.get_enable_4byte_as()
+
+    def set_4byte_enable(self, state):
+        if state in ['true','True',True]:
+           state = True
+        else:
+           state = False
+        self.logger.info("SET_4BYTE_ENABLE " + str(state ) )
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        gsc_obj.set_enable_4byte_as(state)
+        self.connections.vnc_lib.global_system_config_update(gsc_obj)
