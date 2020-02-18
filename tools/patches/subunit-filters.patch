@@ -1,0 +1,12 @@
+diff -r 24a2465c9236 filters.py
+--- a/filters.py	Thu Aug 25 00:31:02 2013 -0400
++++ b/filters.py	Thu Dec 26 12:02:19 2018 +0000
+@@ -143,7 +143,7 @@
+     if output_path is None:
+         output_to = sys.stdout
+     else:
+-        output_to = file(output_path, 'wb')
++        output_to = open(output_path, 'w')
+ 
+     try:
+         result = result_factory(output_to)

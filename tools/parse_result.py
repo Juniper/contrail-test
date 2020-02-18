@@ -73,7 +73,10 @@ def _get_log_location(report_file):
 
 def write_to_a_file(file):
     with open(file, 'w') as the_file:
-        the_file.write(ET.tostring(doc))
+        val = ET.tostring(doc)
+        if sys.version_info[0] == 3:
+            val = val.decode()
+        the_file.write(val)
 
 xmlfile = sys.argv[1]
 report_file = sys.argv[2]

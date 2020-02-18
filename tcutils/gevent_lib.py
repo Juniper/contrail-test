@@ -1,6 +1,5 @@
 import gevent
-from gevent import monkey, Greenlet
-monkey.patch_all()
+from gevent import Greenlet
 from tcutils.util import SafeList
 
 def exec_in_parallel(functions_and_args):
