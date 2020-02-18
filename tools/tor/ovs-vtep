@@ -299,7 +299,7 @@ class Logical_Switch(object):
             if not uuid:
                 continue
 
-            for (mapfrom, mapto) in stats_map.iteritems():
+            for (mapfrom, mapto) in stats_map.items():
                 value = ovs_vsctl("get interface %s statistics:%s"
                                 % (interface, mapfrom)).strip('"')
                 vtep_ctl("set logical_binding_stats %s %s=%s"

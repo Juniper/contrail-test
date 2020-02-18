@@ -128,7 +128,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
                                       level=level,
                                       max_depth=max_depth)
         if isinstance(value, dict):
-            return dict((k, recursive(v)) for k, v in six.iteritems(value))
+            return dict((k, recursive(v)) for k, v in six.items(value))
         elif isinstance(value, (list, tuple)):
             return [recursive(lv) for lv in value]
 
@@ -142,7 +142,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
             return timeutils.strtime(value)
         elif isinstance(value, gettextutils.Message):
             return value.data
-        elif hasattr(value, 'iteritems'):
+        elif hasattr(value, 'items'):
             return recursive(dict(iter(value.items())), level=level + 1)
         elif hasattr(value, '__iter__'):
             return recursive(list(value))

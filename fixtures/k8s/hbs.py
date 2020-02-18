@@ -200,8 +200,8 @@ class HbsFixture(fixtures.Fixture):
         template_metadata["annotations"]["k8s.v1.cni.cncf.io/networks"] = {}
         #template_metadata["labels"]= {'type': 'hbf'}
         template_metadata["labels"]= self.pod_label 
-	left_net = {"name": self.leftnad.metadata["name"]}
-	right_net = {"name": self.rightnad.metadata["name"]}
+        left_net = {"name": self.leftnad.metadata["name"]}
+        right_net = {"name": self.rightnad.metadata["name"]}
         nets = [left_net, right_net]
         template_metadata["annotations"]["k8s.v1.cni.cncf.io/networks"] = nets
         template_metadata['annotations']['k8s.v1.cni.cncf.io/networks'] = \
