@@ -16,7 +16,7 @@ from tcutils.test_lib.contrail_utils import check_xmpp_is_stable
 from .cores import *
 
 def detailed_traceback():
-    buf = io.BytesIO()
+    buf = io.BytesIO() if sys.version_info[0] == 2 else io.StringIO() 
     cgitb.Hook(format="text", file=buf).handle(sys.exc_info())
     tb_txt = buf.getvalue()
     buf.close()
@@ -97,7 +97,8 @@ def preposttest_wrapper(function):
             log.info(msg)
             result = True
             raise
-        except Exception as testfail:
+        except Exception as msg:
+            testfail=True
             test_fail_trace = detailed_traceback()
             # Stop the test in the fail state for debugging purpose
             if self.inputs.stop_on_fail:

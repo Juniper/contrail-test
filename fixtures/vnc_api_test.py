@@ -396,8 +396,6 @@ class VncLibFixture(fixtures.Fixture):
         If VN forwarding mode is not set, returns global forwarding mode
         If global forwarding mode too is not set, returns 'l2_l3' since this is the default.
         '''
-        if type(vn_fq_name).__name__ == 'str':
-            vn_fq_name = vn_fq_name.split(':')
         gl_fw_mode = self.get_global_forwarding_mode()
         vn_fw_mode = self.get_forwarding_mode(vn_fq_name)
         if vn_fw_mode:

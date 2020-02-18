@@ -295,8 +295,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
         lls_service_name = 'introspect'
         introspect_port = '8083'
-        service_ip = unicode(self.inputs.bgp_control_ips[0])
-        fabric_service_name = unicode(self.inputs.bgp_names[0])
+        service_ip = self.inputs.bgp_control_ips[0]
+        fabric_service_name = self.inputs.bgp_names[0]
         host_new_name = fabric_service_name + '-test'
         self.orch.vnc_h.add_link_local_service(lls_service_name,
              '169.254.1.2', '8083', introspect_port,
