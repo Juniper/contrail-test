@@ -6,10 +6,13 @@ source tools/common.sh
 
 PYTHON=/usr/bin/python
 TESTR=/usr/bin/testr
+SUBUNIT2JUNIT=/usr/bin/subunit2junitxml
 if [[ ${PYTHON3} ]]; then
     PYTHON=/usr/bin/python3
     TESTR=/usr/local/bin/testr
+    SUBUNIT2JUNIT=/usr/local/bin/subunit2junitxml
 fi
+export PYTHON=${PYTHON}
 
 function wait_till_process_state
 {
@@ -187,14 +190,14 @@ function run_tests_serial {
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
           testrargs="discover $OS_TEST_PATH"
-          ${wrapper} ${PYTHON} -m subunit.run $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml
+          ${wrapper} ${PYTHON} -m subunit.run $testrargs | ${wrapper} ${SUBUNIT2JUNIT} -f -o $serial_result_xml
       else
           run_tagged_tests_in_debug_mode
       fi
       return $?
      
   fi
-  ${wrapper} ${TESTR} run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml > /dev/null 2>&1
+  ${wrapper} ${TESTR} run --subunit $testrargs | ${wrapper} ${SUBUNIT2JUNIT} -f -o $serial_result_xml > /dev/null 2>&1
 }
 
 function check_test_discovery {
@@ -211,12 +214,12 @@ function run_tagged_tests_in_debug_mode {
     do
         result_xml='result'$count'.xml'
         ((count++))
-        if [ $upgrade -eq 1 ]; then
-            (exec ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml) &
+        if [ $upgrade -eq 1]; then
+            (exec ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml) &
             pids[$i]=$!
             wait_till_process_state $! stop
         else
-            ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml
+            ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml
         fi
     done
     if [ $upgrade -eq 1 ]; then
@@ -246,7 +249,7 @@ function run_tests {
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
-          ${wrapper} ${PYTHON} -m subunit.run $testrargs| ${wrapper} subunit2junitxml -f -o $result_xml
+          ${wrapper} ${PYTHON} -m subunit.run $testrargs| ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml
       else
           #If the command is run_tests.sh -d -T abcxyz, we
           #need to take only those tests tagged with abcxyz.
@@ -265,17 +268,17 @@ function run_tests {
 
   if [ $parallel -eq 0 ]; then
       echo 'running in serial'
-      ${wrapper} ${TESTR} run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml > /dev/null 2>&1
+      ${wrapper} ${TESTR} run --subunit $testrargs | ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml > /dev/null 2>&1
   fi
  
   if [ $parallel -eq 1 ]; then
       echo 'running in parallel'
         if [[ ! -z $concurrency ]];then
           echo 'concurrency:'$concurrency
-          ${wrapper} ${TESTR} run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          ${wrapper} ${TESTR} run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml
           sleep 2
         else
-          ${wrapper} ${TESTR} run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          ${wrapper} ${TESTR} run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml
           sleep 2
         fi
   fi
@@ -357,6 +360,19 @@ fi
 function apply_patches { 
     apply_testtools_patch_for_centos
     apply_junitxml_patch
+    apply_subunitfilters_patch
+}
+
+function apply_subunitfilters_patch { 
+    if [[ ${PYTHON3} ]]; then
+        patch_path=$PWD/tools/patches
+        filepath=/usr/local/lib/python3.6/site-packages/subunit
+        (patch -p0 -N --dry-run --silent $filepath/filters.py < $patch_path/subunit-filters.patch 2>/dev/null)
+        if [ $? -eq 0 ]; then
+            echo 'Applied subunit-filter patch for python3'
+            (patch -p0 -N $filepath/filters.py < $patch_path/subunit-filters.patch)
+        fi
+    fi
 }
 
 function apply_junitxml_patch { 
@@ -382,6 +398,15 @@ function apply_junitxml_patch {
         #apply the patch
         echo 'Applied patch'
         (cd $filepath; patch -p0 -N < $patch_path/junitxml.patch)
+    fi
+
+    if [[ ${PYTHON3} ]]; then
+        filepath=/usr/local/lib/python3.6/site-packages/junitxml
+        (patch -d $filepath -p0 -N --dry-run --silent < $patch_path/junitxml.patch 2>/dev/null)
+        if [ $? -eq 0 ]; then
+            echo 'Applied patch for python3'
+            (cd $filepath; patch -p0 -N < $patch_path/junitxml.patch)
+        fi
     fi
 }
 

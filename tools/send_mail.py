@@ -44,8 +44,11 @@ def send_mail(config_file, file_to_send, report_details):
         print('Mail destination not configured. Skipping')
         return True
     fp = open(file_to_send, 'rb')
-    msg = MIMEText(fp.read(), 'html')
+    val = fp.read()
     fp.close()
+    if sys.version_info[0] == 3:
+        val = val.decode()
+    msg = MIMEText(val, 'html')
 
     msg['Subject'] = '[Build %s] ' % (
          distro_sku) + logScenario + ' Report'

@@ -19,8 +19,10 @@ dpkt==1.9.2
 jxmlease==1.0.1
 pycrypto==2.6.1
 future==0.18.2
-# TODO
-# testresources==2.0.1
-# testrepository==0.0.20
+testresources==2.0.1
+testrepository==0.0.20
+gevent==1.4.0
+junitxml==0.7
+# TODO: move to fabric-2.5.0
+Fabric3
 # fabric==2.5.0
-#? gevent-1.4.0
