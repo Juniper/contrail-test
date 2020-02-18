@@ -6,6 +6,7 @@ REGISTRY_SERVER="opencontrail"
 SKU=""
 CONTRAIL_REPO=""
 OPENSTACK_REPO=""
+CONTRAIL_BUILD_FROM_SOURCE=${CONTRAIL_BUILD_FROM_SOURCE:-"false"}
 TAG=""
 
 download_pkg () {
@@ -48,6 +49,9 @@ docker_build_test_sku () {
   build_arg_opts+=" --build-arg SKU=${SKU}"
   build_arg_opts+=" --build-arg CONTRAIL_REPO=${CONTRAIL_REPO}"
   build_arg_opts+=" --build-arg OPENSTACK_REPO=${OPENSTACK_REPO}"
+  if [[ "${CONTRAIL_BUILD_FROM_SOURCE}" == "true"]] ; then 
+    build_arg_opts+=" --build-arg CONTRAIL_BUILD_FROM_SOURCE=${CONTRAIL_BUILD_FROM_SOURCE}"
+  fi
 
   echo "Building test container ${name}:${tag} with opts ${build_arg_opts}"
   docker build --network host -t ${name}:${tag} ${build_arg_opts} -f $dockerfile $dir || exit 1

@@ -4,6 +4,7 @@ FROM $REGISTRY_SERVER/contrail-test-base:$BASE_TAG
 ARG SKU=ocata
 ARG OPENSTACK_REPO
 ARG CONTRAIL_REPO
+ARG CONTRAIL_BUILD_FROM_SOURCE
 
 COPY requirements*.txt *.rpm /
 
@@ -15,7 +16,15 @@ RUN /etc/yum.repos.d/prepare_repos.sh && \
       python-ceilometerclient python-cinderclient python-barbicanclient \
       python-glanceclient python-heatclient python-novaclient \
       python-ironicclient \
-      python-contrail contrail-test python-setuptools python3-contrail && \
+      python-contrail contrail-test python-setuptools  && \
+    if [[ "${CONTRAIL_BUILD_FROM_SOURCE}" == 'true' ]] ; then \
+      yum install -y yum-utils && \
+      for package in python-contrail python3-contrail contrail-test ; do \
+        rpm -Uvh --nodeps $(repoquery --location "${package}"); \
+      done; \
+    else \
+      yum install -y python-contrail python3-contrail contrail-test; \
+    fi && \
     yum --setopt=obsoletes=0 install -y python-neutronclient && \
     yum clean all -y && rm -rf /var/cache/yum && \
     pip install -r /requirements.txt && \
