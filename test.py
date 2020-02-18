@@ -1,3 +1,5 @@
+from gevent import monkey
+monkey.patch_all()
 from builtins import object
 import functools
 import os
