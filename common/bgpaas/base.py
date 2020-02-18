@@ -267,3 +267,11 @@ EOS
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
 
+    def set_ipv4_mapped_ipv6_nexthop(self,bgpaas_fixture,value):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        bgpaas_obj.set_bgpaas_ipv4_mapped_ipv6_nexthop(value)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_ipv4_mapped_ipv6_nexthop(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        return bgpaas_obj.get_bgpaas_ipv4_mapped_ipv6_nexthop()

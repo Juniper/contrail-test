@@ -98,6 +98,118 @@ class TestBGPaaS(BaseBGPaaS):
                 bgpaas_vm1, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
         # end test_bgpaas_vsrx
 
+    @preposttest_wrapper
+    def test_bgpaas_vsrx_ipv4_mapped_ipv6_nexthop(self):
+
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+        test_vm = self.create_vm(vn_fixture, 'test_vm',
+                                 image_name='ubuntu-traffic')
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',
+                                    image_name='vsrx')
+        bgpaas_vm2 = self.create_vm(vn_fixture, 'bgpaas_vm2',
+                                    image_name='vsrx')
+        assert test_vm.wait_till_vm_is_up()
+
+        bgpaas_vm1_state = False
+        bgpaas_vm2_state = False
+        for i in range(5):
+            bgpaas_vm1_state = bgpaas_vm1.wait_till_vm_is_up()
+            if bgpaas_vm1_state:
+               break
+        assert bgpaas_vm1_state,"bgpaas_vm1 failed to come up"
+        for i in range(5):
+            bgpaas_vm2_state = bgpaas_vm2.wait_till_vm_is_up()
+            if bgpaas_vm2_state:
+               break
+        assert bgpaas_vm2_state,"bgpaas_vm2 failed to come up"
+
+        autonomous_system1 = 63500
+        autonomous_system2 = 64500
+
+        bgpaas_fixture1 = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=autonomous_system1, bgpaas_ip_address=bgpaas_vm1.vm_ip)
+        bgpaas_fixture2 = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=autonomous_system2, bgpaas_ip_address=bgpaas_vm2.vm_ip)
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        port2 = bgpaas_vm2.vmi_ids[bgpaas_vm2.vn_fq_name]
+
+        address_families = []
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('We will configure BGP on the two vSRX')
+        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm1, bgp_ip=bgpaas_vm1.vm_ip, lo_ip=bgpaas_vm1.vm_ip,
+                                address_families=address_families, autonomous_system=autonomous_system1, neighbors=neighbors, bfd_enabled=False)
+        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm2, bgp_ip=bgpaas_vm2.vm_ip, lo_ip=bgpaas_vm2.vm_ip,
+                                address_families=address_families, autonomous_system=autonomous_system2, neighbors=neighbors, bfd_enabled=False)
+        self.logger.info('Will wait for both the vSRXs to come up')
+
+        self.logger.info('Attaching both the VMIs to the BGPaaS object')
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture1)
+        self.addCleanup(self.detach_vmi_from_bgpaas,
+                        port1, bgpaas_fixture1)
+        self.attach_vmi_to_bgpaas(port2, bgpaas_fixture2)
+        self.addCleanup(self.detach_vmi_from_bgpaas,
+                        port2, bgpaas_fixture2)
+
+        ipv6_route = "2001:db8::1/128"
+        self.configure_vsrx(srv_vm=test_vm,dst_vm=bgpaas_vm1,cmds=["set interfaces lo0 unit 0 family inet6 address %s"%ipv6_route])
+
+        assert bgpaas_fixture1.verify_in_control_node(
+            bgpaas_vm1), 'bgpaas_vm1: BGPaaS Session not seen in the control-node'
+        assert bgpaas_fixture2.verify_in_control_node(
+            bgpaas_vm2), 'bgpaas_vm2: BGPaaS Session not seen in the control-node'
+
+        advertised_routes = self.get_config_via_netconf(test_vm,bgpaas_vm1,"show route advertising-protocol bgp %s"%gw_ip)
+        if re.search(ipv6_route,advertised_routes):
+           self.logger.info("IPv6 route: %s is advertised from bgpaas_vm1"%ipv6_route)
+        else:
+           assert False,"IPv6 route : %s is not advertised from bgpaas_vm1"%ipv6_route
+
+        received_routes = self.get_config_via_netconf(test_vm,bgpaas_vm2,"show route receive-protocol bgp %s all"%gw_ip)
+        if re.search(ipv6_route,received_routes):
+           assert False,"IPv6 route is received by default without enabling IPv4 mapped IPv6 next-hop"
+
+        self.set_ipv4_mapped_ipv6_nexthop(bgpaas_fixture2,True)
+        ret = self.get_ipv4_mapped_ipv6_nexthop(bgpaas_fixture2)
+        if ret:
+           self.logger.info("Use IPv4-mapped IPv6 Nexthop flag is set correctly in bgpaas_fixture2")
+        else:
+           assert False,"Use IPv4-mapped IPv6 Nexthop flag is NOT set correctly in bgpaas_fixture2"
+
+        time.sleep(5)
+        assert bgpaas_fixture2.verify_in_control_node(
+            bgpaas_vm2), 'bgpaas_vm2: BGPaaS Session not seen in the control-node'
+
+        received_routes = self.get_config_via_netconf(test_vm,bgpaas_vm2,"show route receive-protocol bgp %s all"%gw_ip)
+
+        if re.search("%s\s+::ffff:%s"%(ipv6_route,gw_ip),received_routes):
+           self.logger.info("IPv4-mapped IPv6 Nexthop is seen correctly")
+        else:
+           assert False,"IPv4-mapped IPv6 Nexthop is NOT seen.Expected route: %s\s+::ffff:%s"%(ipv6_route,gw_ip)
+
+        self.set_ipv4_mapped_ipv6_nexthop(bgpaas_fixture2,False)
+        ret = self.get_ipv4_mapped_ipv6_nexthop(bgpaas_fixture2)
+        if not ret:
+           self.logger.info("Use IPv4-mapped IPv6 Nexthop flag is re-set correctly in bgpaas_fixture2")
+        else:
+           assert False,"Use IPv4-mapped IPv6 Nexthop flag is NOT re-set correctly in bgpaas_fixture2"
+
+        time.sleep(5)
+        assert bgpaas_fixture2.verify_in_control_node(
+            bgpaas_vm2), 'bgpaas_vm2: BGPaaS Session not seen in the control-node'
+
+        received_routes = self.get_config_via_netconf(test_vm,bgpaas_vm2,"show route receive-protocol bgp %s all"%gw_ip)
+
+        if re.search("%s\s+::ffff:%s"%(ipv6_route,gw_ip),received_routes):
+           assert False,"route: %s\s+::ffff:%s is seen when ipv4_mapped_ipv6_nexthop flag is reset"%(ipv6_route,gw_ip)
+        else:
+           self.logger.info("IPv4-mapped IPv6 Nexthop route is NOT seen as expected")
+
 
     @preposttest_wrapper
     def test_bgpaas_vsrx(self):
