@@ -235,7 +235,7 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         result = search_in_pcap(session, pcap, '4784')
         return result
 
-    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as,static_routes=[]):
+    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as,static_routes=[],hold_time=90):
         # Example: static_routes = [ {"network":"6.6.6.0/24","nexthop":"blackhole"} ]
         static_route_cmd = ""
         if static_routes:
@@ -252,7 +252,7 @@ protocol bgp {
         neighbor %s as %s;
         export where source = RTS_STATIC;
         multihop;
-        hold time 90;
+        hold time %d;
         bfd on;
         source address %s;      # What local address we use for the TCP connection
 }
@@ -261,9 +261,22 @@ protocol bfd {
 }
 %s
 EOS
-'''%(local_ip, local_as, peer_ip, peer_as, local_ip, peer_ip, local_ip,static_route_cmd)
+'''%(local_ip, local_as, peer_ip, peer_as, hold_time,local_ip, peer_ip, local_ip,static_route_cmd)
         bgpaas_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         service_restart= "service bird restart"
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
+
+    def set_hold_time(self,bgpaas_fixture,value):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        session.set_hold_time(value)
+        bgpaas_obj.set_bgpaas_session_attributes(session)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_hold_time(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        return int(session.get_hold_time())
+
 

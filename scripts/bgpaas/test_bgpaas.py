@@ -9,6 +9,68 @@ from common import isolated_creds
 
 
 class TestBGPaaS(BaseBGPaaS):
+
+    @preposttest_wrapper
+    def test_bgpaas_hold_time(self):
+
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',image_name='ubuntu-bird')
+        assert bgpaas_vm1.wait_till_vm_is_up()
+
+        cluster_local_autonomous_system = random.randint(200, 800)
+        bgpaas_as = 64500
+        bgpaas_fixture = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=bgpaas_as, bgpaas_ip_address=bgpaas_vm1.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture)
+
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('Configuring BGP on the bird-vm')
+
+        self.config_bgp_on_bird(
+            bgpaas_vm=bgpaas_vm1,
+            local_ip=bgpaas_vm1.vm_ip,
+            peer_ip=gw_ip,
+            peer_as=cluster_local_autonomous_system,
+            local_as=bgpaas_as,hold_time=65535)
+
+        assert bgpaas_fixture.verify_in_control_node(bgpaas_vm1),"BGP session with Controller is not seen"
+        self.logger.info("BGP session with Controller is seen")
+        hold_time = self.get_hold_time(bgpaas_fixture)
+        assert hold_time == 0 , "hold_time is not set 0 by default.current value is %d"%hold_time
+        random_hold_time = random.randint(0,65535)
+
+        self.set_hold_time(bgpaas_fixture,random_hold_time)
+
+        current_set_hold_time = self.get_hold_time(bgpaas_fixture)
+
+        if current_set_hold_time == random_hold_time:
+           self.logger.info("Hold timer is updated on the bgpaas object correctly")
+        else:
+           assert False, "hold time is not updated"
+        time.sleep(5)
+        ret = bgpaas_fixture.verify_in_control_node(bgpaas_vm1)
+        if ret:
+           self.logger.info("BGP session is not up after updating hold_time")
+        else:
+           assert False,"BGP session is not up after updating hold_time"
+ 
+        output=bgpaas_vm1.run_cmd_on_vm(cmds=["birdc show protocols all"],as_sudo=True)
+        ret = re.search("Hold timer:\s+(\d+)/(?P<hold>\d+)",output['birdc show protocols all'])
+        hold_timer_seen = ret.group('hold') if ret else -1
+        if int(ret.group('hold')) == random_hold_time:
+           hold_timer_seen = int(ret.group('hold'))
+           self.logger.info("Hold timer is seen correctly in the peer:%d"%int(random_hold_time))
+        assert hold_timer_seen == random_hold_time,"Hold timer seen in the peer is incorrect.Expected: %d , Actual: %d"%(random_hold_time,hold_timer_seen)
+ 
     @preposttest_wrapper
     def test_bgpaas_bird(self):
         '''
