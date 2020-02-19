@@ -258,3 +258,87 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         assert self.left_vm_fixture.ping_with_certainty(
             self.right_vm_fixture.vm_ip)
     # end test_ecmp_svc_in_network_with_3_instance_reboot_nodes
+
+class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPConfigHashFeature, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPConfigHashFeature, cls).tearDownClass()
+    # end tearDownClass
+
+
+    @preposttest_wrapper
+    def test_ecmp_hash_precedence(self):
+        """
+            Validates ecmp hash config precedence levels
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        service_mode = 'in-network-nat'
+        ecmp_hash = 'default'
+        config_level = "vn"
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # Default ECMP Hash config at Global level
+        ecmp_hash = "default"
+        config_level = "global"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # Default ECMP Hash config at VN level
+        ecmp_hash = "default"
+        config_level = "vn"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # "destination_ip" only ECMP Hash config at VMI level. VMI should take
+        # priority over VN and Global
+        ecmp_hash = {"destination_ip": True}
+        config_level = "vmi"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        si_fixture = ret_dict['si_fixture']
+        dst_vm_list = [right_vm_fixture]
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixture, left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+
+        # Delete the ECMP Hash config at Global, VN and VMI level
+        ecmp_hash = "None"
+        config_level = "all"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+
+        return True
+    # end test_ecmp_hash_precedence
