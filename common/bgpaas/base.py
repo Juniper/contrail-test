@@ -11,6 +11,7 @@ from contrailapi import ContrailVncApi
 from common.base import GenericTestBase
 from common.neutron.base import BaseNeutronTest
 from common.svc_health_check.base import BaseHC
+from vnc_api.gen.resource_xsd import BgpFamilyAttributes,BgpPrefixLimit
 
 
 class BaseBGPaaS(BaseNeutronTest, BaseHC):
@@ -267,3 +268,27 @@ EOS
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
 
+    def set_addr_family_attr(self,bgpaas_fixture,addr_family,limit=0,idle_timeout=0):
+ 
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        attr_list = session.get_family_attributes()
+        if len(attr_list) == 0:
+           attr = BgpFamilyAttributes()
+           attr.set_address_family(addr_family)
+           prefix_limit = BgpPrefixLimit()
+           prefix_limit.set_idle_timeout(idle_timeout)
+           prefix_limit.set_maximum(limit)
+           attr.set_prefix_limit(prefix_limit)
+           attr_list.append(attr)
+        else:
+          for attr in attr_list:
+            if attr.get_address_family() == addr_family: # inet,inet6
+               prefix_limit = attr.get_prefix_limit()
+               prefix_limit.set_maximum(limit)
+               prefix_limit.set_idle_timeout(idle_timeout)
+               break
+        session.set_family_attributes(attr_list)
+        bgpaas_obj.set_bgpaas_session_attributes(session)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+ 
