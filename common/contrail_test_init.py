@@ -799,7 +799,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         host_dict['containers'] = {}
         if  host_dict.get('type', None) == 'esxi':
             return
-        cmd = 'docker ps -a 2>/dev/null | grep -v "/pause\|/usr/bin/pod" | awk \'{print $NF}\''
+        cmd = 'docker ps 2>/dev/null | grep -v "/pause\|/usr/bin/pod" | awk \'{print $NF}\''
         output = self.run_cmd_on_server(host_dict['host_ip'], cmd, as_sudo=True)
         # If not a docker cluster, return
         if not output:
