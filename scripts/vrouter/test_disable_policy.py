@@ -443,8 +443,10 @@ class DisablePolicyEcmp(BaseVrouterTest):
 
         #Remove the SG from all VMs
         self.remove_sg_from_vms(vm_fixtures)
+        self.sleep(10)
         #Enable the policy now, some ping loss should be seen now
         self.disable_policy_for_vms(vm_fixtures, disable=False)
+        self.sleep(10)
         stats = self.stop_ping(ping_h)
         assert stats['loss'] != '0', ('Ping loss not seen after enabling policy with active flow')
 
@@ -716,6 +718,13 @@ class DisablePolicyEcmpIpv6(DisablePolicyEcmp):
         cls.inputs.set_af(AF_TEST)
 
     def is_test_applicable(self):
+
+        AF_TEST = 'v6'
+        self.logger.info('Address family configured is %s' % self.inputs.get_af())
+        self.logger.info('we are setting address family as %s' % AF_TEST)
+        self.inputs.set_af(AF_TEST)
+        self.logger.info('we are setting address family as %s' % self.inputs.get_af())
+
         if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
             return(False, 'Skipping IPv6 Test on vcenter setup')
         if not self.connections.orch.is_feature_supported('ipv6'):
