@@ -622,6 +622,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             for svm in svms:
                 if svm.id == to_be_deleted_svm.vm_id:
                     svms.remove(svm)
+            si_fixture.verify_svm()        
             svms = self.get_svms_in_si(si_fixture)
             svms = sorted(set(svms))
             new_count = len(svms)
