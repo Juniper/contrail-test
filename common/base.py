@@ -63,6 +63,20 @@ class _GenericTestBaseMethods(object):
                 self.remove_from_cleanups(obj.cleanUp)
     # end perform_cleanup
 
+    def attach_shc_to_vmi(self, shc, vm_fixture):
+        '''
+        Attach the Health Check to the VMI object
+        '''
+        result = vm_fixture.attach_shc(shc.uuid)
+        return result
+
+    def detach_shc_from_vmi(self, shc, vm_fixture):
+        '''
+        Detach the Health Check from the VMI object
+        '''
+        result = vm_fixture.detach_shc(shc.uuid)
+        return result
+
     def alloc_ips(self, vn_fixture, count=1):
         ret_val = vn_fixture.alloc_ips(count=count)
         self.addCleanup(vn_fixture.free_ips, ret_val)
