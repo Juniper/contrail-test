@@ -11,7 +11,8 @@ from contrailapi import ContrailVncApi
 from common.base import GenericTestBase
 from common.neutron.base import BaseNeutronTest
 from common.svc_health_check.base import BaseHC
-
+from vnc_api.gen.resource_xsd import RouteOriginOverride,BgpFamilyAttributes,BgpPrefixLimit,BGPaaServiceParametersType
+from tcutils.control.cn_introspect_utils import ControlNodeInspect
 
 class BaseBGPaaS(BaseNeutronTest, BaseHC):
 
@@ -30,7 +31,7 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
 
     def create_bgpaas(
             self,
-            bgpaas_shared='false',
+            bgpaas_shared=False,
             autonomous_system='64512',
             bgpaas_ip_address=None,
             address_families=[
@@ -235,7 +236,75 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         result = search_in_pcap(session, pcap, '4784')
         return result
 
-    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as,static_routes=[]):
+    def get_bgp_router_flap_count(self, bgpaas_fixture):
+
+        bgp_router_uuid = self.vnc_lib.bgp_as_a_service_read(
+            id=bgpaas_fixture.uuid).get_bgp_router_refs()[0]['uuid']
+        bgp_router = self.vnc_lib.bgp_router_read(id=bgp_router_uuid)
+        bgp_router_name = bgp_router.name
+
+        flap_info = {}
+
+        for entry1 in self.inputs.bgp_ips:
+            self.cn_ispec = ControlNodeInspect(entry1)
+            cn_bgp_entry = self.cn_ispec.get_cn_bgp_neigh_entry(encoding='BGP') or []
+
+            if not cn_bgp_entry:
+                result = False
+                self.logger.error(
+                    'Control Node %s does not have any BGP Peer' %
+                    (entry1))
+            else:
+                for entry in cn_bgp_entry:
+                    if entry['peer'] == bgp_router_name:
+                        flap_info[entry1] = entry['flap_count']
+                        self.logger.info(
+                            'Node %s peering info:With Peer %s : %s peering is Current State is %s ' %
+                            (entry['local_address'], bgp_router_name, entry['peer'], entry['state']))
+        return flap_info 
+
+    def create_bird_bgpaas(self):
+        vn_name = get_random_name('bgpaas_vn')
+        vm_name = get_random_name('bgpaas_vm1')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+
+        bgpaas_vm1 = self.create_vm(vn_fixture, vm_name,image_name='ubuntu-bird')
+        assert bgpaas_vm1.wait_till_vm_is_up()
+
+        cluster_local_autonomous_system = random.randint(200, 800)
+        bgpaas_as = random.randint(45000,45100)
+        bgpaas_fixture = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=bgpaas_as, bgpaas_ip_address=bgpaas_vm1.vm_ip,local_autonomous_system=cluster_local_autonomous_system)
+
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture)
+
+        address_families = ['inet', 'inet6']
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('Configuring BGP on the bird-vm')
+
+        static_routes = [ {"network":"0.0.0.0/0","nexthop":"blackhole"}]
+
+        self.config_bgp_on_bird(
+            bgpaas_vm=bgpaas_vm1,
+            local_ip=bgpaas_vm1.vm_ip,
+            neighbors=neighbors,
+            peer_as=cluster_local_autonomous_system,
+            local_as=bgpaas_as,static_routes=static_routes)
+
+        cn_inspect_handle = {}
+        for cn in self.inputs.bgp_control_ips:
+           cn_inspect_handle[cn] = self.connections.get_control_node_inspect_handle(cn)
+
+        assert bgpaas_fixture.verify_in_control_node(bgpaas_vm1),"BGP session with Controller is not seen"
+        self.logger.info("BGP session with Controller is seen")
+        return bgpaas_fixture,bgpaas_vm1
+
+
+    def config_bgp_on_bird(self, bgpaas_vm, local_ip,local_as, neighbors, peer_as, static_routes=[],export_filter_cmds="",hold_time=90):
         # Example: static_routes = [ {"network":"6.6.6.0/24","nexthop":"blackhole"} ]
         static_route_cmd = ""
         if static_routes:
@@ -243,27 +312,224 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
            for rt in static_routes:
                static_route_cmd += "route %s %s;\n"%(rt["network"],rt["nexthop"])
            static_route_cmd += "}\n"
+        if not export_filter_cmds:
+           export_filter = "export where source = RTS_STATIC;\n" 
+           export_filter_fn = ""
+        else:
+           export_filter = export_filter_cmds[0]
+           export_filter_fn = export_filter_cmds[1]
+        neighbor_info_str = "neighbor %s as %s"%(neighbors[0],peer_as)
+        neighbor_bfd_info_str = "neighbor %s local %s multihop on"%(neighbors[0],local_ip)
+
         self.logger.info('Configuring BGP on %s ' % bgpaas_vm.vm_name)
-        cmd = '''cat > /etc/bird/bird.conf << EOS
-router id %s;
-protocol bgp {
-        description "BGPaaS";
-        local as %s;
-        neighbor %s as %s;
-        export where source = RTS_STATIC;
+        bgp_info = {}
+        bgp_info["local_ip"] = local_ip
+        bgp_info["local_as"]         = local_as
+        bgp_info["export_filter_fn"] = export_filter_fn
+        bgp_info["export_filter"]    = export_filter
+        bgp_info["neighbor_info_str"] = neighbor_info_str
+        bgp_info["neighbor_bfd_info_str"] = neighbor_bfd_info_str
+        bgp_info["hold_time"]             = hold_time
+        bgp_info["static_route_fn"]       = static_route_cmd
+        
+
+        cmd = """cat > /etc/bird/bird.conf << EOS
+router id {local_ip};
+{export_filter_fn}
+protocol bgp {{
+        local as {local_as};
+        {neighbor_info_str};
+        {export_filter}
         multihop;
-        hold time 90;
+        hold time {hold_time};
         bfd on;
-        source address %s;      # What local address we use for the TCP connection
-}
-protocol bfd {
-    neighbor %s local %s multihop on;
-}
-%s
+        source address {local_ip};
+}}
+protocol bfd {{
+        {neighbor_bfd_info_str};
+}}
+{static_route_fn}
 EOS
-'''%(local_ip, local_as, peer_ip, peer_as, local_ip, peer_ip, local_ip,static_route_cmd)
+""".format(**bgp_info)
+
         bgpaas_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         service_restart= "service bird restart"
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
+
+    def set_route_origin_override(self,bgpaas_fixture,origin_override,origin):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        routeorigin=session_attr.get_route_origin_override()
+        if not routeorigin :
+           routeorigin = RouteOriginOverride()
+
+        routeorigin.set_origin_override(True)
+        routeorigin.set_origin(origin)
+        session_attr.set_route_origin_override(routeorigin)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_route_origin_override(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        routeorigin=session_attr.get_route_origin_override()
+        return routeorigin
+
+    def set_suppress_route_advt(self,bgpaas_fixture,suppress):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        bgpaas_obj.set_bgpaas_suppress_route_advertisement(suppress)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_suppress_route_advt(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        return bgpaas_obj.get_bgpaas_suppress_route_advertisement()
+
+    def set_as_override(self,bgpaas_fixture,as_override):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        session_attr.set_as_override(as_override)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_as_override(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        return session_attr.get_as_override()
+
+
+    def get_as_loop_count(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        return session_attr.get_loop_count()
+
+
+    def set_as_loop_count(self,bgpaas_fixture,loop_count):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        session_attr.set_loop_count(loop_count)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def set_md5_auth_data(self,bgpaas_fixture,auth_password):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session_attr = bgpaas_obj.get_bgpaas_session_attributes()
+        auth_data={'key_items': [ { 'key':auth_password,"key_id":0 } ], "key_type":"md5"}
+        session_attr.set_auth_data(auth_data)
+        bgpaas_obj.set_bgpaas_session_attributes(session_attr)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+
+    def set_ipv4_mapped_ipv6_nexthop(self,bgpaas_fixture,value):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        bgpaas_obj.set_bgpaas_ipv4_mapped_ipv6_nexthop(value)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_ipv4_mapped_ipv6_nexthop(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        return bgpaas_obj.get_bgpaas_ipv4_mapped_ipv6_nexthop()
+
+    def update_bgpaas_as(self,bgpaas_fixture,autonomous_system=None,local_autonomous_system=None):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        if autonomous_system:
+           bgpaas_obj.set_autonomous_system(autonomous_system)
+        if local_autonomous_system:
+           session = bgpaas_obj.get_bgpaas_session_attributes()
+           session.set_local_autonomous_system(local_autonomous_system)
+           bgpaas_obj.set_bgpaas_session_attributes(session)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_4byte_enable(self):
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        return gsc_obj.get_enable_4byte_as()
+
+    def set_4byte_enable(self, state):
+        if state in ['true','True',True]:
+           state = True
+        else:
+           state = False
+        self.logger.info("SET_4BYTE_ENABLE " + str(state ) )
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        gsc_obj.set_enable_4byte_as(state)
+        self.connections.vnc_lib.global_system_config_update(gsc_obj)
+
+    def set_hold_time(self,bgpaas_fixture,value):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        session.set_hold_time(value)
+        bgpaas_obj.set_bgpaas_session_attributes(session)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_hold_time(self,bgpaas_fixture):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        return int(session.get_hold_time())
+
+    def set_addr_family_attr(self,bgpaas_fixture,addr_family,limit=0,idle_timeout=0,tunnel_encap_list=None):
+
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        attr_list = session.get_family_attributes()
+        if len(attr_list) == 0:
+           attr = BgpFamilyAttributes()
+           if tunnel_encap_list:
+             attr.set_default_tunnel_encap(tunnel_encap_list)
+           attr.set_address_family(addr_family)
+           prefix_limit = BgpPrefixLimit()
+           prefix_limit.set_idle_timeout(idle_timeout)
+           prefix_limit.set_maximum(limit)
+           attr.set_prefix_limit(prefix_limit)
+           attr_list.append(attr)
+        else:
+          for attr in attr_list:
+            if attr.get_address_family() == addr_family: # inet,inet6
+               if tunnel_encap_list:
+                  attr.set_default_tunnel_encap(tunnel_encap_list)
+               prefix_limit = attr.get_prefix_limit()
+               prefix_limit.set_maximum(limit)
+               prefix_limit.set_idle_timeout(idle_timeout)
+               break
+        session.set_family_attributes(attr_list)
+        bgpaas_obj.set_bgpaas_session_attributes(session)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+    def get_private_as_action(self,bgpaas_fixture,action):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        return session.get_private_as_action()
+
+    def set_private_as_action(self,bgpaas_fixture,action):
+        bgpaas_obj = self.connections.vnc_lib.bgp_as_a_service_read(id=bgpaas_fixture.uuid)
+        session = bgpaas_obj.get_bgpaas_session_attributes()
+        session.set_private_as_action(action)
+        bgpaas_obj.set_bgpaas_session_attributes(session)
+        self.connections.vnc_lib.bgp_as_a_service_update(bgpaas_obj)
+
+
+    def get_global_service_port_range(self):
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(fq_name=['default-global-system-config'])
+        bgpaas_parameters = gsc_obj.get_bgpaas_parameters()
+        if not bgpaas_parameters:
+           return 50000,50512
+        else:
+           return bgpaas_parameters.get_port_start(),bgpaas_parameters.get_port_end()  
+
+    def set_global_service_port_range(self,port_start,port_end):
+        gsc_obj = self.connections.vnc_lib.global_system_config_read(fq_name=['default-global-system-config'])
+        bgpaas_params = gsc_obj.get_bgpaas_parameters()
+        if not bgpaas_params:
+           bgpaas_params = BGPaaServiceParametersType()
+        if port_start:
+           bgpaas_params.set_port_start(port_start)
+        if port_end:
+           bgpaas_params.set_port_end(port_end)
+        
+        gsc_obj.set_bgpaas_parameters(bgpaas_params)
+        try:
+          self.connections.vnc_lib.global_system_config_update(gsc_obj)
+          return True
+        except:
+          return False
 
