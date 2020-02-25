@@ -362,7 +362,7 @@ class TestInputs(with_metaclass(Singleton, object)):
                 self.qos_queue.append(qos_queue_per_host)
             if qos_queue_pg_properties_per_host:
                 self.qos_queue_pg_properties.append(qos_queue_pg_properties_per_host)
-            if 'openstack' in roles and 'nova' in host_data['containers']:
+            if 'openstack' in roles and ( 'nova' in host_data['containers'] or self.deployer == 'juju'):
                 self.openstack_ip = host_data['host_ip']
                 self.openstack_ips.append(host_data['host_ip'])
                 service_ip = self.get_service_ip(host_data['host_ip'], 'openstack')
