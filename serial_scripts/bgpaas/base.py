@@ -82,14 +82,13 @@ class LocalASBase(test_v1.BaseTestCase_v1):
         address_families = ['inet', 'inet6']
         gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
         dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
-        neighbors = []
         neighbors = [gw_ip, dns_ip]
         self.logger.info('Configuring BGP on the bird')
         bgpaas_vm1.wait_for_ssh_on_vm()
         self.config_bgp_on_bird(
             bgpaas_vm=bgpaas_vm1,
             local_ip=bgp_ip,
-            peer_ip=gw_ip,
+            neighbors=neighbors,
             peer_as=cluster_local_autonomous_system,
             local_as=local_as)
 
@@ -183,7 +182,12 @@ class LocalASBase(test_v1.BaseTestCase_v1):
                 node_name=None,
                 image_name='vsrx'))
 
-        assert bgpaas_vm1.wait_till_vm_is_up()
+        bgpaas_vm1_state = False
+        for i in range(5):
+            bgpaas_vm1_state = bgpaas_vm1.wait_till_vm_is_up()
+            if bgpaas_vm1_state:
+               break
+        assert bgpaas_vm1_state,"bgpaas_vm1 failed to come up"
         ret_dict = {
             'vn1_fixture': vn1_fixture,
             'vn2_fixture': vn2_fixture,

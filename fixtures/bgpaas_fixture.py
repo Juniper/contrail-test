@@ -17,7 +17,7 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
         self.uuid = kwargs.get('uuid', None)
         self.asn = kwargs.get('autonomous_system') or 64512
         self.ip = kwargs.get('bgpaas_ip_address') or None
-        self.shared = kwargs.get('bgpaas_shared') or 'false'
+        self.shared = kwargs.get('bgpaas_shared') or False
         self.address_families = ['inet', 'inet6']
         self.local_autonomous_system = kwargs.get(
             'local_autonomous_system') or None
