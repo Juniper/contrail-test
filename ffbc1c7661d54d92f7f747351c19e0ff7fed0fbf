@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "35193c51_5ed0de30",
+        "filename": "run_tests.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 408,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-02-26T11:42:32Z",
+      "side": 1,
+      "message": "Does the same patch of python2 applies to python3 too?",
+      "revId": "ffbc1c7661d54d92f7f747351c19e0ff7fed0fbf",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
