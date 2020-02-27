@@ -528,6 +528,7 @@ class TestInputs(with_metaclass(Singleton, object)):
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})
         self.deployer = deployment_configs.get('deployer', 'contrail-ansible-deployer')
+        self.security_group_domain = deployment_configs.get('security_group_domain') or 'default-domain'
         self.contrail_configs = contrail_configs = \
             self.config.get('contrail_configuration') or {}
         self.orchestrator_configs = orchestrator_configs = \
