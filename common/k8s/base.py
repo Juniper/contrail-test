@@ -979,6 +979,10 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         time.sleep(30)#wait time to stabilize the cluster
     # end restart_kube_manager
 
+    def invalidate_kube_manager_inspect(self):
+        if getattr(self.connections, '_kube_manager_inspect'):
+            del self.connections._kube_manager_inspect
+
     def restart_vrouter_agent(self, ips=None):
         '''
         Restarts vrouter agent
