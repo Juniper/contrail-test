@@ -41,7 +41,7 @@ class TestSVCCombosForEvpn(GenericTestBase, VerifySvcFirewall):
             ]
         }
         svc_creator = ServiceChainCreator(self)
-        svc_chain_info = svc_creator.build(data)
+        svc_chain_info = svc_creator.build(data, evpn=True)
         assert self.verify_svc_chain(svc_chain_info=svc_chain_info)
 
     def _do_cleanup(self):
@@ -67,11 +67,10 @@ class TestSVCCombosForEvpn(GenericTestBase, VerifySvcFirewall):
                 left_vm_nodes=left_vm_nodes,
                 right_vm_nodes=right_vm_nodes,
                 si_vm_nodes=si_vm_nodes,
-                #si_modes=['transparent', 'in-network', 'in-network-nat'],
-                si_modes=['in-network', 'in-network-nat'],
+                si_modes=['transparent', 'in-network', 'in-network-nat'],
                 max_sis=2,
                 max_stages=2):
             self.logger.info('Combo : %s' % (combo))
-            svc_chain_info = svc_creator.build(combo)
+            svc_chain_info = svc_creator.build(combo, evpn=True)
             svc_chain = self.verify_svc_chain(svc_chain_info=svc_chain_info)
             self._do_cleanup()
