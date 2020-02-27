@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore', ".*SNIMissingWarning.*")
 warnings.filterwarnings('ignore', ".*InsecurePlatformWarning.*")
 warnings.filterwarnings('ignore', ".*SubjectAltNameWarning.*")
 from common.contrail_services import BackupImplementedServices, \
-    ServiceHttpPortMap, CONTRAIL_PODS_SERVICES_MAP
+    ServiceHttpPortMap, CONTRAIL_PODS_SERVICES_MAP, CONTRAIL_PODS_SERVICES_MAP_JUJU, CONTRAIL_SERVICES_MAP_RHOSP
 
 class IntrospectUtil(object):
     def __init__(self, ip, port, debug, timeout, keyfile, certfile, cacert):
@@ -251,7 +251,39 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
         containers = inputs.get_active_containers(node)
         logger.info(node)
         status_dict[node] = dict()
-        if service:
+
+        # Check all contrail containers are in place for JuJu
+        if inputs.deployer == 'juju':
+            for r in role or inputs.get_roles(node):
+                logger.info('  '+r)
+                if r not in CONTRAIL_PODS_SERVICES_MAP_JUJU:
+                    logger.error('role '+r+' is not yet supported')
+                    continue
+                for container in CONTRAIL_PODS_SERVICES_MAP_JUJU[r]:
+                    status = 'active' if container in containers else 'inactive'
+                    if status == 'active':
+                        status, desc = get_svc_uve_info(node, container,
+                            debug, detail, timeout, keyfile, certfile, cacert)
+                    status_dict[node][svc] = {'status': status, 'description': desc}
+                    logger.info('    %s:%s%s'%(container, status, ' (%s)'%
+                        desc if desc else ''))
+       # Check all contrail containers are in place for RHOST
+        elif inputs.deployer == 'rhosp':
+            for r in role or inputs.get_roles(node):
+                logger.info('  '+r)
+                if r not in CONTRAIL_SERVICES_MAP_RHOSP:
+                    logger.error('role '+r+' is not yet supported')
+                    continue
+                for container in CONTRAIL_SERVICES_MAP_RHOSP[r]:
+                    desc = None
+                    status = 'active' if container in containers else 'inactive'
+                    if status == 'active':
+                        status, desc = get_svc_uve_info(node, container,
+                            debug, detail, timeout, keyfile, certfile, cacert)
+                    status_dict[node][container] = {'status': status, 'description': desc}
+                    logger.info('    %s:%s%s'%(container, status, ' (%s)'%
+                        desc if desc else ''))
+        elif service:
             for svc in service:
                 desc = None
                 status = get_container_status(
