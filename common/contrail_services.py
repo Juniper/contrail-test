@@ -90,6 +90,61 @@ _CONTRAIL_SERVICES_CONTAINER_MAP = {
     'strongswan':  ['strongswan_strongswan']
 }
 
+# Separate container names for JuJu deployer
+_CONTRAIL_SERVICES_JUJU_CONTAINER_MAP = {
+    'vrouter' : ['vrouter-nodemgr', 'agent'],
+    'control' : ['control_nodemgr_1',
+                 'control_control_1',
+                 'control_named_1',
+                 'control_dns_1'],
+    'config' : ['configapi_nodemgr_1',
+                'configapi_api_1',
+                'configapi_schema_1',
+                'configapi_svcmonitor_1',
+                'configapi_devicemgr_1'],
+    'config-database' : ['configdatabase_cassandra_1',
+                         'configdatabase_zookeeper_1',
+                         'configdatabase_rabbitmq_1'],
+    'analytics' : ['analytics_nodemgr_1',
+                   'analytics_api_1',
+                   'analytics_collector_1'],
+    'analytics-database' : ['analyticsdatabase_cassandra_1',
+                            'analyticsdatabase_nodemgr_1',
+                            'analyticsdatabase_query-engine_1'],
+    'analytics_snmp': ['analyticssnmp_snmp-collector_1', 'analyticssnmp_topology_1', 'analyticssnmp_nodemgr_1'],
+    'analytics_alarm': ['analyticsalarm_alarm-gen_1', 'analyticsalarm_nodemgr_1','analyticsalarm_kafka_1'],
+    'webui' : ['webui_web_1', 'webui_job_1', 'redis_redis_1'],
+    'kubernetes' : ['contrail-kube-manager'],
+}
+
+# Separate container names for RHOSP deployer
+_CONTRAIL_SERVICES_RHOSP_CONTAINER_MAP = {
+    'vrouter' : ['contrail_vrouter_agent_nodemgr', 'contrail_vrouter_agent'],
+    'control' : ['contrail_control_nodemgr',
+                 'contrail_control_control',
+                 'contrail_control_named',
+                 'contrail_control_dns'],
+    'config' : ['contrail_config_nodemgr',
+                'contrail_config_api',
+                'contrail_config_schema',
+                'contrail_config_svc_monitor',
+                'contrail_config_device_manager'],
+    'database' : ['contrail_config_database_nodemgr',
+                  'contrail_config_database'],
+    'config-database' : ['contrail_config_database',
+                         'contrail_config_zookeeper',
+                         'contrail_config_rabbitmq'],
+    'analytics' : ['contrail_analytics_nodemgr',
+                   'contrail_analytics_api',
+                   'contrail_analytics_collector'],
+    'analytics-database' : ['contrail_analytics_database',
+                            'contrail_analytics_database_nodemgr',
+                            'contrail_analytics_queryengine'],
+    'analytics-snmp': ['contrail_analytics_snmp_collector', 'contrail_analytics_topology', 'contrail_analytics_snmp_nodemgr'],
+    'analytics-alarm': ['contrail_analytics_alarmgen', 'contrail_analytics_alarm_nodemgr','contrail_analytics_kafka'],
+    'webui' : ['contrail_webui_web', 'contrail_webui_job'],
+}
+
 CONTRAIL_PODS_SERVICES_MAP = {
     'vrouter' : ['vrouter-nodemgr', 'agent'],
     'control' : ['control-nodemgr',
@@ -157,5 +212,9 @@ ANSIBLE_DEPLOYER_PODS_YML_FILE = {
 def get_contrail_services_map(inputs):
     if inputs.deployer == 'openshift':
         return _CONTRAIL_SERVICES_OPENSHIFT_CONTAINER_MAP
+    elif inputs.deployer == 'juju':
+        return _CONTRAIL_SERVICES_JUJU_CONTAINER_MAP
+    elif inputs.deployer == 'rhosp':
+        return _CONTRAIL_SERVICES_RHOSP_CONTAINER_MAP
     else:
         return _CONTRAIL_SERVICES_CONTAINER_MAP
