@@ -211,7 +211,7 @@ function run_tagged_tests_in_debug_mode {
     do
         result_xml='result'$count'.xml'
         ((count++))
-        if [ $upgrade -eq 1]; then
+        if [ $upgrade -eq 1 ]; then
             (exec ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml) &
             pids[$i]=$!
             wait_till_process_state $! stop
@@ -219,7 +219,7 @@ function run_tagged_tests_in_debug_mode {
             ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml
         fi
     done
-    if [ $upgrade -eq 1]; then
+    if [ $upgrade -eq 1 ]; then
         wait
     fi
 }
