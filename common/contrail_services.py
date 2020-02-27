@@ -116,6 +116,33 @@ CONTRAIL_PODS_SERVICES_MAP = {
     'kubernetes' : ['contrail-kube-manager'],
 }
 
+# Separate container names for JuJu deployer
+CONTRAIL_PODS_SERVICES_MAP_JUJU = {
+    'vrouter' : ['vrouter-nodemgr', 'agent'],
+    'control' : ['control_nodemgr_1',
+                 'control_control_1',
+                 'control_named_1',
+                 'control_dns_1'],
+    'config' : ['configapi_nodemgr_1',
+                'configapi_api_1',
+                'configapi_schema_1',
+                'configapi_svcmonitor_1',
+                'configapi_devicemgr_1'],
+    'config-database' : ['configdatabase_cassandra_1',
+                         'configdatabase_zookeeper_1',
+                         'configdatabase_rabbitmq_1'],
+    'analytics' : ['analytics_nodemgr_1',
+                   'analytics_api_1',
+                   'analytics_collector_1'],
+    'analytics-database' : ['analyticsdatabase_cassandra_1',
+                            'analyticsdatabase_nodemgr_1',
+                            'analyticsdatabase_query-engine_1'],
+    'analytics_snmp': ['analyticssnmp_snmp-collector_1', 'analyticssnmp_topology_1', 'analyticssnmp_nodemgr_1'],
+    'analytics_alarm': ['analyticsalarm_alarm-gen_1', 'analyticsalarm_nodemgr_1','analyticsalarm_kafka_1'],
+    'webui' : ['webui_web_1', 'webui_job_1', 'redis_redis_1'],
+    'kubernetes' : ['contrail-kube-manager'],
+}
+
 BackupImplementedServices = ["schema",
                              "svc-monitor",
                              "device-manager",
