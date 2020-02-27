@@ -83,12 +83,12 @@ class ScapyTraffic(object):
             if dict_values:
                 vars = []
                 for key,value in dict_values.items():
-                    if type(value) is str:
-                        var = "%s='%s'" % (key,value)
+                    if type(value) is int:
+                        var = "%s=%d" % (key,value)
                     elif type(value) is list or type(value) is tuple:
                         var = "%s=%s" % (key,value)
                     else:
-                        var = "%s=%d" % (key,value)
+                        var = "%s='%s'" % (key,value)
                     vars.append(var)
                 header_fields = ','.join(vars)
                 if header == 'IGMPv3mr':
