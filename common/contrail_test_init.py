@@ -576,6 +576,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         self.admin_domain = keystone_configs.get('domain') or \
                                 os.getenv('OS_DOMAIN_NAME',
                                 ORCH_DEFAULT_DOMAIN.get(self.orchestrator))
+        self.security_group_domain = self.admin_domain or 'default-domain'
         self.region_name = keystone_configs.get('region') or \
                                os.getenv('OS_REGION_NAME', 'RegionOne')
         if self.keystone_version == 'v3':
