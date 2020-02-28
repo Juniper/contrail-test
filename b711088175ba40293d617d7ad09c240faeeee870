@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f5c6acec_a295280c",
+        "filename": "common/contrail_test_init.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 365,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-02-28T19:27:03Z",
+      "side": 1,
+      "message": "Seems this check was added as part of https://bugs.launchpad.net/juniperopenstack/+bug/1775278 to support contrail-test with Helm based provisioning. If we are sure we are not going to support Helm going forward then its ok to go ahead with the current patch else we need to fix such that it wont break Helm.",
+      "revId": "b711088175ba40293d617d7ad09c240faeeee870",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
