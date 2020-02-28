@@ -16,6 +16,24 @@
       "revId": "ffbc1c7661d54d92f7f747351c19e0ff7fed0fbf",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "17cb6ae5_b1c1162c",
+        "filename": "run_tests.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 408,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-02-28T08:17:28Z",
+      "side": 1,
+      "message": "yes, the same patch applies to python3 version of the library",
+      "parentUuid": "35193c51_5ed0de30",
+      "revId": "ffbc1c7661d54d92f7f747351c19e0ff7fed0fbf",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
     }
   ]
 }
