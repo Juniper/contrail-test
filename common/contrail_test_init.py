@@ -600,6 +600,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         self.stack_password = test_configs.get('stack_password') or self.admin_password
         self.stack_tenant = test_configs.get('stack_tenant') or self.admin_tenant
         self.stack_domain = test_configs.get('stack_domain') or self.admin_domain
+        self.test_domain = test_configs.get('test_domain','default-domain')
         self.availability_zone = test_configs.get('availability_zone')
         self.use_project_scoped_token = test_configs.get('use_project_scoped_token') or False
         self.domain_isolation = test_configs.get('domain_isolation') or False

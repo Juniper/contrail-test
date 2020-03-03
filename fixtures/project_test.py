@@ -327,7 +327,7 @@ class ProjectFixture(fixtures.Fixture):
 
     def update_sec_group(self, project_name, sec_group_name, rules):
         def_sec_grp = self.vnc_lib_h.security_group_read(
-            fq_name=[u'default-domain', project_name, sec_group_name])
+            fq_name=[self.inputs.test_domain, project_name, sec_group_name])
         try:
             old_rules = def_sec_grp.get_security_group_entries(
             ).get_policy_rule()
@@ -342,8 +342,8 @@ class ProjectFixture(fixtures.Fixture):
 
     def set_sec_group(self, project_name, sec_group_name, rules):
         rule_list = PolicyEntriesType(policy_rule=rules)
-        project_fq_name = [u'default-domain', project_name]
-        sg_fq_name = [u'default-domain', project_name, sec_group_name]
+        project_fq_name = [self.inputs.test_domain, project_name]
+        sg_fq_name = [self.inputs.test_domain, project_name, sec_group_name]
         project = self.vnc_lib_h.project_read(fq_name=project_fq_name)
         def_sec_grp = self.vnc_lib_h.security_group_read(fq_name=sg_fq_name)
         def_sec_grp = SecurityGroup(
