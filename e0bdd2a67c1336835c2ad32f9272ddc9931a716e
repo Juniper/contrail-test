@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d5fef400_c595511d",
+        "filename": "common/contrail_test_init.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 603,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-04T14:53:49Z",
+      "side": 1,
+      "message": "Would stack_domain suffice here. do we need a new param?",
+      "revId": "e0bdd2a67c1336835c2ad32f9272ddc9931a716e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
