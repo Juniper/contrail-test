@@ -130,17 +130,15 @@ class BaseServiceConnectionsTest(GenericTestBase):
                     "collector", "xmpp", "dns" or "rabbitmq"
         Values to argument "client_role" can be:
                     "agent", "control", "config", "analytics" and "database" '''
-        if client_role in ['config', 'analytics', 'database', 'control']:
-            client_node_name = self.inputs.host_data[client_ip]['fqname']
-        else:
-            client_node_name = self.inputs.host_data[client_ip]['name']
+        client_node_fqname = self.inputs.host_data[client_ip]['fqname']
+        client_node_name = self.inputs.host_data[client_ip]['name']
         server_addr_list = []
         server_addr_status = []
         server_port = []
         # First 'if' statement is to get all connections of "agent"
         # "Vrouter-agent" connects to 'XMPP', 'DNS' and "COLLECTOR' Servers
-        if service_name == "xmpp" or service_name == "dns" or \
-            service_name == "collector" and client_role == "agent":
+        if (service_name == "xmpp" or service_name == "dns" or \
+            service_name == "collector") and client_role == "agent":
             vrouter_uve_dict = self.ops_inspect.get_ops_vrouter(
                                                     client_node_name)
             index = self.find_index(vrouter_uve_dict, client_process)
@@ -163,32 +161,39 @@ class BaseServiceConnectionsTest(GenericTestBase):
                         server_addr_status.append(connections['status'])
                         server_port.append(connections[
                                             'server_addrs'][0].split(':')[1])
-        elif service_name == "collector" and client_role == "control":
+        elif (service_name == "collector" or service_name == "configdb") \
+            and client_role == "control":
             if client_process != "contrail-dns":
                 control_uve_dict = self.ops_inspect.get_ops_bgprouter(
                                                     client_node_name)
+                if not control_uve_dict:
+                    control_uve_dict = self.ops_inspect.get_ops_bgprouter(
+                                                    client_node_fqname)
             else:
                 control_uve_dict = self.ops_inspect.get_ops_dns(
                                                     client_node_name)
+                if not control_uve_dict:
+                    control_uve_dict = self.ops_inspect.get_ops_dns(
+                                                    client_node_fqname)
             index = self.find_index(control_uve_dict, client_process)
             connection_info = control_uve_dict['NodeStatus']\
                             ['process_status'][index]['connection_infos']
         elif service_name == "collector" and client_role == "config":
             config_uve_dict = self.ops_inspect.get_ops_config(
-                                                    client_node_name)
+                                                    client_node_fqname)
             index = self.find_index(config_uve_dict, client_process)
             connection_info = config_uve_dict['NodeStatus']\
                             ['process_status'][index]['connection_infos']
         elif (service_name == "collector" or service_name == "redis")\
             and client_role == "analytics":
             collector_uve_dict = self.ops_inspect.get_ops_collector(
-                                                    client_node_name)
+                                                    client_node_fqname)
             index = self.find_index(collector_uve_dict, client_process)
             connection_info = collector_uve_dict['NodeStatus']\
                             ['process_status'][index]['connection_infos']
         elif service_name == "collector" and client_role == "database":
             database_uve_dict = self.ops_inspect.get_ops_db(
-                                                    client_node_name)
+                                                    client_node_fqname)
             index = self.find_index(database_uve_dict, client_process)
             connection_info = database_uve_dict['NodeStatus']\
                             ['process_status'][index]['connection_infos']
@@ -212,6 +217,13 @@ class BaseServiceConnectionsTest(GenericTestBase):
                     server_addr_status.append(connections['status'])
                     server_port.append(connections[
                                         'server_addrs'][0].split(':')[1])
+            elif service_name == "configdb":
+                if connections['type'] == 'Database' and \
+                    connections['name'] == 'Cassandra':
+                    info = connections['server_addrs']
+                    server_addr_list = [x.split(':')[0] for x in info]
+                    server_port = [x.split(':')[1] for x in info]
+                    server_addr_status.append(connections['status'])
             elif service_name == "redis":
                 if connections['type'] == 'Redis-UVE':
                     if connections['name'] != "AggregateRedis":
