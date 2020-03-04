@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "423130d9_f0002aa9",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 120,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-04T15:00:38Z",
+      "side": 1,
+      "message": "Pods to services map is a map between the contrail roles(pods) defined in input file and the services provided by that role and the map between the contrail service and the container name is provided via _CONTRAIL_SERVICES_CONTAINER_MAP which has matching regex patterns.\n\nFor whatever reason openshift deployment used their own services to container-name mapping via _CONTRAIL_SERVICES_OPENSHIFT_CONTAINER_MAP.\n\nCan we use either of the above two approaches?",
+      "revId": "3a2881a8a51b43fabb0eff9a5c8b4964b1efc8fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
