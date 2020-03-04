@@ -184,6 +184,18 @@ class TestBGPaaS(BaseBGPaaS):
                 bgpaas_vm1, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
         # end test_bgpaas_vsrx
 
+    @preposttest_wrapper
+    def test_bgpaas_with_bfd_shc_attached_to_vmi(self):
+        '''
+        1. Create a BGPaaS object with shared attribute, IP address and ASN.
+        2. Launch a VM which will act as the BGPaaS client.
+        3. Configure BFDoVMI on it.
+        4. Verify BGP and BFD sessions over it come up fine.
+        Maintainer: ankitja@juniper.net
+        '''
+        self.bgpaas_basic_common(attach_to='vmi')
+    # end test_bgpaas_with_bfd_shc_attached_to_vmi
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_bgpaas_basic(self):
@@ -192,8 +204,12 @@ class TestBGPaaS(BaseBGPaaS):
         2. Launch a VM which will act as the BGPaaS client. 
         3. Configure BFDoBGPaaS on it. 
         4. Verify BGP and BFD sessions over it come up fine.
-	Maintainer: ganeshahv@juniper.net
+        Maintainer: ganeshahv@juniper.net
         '''
+        self.bgpaas_basic_common(attach_to='bgpaas')
+    # end test_bgpaas_basic
+
+    def bgpaas_basic_common(self, attach_to='bgpaas'):
         vn_name = get_random_name('bgpaas_vn')
         vn_subnets = [get_random_cidr()]
         vn_fixture = self.create_vn(vn_name, vn_subnets)
@@ -215,16 +231,22 @@ class TestBGPaaS(BaseBGPaaS):
                         bgp_vm_port, bgpaas_fixture)
         shc_fixture = self.create_hc(
             probe_type='BFD', http_url=local_ip, timeout=1, delay=1, max_retries=3)
-        self.attach_shc_to_bgpaas(shc_fixture, bgpaas_fixture)
-        self.addCleanup(self.detach_shc_from_bgpaas,
-                        shc_fixture, bgpaas_fixture)
+        if attach_to == 'bgpaas':
+            self.attach_shc_to_bgpaas(shc_fixture, bgpaas_fixture)
+            self.addCleanup(self.detach_shc_from_bgpaas,
+                            shc_fixture, bgpaas_fixture)
+        elif attach_to == 'vmi':
+            self.attach_shc_to_vmi(shc_fixture, bgpaas_vm)
+            self.addCleanup(self.detach_shc_from_vmi,
+                            shc_fixture, bgpaas_vm)
+
         agent = bgpaas_vm.vm_node_ip
         shc_fixture.verify_in_agent(agent)
         assert bgpaas_fixture.verify_in_control_node(
-            bgpaas_vm), 'BGPaaS Session not seen in the control-node'	
+            bgpaas_vm), 'BGPaaS Session not seen in the control-node'
         assert self.verify_bfd_packets(
             bgpaas_vm, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
         op= bgpaas_vm.run_cmd_on_vm(cmds=['birdc show protocols bfd1'], as_sudo=True)
         assert 'up' in op['birdc show protocols bfd1'], 'BFD session not UP'
 
-        # end test_bgpaas_basic
+        # end bgpaas_basic_common

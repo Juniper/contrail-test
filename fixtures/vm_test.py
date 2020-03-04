@@ -265,6 +265,17 @@ class VMFixture(fixtures.Fixture):
 
     # end setUp
 
+
+    def attach_shc(self, shc_id):
+        vmi_uuid = self.get_vmi_ids().values()[0]
+        result = self.vnc_h.attach_shc_to_vmi(vmi_uuid, shc_id)
+        return result
+
+    def detach_shc(self, shc_id):
+        vmi_uuid = self.get_vmi_ids().values()[0]
+        result = self.vnc_h.detach_shc_from_vmi(vmi_uuid, shc_id)
+        return result
+
     def set_image_details(self, vm_obj):
         '''
         Need to update image details for the setup where we manipulate image name in orchestrator

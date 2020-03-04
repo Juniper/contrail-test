@@ -1154,6 +1154,22 @@ class ContrailVncApi(object):
         '''
         return self._vnc.bgp_as_a_service_delete(**kwargs)
 
+    def attach_shc_to_vmi(self, vmi_uuid, shc_id):
+        self._log.info('Attaching HC %s to VMI %s' % (shc_id, vmi_uuid))
+        vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_uuid)
+        ref_obj = self._vnc.service_health_check_read(id=shc_id)
+        vmi_obj.add_service_health_check(ref_obj)
+        return self._vnc.virtual_machine_interface_update(vmi_obj)
+
+    def detach_shc_from_vmi(self, vmi_uuid, shc_id):
+        self._log.info(
+            'Detaching HC %s from VMI %s' %
+            (shc_id, vmi_uuid))
+        vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_uuid)
+        ref_obj = self._vnc.service_health_check_read(id=shc_id)
+        vmi_obj.del_service_health_check(ref_obj)
+        return self._vnc.virtual_machine_interface_update(vmi_obj)
+
     def attach_vmi_to_bgpaas(self, bgpaas_uuid, vmi_id):
         self._log.info('Attaching VMI %s to BGPaaS %s' % (vmi_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
