@@ -1,4 +1,5 @@
 """Service chain firewall regression suite."""
+from common.svc_firewall.base import BaseSvc_FwTest
 from builtins import str
 import os
 import unittest
@@ -9,7 +10,6 @@ from tcutils.util import skip_because, get_random_name
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.servicechain.mirror.verify import VerifySvcMirror
-from common.svc_firewall.base import BaseSvc_FwTest
 from netaddr import IPNetwork
 import test
 from common import isolated_creds

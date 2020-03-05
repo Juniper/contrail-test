@@ -1,9 +1,9 @@
+from common.securitygroup.base import BaseSGTest
+from common.securitygroup.verify import VerifySecGroup
+from common.policy.config import ConfigPolicy
 import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
-from common.securitygroup.verify import VerifySecGroup
-from common.securitygroup.base import BaseSGTest
-from common.policy.config import ConfigPolicy
 from vn_test import VNFixture
 from vm_test import VMFixture
 import os

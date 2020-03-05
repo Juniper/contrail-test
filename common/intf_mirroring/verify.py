@@ -1,3 +1,4 @@
+from common.servicechain.mirror.verify import VerifySvcMirror
 from builtins import str
 import os
 import re
@@ -7,7 +8,6 @@ from tcutils.util import get_random_name
 from tcutils.util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.tcpdump_utils import *
-from common.servicechain.mirror.verify import VerifySvcMirror
 from random import randint
 from vnc_api.gen.resource_xsd import StaticMirrorNhType
 from vnc_api.gen.resource_xsd import MirrorActionType
@@ -650,6 +650,7 @@ class VerifyIntfMirror(VerifySvcMirror):
     #routine to verify inner header by checking the source and dst ip based in direction mirrored
     def verify_inner_header(self, vm_fix_pcap_pid_files, src_vm_ip, dst_vm_ip, direction = 'both'):
         cmds = 'tshark -r %s -n -d udp.port==8099,juniper' % vm_fix_pcap_pid_files[0][1]
+        cmds = cmds + " | tr -c [[:alpha:][:digit:].':''('')''\r''\n'] ' '"
         outer_header = vm_fix_pcap_pid_files[0][0].run_cmd_on_vm(cmds = [cmds])
         if direction == 'both':
             regex = re.compile('%s.*%s *ICMP *\d* *Echo *\(ping\) *request' % (src_vm_ip, dst_vm_ip))

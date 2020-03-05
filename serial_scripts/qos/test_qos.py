@@ -1,9 +1,8 @@
+from common.qos.base import *
 from builtins import str
 from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
-
-from common.qos.base import *
 
 
 class TestQosQueueSerial(QosTestExtendedBase):

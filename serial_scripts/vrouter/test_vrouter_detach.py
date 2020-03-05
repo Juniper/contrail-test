@@ -1,8 +1,8 @@
+from common.neutron.base import *
 from tcutils.commands import *
 from tcutils.util import retry
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.contrail_status_check import ContrailStatusChecker
-from common.neutron.base import *
 
 class TestVrouterDetach(BaseNeutronTest):
     

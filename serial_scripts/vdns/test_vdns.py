@@ -6,6 +6,7 @@ from __future__ import print_function
 # You can do 'python -m testtools.run -l vdns_tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from common.vdns.base import BasevDNSTest 
 from builtins import str
 from builtins import range
 from builtins import object
@@ -23,7 +24,6 @@ from tcutils.pkgs.Traffic.traffic.core.stream import Stream
 from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
-from common.vdns.base import BasevDNSTest 
 from common import isolated_creds
 import inspect
 from vnc_api import vnc_api

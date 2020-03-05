@@ -615,7 +615,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
     def verify_fip_in_agent(self):
         exp_label = self.get_vip_label()
         active_vr = self.get_active_vrouter()
-        if not active_vr or not exp_label or exp_label < 1:
+        if not active_vr or not exp_label or int(exp_label) < 1:
             self.logger.warn('LB(%s): unable to find active vr'%self.lb_uuid)
             return False
         inspect_h = self.connections.agent_inspect[active_vr]

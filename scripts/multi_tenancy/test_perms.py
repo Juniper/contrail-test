@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from .base import BaseMultitenancyTest
 from builtins import str
 from builtins import range
 from common.openstack_libs import ks_client as ksclient
@@ -25,7 +26,6 @@ from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from keystone_tests import *
 from tcutils.wrappers import preposttest_wrapper
-from .base import BaseMultitenancyTest
 import tcutils.util as util
 import test
 

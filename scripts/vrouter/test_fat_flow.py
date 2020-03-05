@@ -1,6 +1,6 @@
 from builtins import str
-from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
+from tcutils.wrappers import preposttest_wrapper
 import test
 from tcutils.util import get_random_name, is_v6
 import random

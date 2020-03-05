@@ -1,3 +1,5 @@
+from common.vrouter.base import BaseVrouterTest
+from common.servicechain.config import ConfigSvcChain
 from builtins import str
 from builtins import range
 import vnc_api_test
@@ -13,8 +15,6 @@ from fabric.api import run
 from floating_ip import *
 from contrailapi import ContrailVncApi
 from common.base import GenericTestBase
-from common.vrouter.base import BaseVrouterTest
-from common.servicechain.config import ConfigSvcChain
 from fabric.context_managers import settings, hide
 from tcutils.util import safe_run, safe_sudo
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out

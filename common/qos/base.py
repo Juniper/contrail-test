@@ -3,11 +3,11 @@ from builtins import str
 from builtins import range
 from builtins import object
 import re
+from common.neutron.base import BaseNeutronTest
 from tcutils.util import Lock
 from tcutils.util import is_almost_same
 import dpkt
 
-from common.neutron.base import BaseNeutronTest
 from compute_node_test import ComputeNodeFixture
 from qos_fixture import QosForwardingClassFixture, QosConfigFixture, QosQueueFixture
 from collections import OrderedDict

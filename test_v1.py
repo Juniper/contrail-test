@@ -1,5 +1,5 @@
-from common.isolated_creds import *
 from test import BaseTestCase
+from common.isolated_creds import *
 import time
 
 class BaseTestCase_v1(BaseTestCase):

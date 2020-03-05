@@ -1,3 +1,4 @@
+import test_v1
 from builtins import str
 from builtins import range
 import sys
@@ -9,7 +10,6 @@ import socket
 import random
 import inspect
 #from fabric.state import connections as fab_connections
-import test_v1
 import re
 from common.connections import ContrailConnections
 from common.device_connection import NetconfConnection

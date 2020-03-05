@@ -1,3 +1,4 @@
+from common.static_route_table.base import StaticRouteTableBase 
 from builtins import range
 import sys
 import os
@@ -6,7 +7,6 @@ import testtools
 import unittest
 from vn_test import *
 from tcutils.wrappers import preposttest_wrapper
-from common.static_route_table.base import StaticRouteTableBase 
 from common import isolated_creds
 import test 
 from common.servicechain.firewall.verify import VerifySvcFirewall

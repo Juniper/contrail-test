@@ -1,10 +1,10 @@
+from common.securitygroup.base import BaseSGTest
 import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
 import os
 import sys
 from common.securitygroup.verify import VerifySecGroup
-from common.securitygroup.base import BaseSGTest
 from common.policy.config import ConfigPolicy
 from tcutils.topo.topo_helper import *
 from tcutils.topo.sdn_topo_setup import *

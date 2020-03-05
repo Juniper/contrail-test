@@ -1,5 +1,5 @@
-from tcutils.wrappers import preposttest_wrapper
 from common.service_connections.base import BaseServiceConnectionsTest
+from tcutils.wrappers import preposttest_wrapper
 
 
 class TestServiceConnections(BaseServiceConnectionsTest):

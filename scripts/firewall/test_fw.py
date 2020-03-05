@@ -1,6 +1,6 @@
+from common.firewall.base import FirewallBasic, FirewallDraftBasic
 import test
 from tcutils.wrappers import preposttest_wrapper
-from common.firewall.base import FirewallBasic, FirewallDraftBasic
 
 class TestFirewallBasic(FirewallBasic):
     @test.attr(type=['vcenter'])

@@ -1,17 +1,14 @@
 from builtins import str
 from builtins import range
+from common.vrouter.base import BaseVrouterTest
 import re
 from vnc_api.vnc_api import *
-
-from common.vrouter.base import BaseVrouterTest
 from bridge_domain_fixture import BDFixture
 from common.neutron.base import BaseNeutronTest
 from compute_node_test import ComputeNodeFixture
 from common.base import GenericTestBase
 from common.vrouter.base import BaseVrouterTest
-
 from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
-
 import random
 from netaddr import *
 from tcutils.util import retry, get_random_mac

@@ -1,4 +1,5 @@
 from __future__ import print_function
+from common.neutron.base import BaseNeutronTest
 from common.neutron.attributes import *
 import testtools
 import json
@@ -6,7 +7,6 @@ import json
 from tcutils.util import *
 from tcutils.wrappers import preposttest_wrapper
 from common.neutron.neutron_util import combos
-from common.neutron.base import BaseNeutronTest
 import test
 
 from common.openstack_libs import neutron_client as client

@@ -1,3 +1,4 @@
+from common.base import GenericTestBase
 from builtins import range
 import os
 import fixtures
@@ -14,7 +15,6 @@ from tcutils.contrail_status_check import ContrailStatusChecker
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from common.servicechain.firewall.verify import VerifySvcFirewall
-from common.base import GenericTestBase
 from common.ecmp.base import ECMPTestBase
 from common.ecmp.ecmp_traffic import ECMPTraffic
 from common.ecmp.ecmp_verify import ECMPVerify

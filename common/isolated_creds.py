@@ -1,12 +1,9 @@
-import project_test
-import domain_test
 from common.contrail_test_init import ContrailTestInit
 from common.connections import ContrailConnections
-import os
-import fixtures
-from test import BaseTestCase
-import time
+import project_test
+import domain_test
 from tcutils.util import get_random_name
+import fixtures
 
 class IsolatedCreds(fixtures.Fixture):
 

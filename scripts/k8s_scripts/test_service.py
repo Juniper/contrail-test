@@ -1,7 +1,7 @@
+from common.k8s.base import BaseK8sTest
 from builtins import range
 from tcutils.util import skip_because
 #import random
-from common.k8s.base import BaseK8sTest
 from k8s.namespace import NamespaceFixture
 from k8s.service import ServiceFixture
 from tcutils.wrappers import preposttest_wrapper

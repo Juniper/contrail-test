@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from .base import BaseRtFilterTest
 import os
 import sys
 from vn_test import *
@@ -13,7 +14,6 @@ from tcutils.pkgs.Traffic.traffic.core.stream import Stream
 from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
-from .base import BaseRtFilterTest
 from common import isolated_creds
 import inspect
 

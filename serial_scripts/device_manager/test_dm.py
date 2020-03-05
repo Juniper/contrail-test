@@ -1,15 +1,14 @@
 from __future__ import absolute_import
 from builtins import str
 from builtins import range
+from .base import BaseDM
 import test
-import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vn_test import MultipleVNFixture
 from physical_router_fixture import PhysicalRouterFixture
 from lif_fixture import LogicalInterfaceFixture
 from common import isolated_creds
 from serial_scripts.md5.base import Md5Base
-from .base import BaseDM
 from common.neutron.base import BaseNeutronTest
 from tcutils.contrail_status_check import *
 import physical_device_fixture

@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import division
+import test_v1
 from builtins import range
 from past.utils import old_div
 import os
@@ -9,7 +10,6 @@ import struct
 import socket
 import random
 from fabric.state import connections as fab_connections
-import test_v1
 import traffic_tests
 from common.contrail_test_init import *
 from common import isolated_creds
