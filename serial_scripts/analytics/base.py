@@ -55,6 +55,7 @@ class AnalyticsBaseTest(GenericTestBase):
             cmd = cmd_args
             if form_cmd:
                 cmd = self._form_cmd(cmd_type, cmd_args)
+            cmd += cmd + ' | wc -l'
             self.logger.info("Running the following cmd:%s \n" %cmd)
             if not self.execute_cli_cmd(cmd, check_output, as_sudo=as_sudo, print_output=print_output):
                 self.logger.error('%s command failed..' % cmd)

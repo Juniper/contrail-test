@@ -1,13 +1,11 @@
 from builtins import str
 from builtins import range
-import test_v1, time
+from common.neutron.base import BaseNeutronTest
 from lbaasv2_fixture import LBaasV2Fixture
 from tcutils.util import *
-from common.neutron.base import BaseNeutronTest
 from security_group import SecurityGroupFixture, get_secgrp_id_from_name
 
-
-class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
+class BaseLBaaSTest(BaseNeutronTest):
 
     @classmethod
     def setUpClass(cls):

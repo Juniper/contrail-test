@@ -1,5 +1,5 @@
-from tcutils.wrappers import preposttest_wrapper
 from common.bgpaas.base import BaseBGPaaS
+from tcutils.wrappers import preposttest_wrapper
 from common.neutron.base import BaseNeutronTest
 import test
 import time

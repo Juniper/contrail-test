@@ -5,6 +5,7 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 # 
+from analytics import base
 import os
 import time    
 import fixtures
@@ -16,7 +17,6 @@ from policy_test import *
 from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
 from fabric.api import run, local
-from analytics import base
 import fixtures
 
 import test

@@ -1,6 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
+from .base import *
 from builtins import str
 from builtins import range
 from builtins import object
@@ -14,7 +15,6 @@ from common.connections import *
 import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
-from .base import *
 from vcenter import *
 import test
 from tcutils.contrail_status_check import ContrailStatusChecker

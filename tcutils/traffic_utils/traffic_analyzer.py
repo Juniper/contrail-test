@@ -210,7 +210,7 @@ class TrafficAnalyzer(object):
         if self.encap_type and self.encap_type != "MPLS_any":
             if not self.verify_encap_type(self.encap_type, file_name):
                 return False
-        f = open(file_name, 'r')
+        f = open(file_name, 'rb')
         pcap = dpkt.pcap.Reader(f)
         count = 0
         for ts,buff in pcap:

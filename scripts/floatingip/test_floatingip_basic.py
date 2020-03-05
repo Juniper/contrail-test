@@ -6,6 +6,7 @@ from __future__ import absolute_import
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from . import base
 import re
 import os
 from user_test import UserFixture
@@ -30,7 +31,6 @@ from testresources import ResourcedTestCase
 import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
-from . import base
 import test
 
 

@@ -1,3 +1,4 @@
+from common.neutron.lbaas.base import BaseTestLbaas
 import os
 import fixtures
 import testtools
@@ -10,8 +11,6 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import run_fab_cmd_on_node
 
 from common.openstack_libs import neutron_client_exception as NeutronClientException
-
-from common.neutron.lbaas.base import BaseTestLbaas
 import test
 
 

@@ -2,10 +2,10 @@ from __future__ import division
 from builtins import str
 from builtins import range
 from past.utils import old_div
-from tcutils.wrappers import preposttest_wrapper
 from common.dsnat.base import BaseDSNAT
 from common.neutron.base import BaseNeutronTest
 from security_group import SecurityGroupFixture
+from tcutils.wrappers import preposttest_wrapper
 import test
 import time
 from tcutils.util import *

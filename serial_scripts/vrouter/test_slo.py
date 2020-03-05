@@ -1,5 +1,5 @@
-from tcutils.wrappers import preposttest_wrapper
 from common.slo.base import *
+from tcutils.wrappers import preposttest_wrapper
 import test
 from tcutils.util import get_random_name, is_almost_same, skip_because
 from security_group import get_secgrp_id_from_name, list_sg_rules

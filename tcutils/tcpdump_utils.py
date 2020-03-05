@@ -148,7 +148,7 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None, mac=None, raw_count
         cmd = 'sudo tcpdump -nnr %s | %s' % (pcap, new_grep_string)
     if not vm_fix_pcap_pid_files:
         out, err = execute_cmd_out(session, cmd, obj.logger)
-        count = int(out.strip('\n'))
+        count = int(out.decode().strip('\n'))
     else:
         output, count = stop_tcpdump_for_vm_intf(
             None, None, pcap, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, svm=svm)
@@ -182,7 +182,7 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None, mac=None, raw_count
 def search_in_pcap(session, pcap, search_string):
     cmd = 'sudo tcpdump -v -nn -r %s | grep "%s"' % (pcap, search_string)
     out, err = execute_cmd_out(session, cmd)
-    if search_string in out:
+    if search_string in out.decode():
         return True
     else:
         return False

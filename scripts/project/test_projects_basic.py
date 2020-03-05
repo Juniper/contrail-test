@@ -1,3 +1,4 @@
+from project.base import BaseProjectTest
 import os
 import fixtures
 import testtools
@@ -9,7 +10,6 @@ from user_test import UserFixture
 from common.connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
 
-from project.base import BaseProjectTest
 import test
 from tcutils.util import get_random_name
 from vnc_api.vnc_api import NoIdError

@@ -5,8 +5,8 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
-from tcutils.wrappers import preposttest_wrapper
 from vgw import base
+from tcutils.wrappers import preposttest_wrapper
 from vgw.verify import VerifyVgwCases
 
 

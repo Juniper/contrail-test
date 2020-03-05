@@ -3,10 +3,9 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from common.neutron.lbaasv2.base import BaseLBaaSTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import *
-
-from common.neutron.lbaasv2.base import BaseLBaaSTest
 import os
 import fixtures
 import tcutils.wrappers

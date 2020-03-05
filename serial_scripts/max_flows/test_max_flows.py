@@ -5,14 +5,13 @@ from __future__ import division
 # To run tests, you can do 'python -m testtools.run tests'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
-
+from common.max_flows.base import BaseMaxFlowsTest
 from builtins import str
 from builtins import range
 from past.utils import old_div
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.agent import *
 from common.max_flows.verify import VerifyMaxFlows
-from common.max_flows.base import BaseMaxFlowsTest
 import test
 from tcutils.util import skip_because
 import time

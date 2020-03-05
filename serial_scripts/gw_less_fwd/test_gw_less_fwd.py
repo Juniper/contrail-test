@@ -1,13 +1,12 @@
 from builtins import str
 from builtins import range
-from tcutils.wrappers import preposttest_wrapper
 from common.gw_less_fwd.base import *
+from tcutils.wrappers import preposttest_wrapper
 from contrailapi import ContrailVncApi
 from common.svc_firewall.base import BaseSvc_FwTest
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.servicechain.mirror.verify import VerifySvcMirror
 import test
-
 from time import sleep
 
 class TestGWLessFWD(GWLessFWDTestBase):

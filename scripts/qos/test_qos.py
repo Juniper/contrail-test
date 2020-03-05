@@ -1,10 +1,8 @@
 from builtins import str
+from common.qos.base import *
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
 import test
-
-from common.qos.base import *
-
 from svc_instance_fixture import SvcInstanceFixture
 from svc_template_fixture import SvcTemplateFixture
 from policy_test import PolicyFixture

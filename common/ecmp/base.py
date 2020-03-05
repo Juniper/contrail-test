@@ -1,6 +1,6 @@
+from common.base import GenericTestBase
 import os
 from tcutils.util import get_random_name, get_random_cidr
-from common.base import GenericTestBase
 
 class ECMPTestBase(GenericTestBase):
 

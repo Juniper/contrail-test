@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from .base import BaseRRTest,verify_peer_in_control_nodes,\
+     get_connection_matrix
 import traffic_tests
 from vn_test import *
 from vm_test import *
@@ -13,8 +15,6 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from .base import BaseRRTest,verify_peer_in_control_nodes,\
-     get_connection_matrix
 from common import isolated_creds
 import inspect
 from tcutils.util import skip_because, is_almost_same,ipv4_to_decimal

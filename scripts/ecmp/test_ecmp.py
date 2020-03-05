@@ -1,5 +1,7 @@
 from builtins import str
 from builtins import range
+from common.ecmp.base import ECMPTestBase
+from common.base import GenericTestBase
 import sys
 import os
 from vn_test import *
@@ -12,16 +14,12 @@ from vm_test import *
 from tcutils.util import skip_because, get_an_ip
 from tcutils.wrappers import preposttest_wrapper
 from common.servicechain.firewall.verify import VerifySvcFirewall
-from common.ecmp.base import ECMPTestBase
 from common.ecmp.ecmp_traffic import ECMPTraffic
 from common.ecmp.ecmp_verify import ECMPVerify
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
-from common.base import GenericTestBase
 import test
-
-
 
 class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
     @test.attr(type=['cb_sanity', 'sanity'])

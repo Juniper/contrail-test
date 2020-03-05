@@ -1,10 +1,9 @@
-from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
+from tcutils.wrappers import preposttest_wrapper
 import test
 from tcutils.util import get_random_name, is_v6
 import random
 from common.neutron.lbaasv2.base import BaseLBaaSTest
-import ipaddress
 from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
 

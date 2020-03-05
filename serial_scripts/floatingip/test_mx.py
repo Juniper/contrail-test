@@ -7,6 +7,7 @@ from __future__ import absolute_import
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 # Set the env variable MX_GW_TESTto 1 to run the test
 #
+from . import base
 import os
 from common.openstack_libs import nova_client as mynovaclient
 from common.openstack_libs import nova_exception as novaException
@@ -15,7 +16,6 @@ import fixtures
 import testtools
 import socket
 import test
-from . import base
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from quantum_test import *

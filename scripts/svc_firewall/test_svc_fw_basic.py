@@ -1,4 +1,5 @@
 """Service chain firewall regression suite."""
+from common.svc_firewall.base import BaseSvc_FwTest
 import os
 import unittest
 import fixtures
@@ -7,7 +8,6 @@ from tcutils.wrappers import preposttest_wrapper
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.servicechain.config import ConfigSvcChain
-from common.svc_firewall.base import BaseSvc_FwTest
 import test
 from common import isolated_creds
 import inspect

@@ -1,7 +1,7 @@
+from common.base import GenericTestBase
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import skip_because
 from common.device_connection import NetconfConnection
-from common.base import GenericTestBase
 from tcutils.collector.analytics_tests import *
 
 

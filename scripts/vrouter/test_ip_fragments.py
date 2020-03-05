@@ -1,6 +1,6 @@
+from common.vrouter.base import BaseVrouterTest
 import unittest
 from tcutils.wrappers import preposttest_wrapper
-from common.vrouter.base import BaseVrouterTest
 import os
 import sys
 from tcutils.tcpdump_utils import *

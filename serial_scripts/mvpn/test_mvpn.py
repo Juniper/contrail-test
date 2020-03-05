@@ -1,7 +1,7 @@
+from common.mvpn.base import *
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
 import test
-from common.mvpn.base import *
 from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
 from tcutils.traffic_utils.traffic_analyzer import TrafficAnalyzer
 

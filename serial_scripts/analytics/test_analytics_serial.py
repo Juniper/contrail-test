@@ -1,3 +1,4 @@
+from analytics import base
 from builtins import str
 from builtins import range
 import os
@@ -13,7 +14,6 @@ from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import skip_because, get_random_name
 from fabric.api import run, local
-from analytics import base
 import fixtures
 import test
 

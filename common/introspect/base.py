@@ -1,5 +1,5 @@
-from tcutils.ssl_certs_utils import SslCert
 from common.base import GenericTestBase
+from tcutils.ssl_certs_utils import SslCert
 from tcutils.util import get_random_name
 import os
 from tcutils.collector.opserver_introspect_utils import VerificationOpsSrvIntrospect
