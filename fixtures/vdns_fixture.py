@@ -18,6 +18,7 @@ class VdnsFixture(fixtures.Fixture):
         self.inputs = connections.inputs
         self.logger = connections.logger
         self.connections = connections
+        self.domain_name = connections.domain_name
         self.dns_domain_name = dns_domain_name
         self.ttl = ttl
         self.record_order = record_order
@@ -128,14 +129,13 @@ class VdnsFixture(fixtures.Fixture):
         for cn in self.inputs.bgp_ips:
             try:
                 cn_s_dns = self.cn_inspect[cn].get_cn_vdns(
-                    vdns=str(self.obj.name))
+                    domain=self.domain_name, vdns=str(self.obj.name))
                 if self.vdns_fq_name not in cn_s_dns['node_name']:
                     result = result and False
                     msg = msg + \
                         '\nvdns name info not matching with control name data'
                 act_cn_vdns_data = cn_s_dns['obj_info'][
                     'data']['virtual-DNS-data']
-                print(act_cn_vdns_data)
                 exp_vdns_data = self.obj.get_virtual_DNS_data()
                 if act_cn_vdns_data:
                     if exp_vdns_data.__dict__['domain_name'] != act_cn_vdns_data['domain-name']:
@@ -168,8 +168,7 @@ class VdnsFixture(fixtures.Fixture):
         ''' verify VDNS data in API server '''
         result = True
         api_s_dns = self.api_s_inspect.get_cs_dns(
-            vdns_name=str(self.obj.name), refresh=True)
-        print(api_s_dns)
+            vdns_name=str(self.obj.name), domain=self.domain_name, refresh=True)
         msg = ''
         try:
             if self.fq_name != api_s_dns['virtual-DNS']['fq_name']:
@@ -200,7 +199,9 @@ class VdnsFixture(fixtures.Fixture):
     @retry(delay=2, tries=5)
     def verify_vdns_not_in_api_server(self):
         """Validate VDNS information in API-Server."""
-        if self.api_s_inspect.get_cs_dns(vdns_name=str(self.obj.name), refresh=True) is not None:
+        if self.api_s_inspect.get_cs_dns(vdns_name=str(self.obj.name),
+                                         domain=self.domain_name,
+                                         refresh=True) is not None:
             errmsg = "VDNS information %s still found in the API Server" % self.obj.name
             self.logger.warn(errmsg)
             return False
@@ -213,8 +214,7 @@ class VdnsFixture(fixtures.Fixture):
     def verify_vdns_not_in_control_node(self):
         for cn in self.inputs.bgp_ips:
             cn_s_dns = self.cn_inspect[cn].get_cn_vdns(
-                vdns=str(self.obj.name))
-
+                vdns=str(self.obj.name), domain=self.domain_name)
             if cn_s_dns:
                 errmsg = "VDNS information %s still found in the Control node" % self.obj.name
                 self.logger.warn(errmsg)
@@ -262,6 +262,7 @@ class VdnsRecordFixture(fixtures.Fixture):
         self.vdns_record_name = virtual_DNS_record_name
         self.vdns_record_data = virtual_DNS_record_data
         self.parent_fqname = vdns_fqname
+        self.domain_name = connections.domain_name
         self.fq_name = self.parent_fqname + [self.vdns_record_name]
         self.uuid = uuid
         self.obj = None
@@ -393,7 +394,7 @@ class VdnsRecordFixture(fixtures.Fixture):
         for cn in self.inputs.bgp_ips:
             try:
                 cn_s_dns = self.cn_inspect[cn].get_cn_vdns_rec(
-                    vdns=self.vdns_name, rec_name=self.vdns_record_name)
+                    vdns=self.vdns_name, rec_name=self.vdns_record_name, domain=self.domain_name)
                 if self.vdns_rec_fq_name not in cn_s_dns['node_name']:
                     result = result and False
                     msg = msg + \
@@ -432,7 +433,8 @@ class VdnsRecordFixture(fixtures.Fixture):
         ''' verify VDNS record data in API server '''
         result = True
         api_s_dns_rec = self.api_s_inspect.get_cs_dns_rec(
-            rec_name=self.vdns_record_name, vdns_name=self.vdns_name, refresh=True)
+            rec_name=self.vdns_record_name, domain=self.domain_name,
+            vdns_name=self.vdns_name, refresh=True)
         msg = ''
         try:
             if self.fq_name != api_s_dns_rec['virtual-DNS-record']['fq_name']:
@@ -463,7 +465,10 @@ class VdnsRecordFixture(fixtures.Fixture):
     @retry(delay=2, tries=5)
     def verify_vdns_rec_not_in_api_server(self):
         '''Validate VDNS record data not  in API-Server.'''
-        if self.api_s_inspect.get_cs_dns_rec(rec_name=self.vdns_record_name, vdns_name=self.vdns_name, refresh=True) is not None:
+        if self.api_s_inspect.get_cs_dns_rec(rec_name=self.vdns_record_name,
+                                             vdns_name=self.vdns_name,
+                                             domain=self.domain_name,
+                                             refresh=True) is not None:
             errmsg = "VDNS record information %s still found in the API Server" % self.vdns_record_name
             self.logger.warn(errmsg)
             return False
@@ -476,7 +481,7 @@ class VdnsRecordFixture(fixtures.Fixture):
     def verify_vdns_rec_not_in_control_node(self):
         for cn in self.inputs.bgp_ips:
             cn_s_dns = self.cn_inspect[cn].get_cn_vdns_rec(vdns=self.vdns_name,
-                                                rec_name=self.vdns_record_name)
+                domain_name=self.domain_name, rec_name=self.vdns_record_name)
             if cn_s_dns:
                 errmsg = "VDNS record information %s still found in the"\
                          " Control node" % self.vdns_record_name
