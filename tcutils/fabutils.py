@@ -220,7 +220,7 @@ def remove_unwanted_output(text):
 
 def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
                 dest_password=None, dest_gw=None, dest_gw_password=None,
-                with_sudo=False, warn_only=True):
+                with_sudo=False, warn_only=True, logger=None):
     """ Copy files/folders to remote server or VM (in case of VM,
         copy will happen through gateway node - i.e compute node)
 
@@ -244,6 +244,8 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
         with_sudo: use Sudo
         warn_only: run fab with warn_only
     """
+    if not logger:
+        logger = contrail_logging.getLogger(__name__)
     # dest is local file path
     if re.match(r"^[\t\s]*/", dest):
         dest_node = None
@@ -308,16 +310,21 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
                       warn_only=warn_only, disable_known_hosts=True,
                       abort_on_prompts=False):
             update_env_passwords(dest_node, dest_password, dest_gw, dest_gw_password)
-            while tries < 2:
+            while tries < 4:
                 try:
-                    put(src_path, dest_path, use_sudo=with_sudo)
-                    return True
+                    out = put(src_path, dest_path, use_sudo=with_sudo)
+                    #sometimes put failing to copy without exception
+                    #return only when file copy succeeded other wise retry
+                    if out.succeeded:
+                        logger.debug('file transfer done %s'%out)
+                        return True
                 except (NetworkError, SystemExit, EOFError) as e:
                     pass
                 except SSHException:
                     fab_state.connections.clear()
                 tries += 1
                 time.sleep(3)
+                logger.debug('file copy failed retrying')
                 continue
     else:
         # Both are local
