@@ -2578,7 +2578,7 @@ class VMFixture(fixtures.Fixture):
         dest_gw_ip = self.vm_node_ip
         dest_gw_login = "%s@%s" % (dest_gw_username, dest_gw_ip)
         remote_copy(localfile, dest_dir, dest_password=self.vm_password,
-                    dest_gw=dest_gw_login, dest_gw_password=dest_gw_password)
+                    dest_gw=dest_gw_login, dest_gw_password=dest_gw_password, logger=self.logger)
         self.logger.debug('Copied file %s to %s'%(localfile, self.vm_ip))
         self.copied_files[localfile] = dstdir
     # end copy_file_to_vm
