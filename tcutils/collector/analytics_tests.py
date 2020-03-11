@@ -3726,46 +3726,7 @@ class AnalyticsVerification(fixtures.Fixture):
             for elem in columns:
                 column_names.append(elem['name'])
             table_schema_dct.update({'schema': column_names})
-            if not 'Flow' in k:
-                column_value_key = '%s/column-values' % k
-            else:
-                table_dct.update({k: [table_schema_dct]})
-                tables_lst.append(table_dct)
-                continue
-
-            if column_value_key:
-                try:
-                    for elem in d[k][column_value_key].keys():
-                        if 'Source' in elem:
-                            src_key = '%s/Source' % column_value_key
-                        if 'ModuleId' in elem:
-                            mod_key = '%s/ModuleId' % column_value_key
-                        if 'name' in elem:
-                            name_key = '%s/name' % column_value_key
-                except Exception as e:
-                    self.logger.warn("Got exception as %s " % (e))
-
-            if src_key:
-                try:
-                    table_src_dct.update(
-                        {'Source': d[k][column_value_key][src_key]})
-                except Exception as e:
-                    self.logger.debug("Got exception as %s " % (e))
-            if mod_key:
-                try:
-                    table_mod_dct.update(
-                        {'ModuleId': d[k][column_value_key][mod_key]})
-                except Exception as e:
-                    self.logger.debug("Got exception as %s " % (e))
-
-            if name_key:
-                try:
-                    table_name_dct.update(
-                        {'name': d[k][column_value_key][name_key]})
-                except Exception as e:
-                    self.logger.debug("Got exception as %s " % (e))
-            table_dct.update(
-                {k: [table_schema_dct, table_src_dct, table_mod_dct, table_name_dct]})
+            table_dct.update({k: [table_schema_dct]})
             tables_lst.append(table_dct)
 
         return tables_lst
