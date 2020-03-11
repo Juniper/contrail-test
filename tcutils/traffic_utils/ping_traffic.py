@@ -70,7 +70,7 @@ class Ping(object):
         self.logger.debug('Ensuring ping instance with result file %s '
             'on %s is stopped' % (self.result_file,
                                   self.sender_vm_fixture.vm_name))
-        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd])
+        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd, 'sync'])
         (stats, log) = self.parse_result_file()
         self.delete_log_files()
         return (stats, log)
