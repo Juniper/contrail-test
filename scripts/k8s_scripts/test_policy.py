@@ -3128,7 +3128,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns2, url1)
     #end test_egress_rule_on_namespace_with_service
     
-    @test.attr(type=['ci_k8s_sanity'])
+    @test.attr(type=['ci_k8s_sanity', 'k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_rule_on_pod_with_service(self):
         """
