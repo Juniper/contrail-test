@@ -20,7 +20,7 @@ class TestIngressClusterIp(BaseK8sTest):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
     
-    @test.attr(type=['ci_k8s_sanity'])
+    @test.attr(type=['ci_k8s_sanity', 'k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_ip_assignment(self):
         ''' 
