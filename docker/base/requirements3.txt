@@ -24,5 +24,6 @@ testrepository==0.0.20
 gevent==1.4.0
 junitxml==0.7
 # TODO: move to fabric-2.5.0
-Fabric3
+# Fabric3
+fabric3==1.14.post1
 # fabric==2.5.0
