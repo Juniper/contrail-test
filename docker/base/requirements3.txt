@@ -19,8 +19,19 @@ dpkt==1.9.2
 jxmlease==1.0.1
 pycrypto==2.6.1
 future==0.18.2
+<<<<<<< HEAD   (d5b2f5 Merge "Initial Checkin for Multicloud test code." into R2003)
 # TODO
 # testresources==2.0.1
 # testrepository==0.0.20
 # fabric==2.5.0
 #? gevent-1.4.0
+=======
+testresources==2.0.1
+testrepository==0.0.20
+gevent==1.4.0
+junitxml==0.7
+# TODO: move to fabric-2.5.0
+# Fabric3
+fabric3==1.14.post1
+# fabric==2.5.0
+>>>>>>> CHANGE (e2a41a Locks down indirect dependencies)
