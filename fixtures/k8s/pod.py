@@ -94,7 +94,7 @@ class PodFixture(fixtures.Fixture):
     @retry(delay=3, tries=20)
     def _get_pod_node_name(self):
         self.obj = self.k8s_client.read_pod(self.name, self.namespace)
-        if not self.obj.spec.node_name and not self.obj.spec.nodeName:
+        if not self.obj.spec.node_name and not getattr(self.obj.spec, 'nodeName', None):
             self.logger.debug('Node for Pod %s not yet populated' % (self.name))
             return (False, None)
         return (True, self.obj.spec.node_name or self.obj.spec.nodeName)
