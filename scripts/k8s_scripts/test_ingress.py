@@ -5,6 +5,7 @@ from floating_ip import FloatingIPFixture
 from tcutils.wrappers import preposttest_wrapper
 import test
 from tcutils.util import skip_because
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestIngressClusterIp(BaseK8sTest):
 
@@ -35,6 +36,11 @@ class TestIngressClusterIp(BaseK8sTest):
         Validate that Ingress get a IP from Public FIP pool which might/might not be accessible.
         Validate that service and its loadbalancing work
         '''        
+        #check for the cluster stability
+        for node in self.inputs.bgp_control_ips:
+            status, err_nodes = ContrailStatusChecker(
+                ).wait_till_contrail_cluster_stable(nodes=[node])
+            assert status, 'error nodes and services : %s' % ( err_nodes)
         app = 'http_test'
         labels = {'app':app}
         namespace = self.setup_namespace(name='default')

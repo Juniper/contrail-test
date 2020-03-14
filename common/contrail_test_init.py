@@ -805,7 +805,12 @@ class TestInputs(with_metaclass(Singleton, object)):
         if not output:
             return
         containers = [x.strip('\r') for x in output.split('\n')]
-
+        #timely adding this code..
+        #kubemanager_k8s_node-init_1 picked sometimes instead of kubemanager_kubemanager_1 
+        cluster_name=self.contrail_configs.get('KUBERNETES_CLUSTER_NAME') or 'k8s'
+        k8s_dead_container =  "kubemanager_"+cluster_name+"_node-init_1"
+        if k8s_dead_container in containers :
+           containers.remove(k8s_dead_container)
         containers = [x for x in containers if 'k8s_POD' not in x]
         nodemgr_cntrs = [x for x in containers if 'nodemgr' in x]
         containers = set(containers) - set(nodemgr_cntrs)

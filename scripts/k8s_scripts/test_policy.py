@@ -3168,6 +3168,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
                                     namespace = self.ns1.name,
                                     policy_types = policy_types,
                                     ingress= ingress_list)
+        time.sleep(5) #Give some time for the policy to get update
         assert policy1.verify_on_setup()
         # Verify is policy works as expected
         assert self.validate_nginx_lb([self.web1_pod_ns1,self.web2_pod_ns1], 
@@ -3197,6 +3198,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         self.setup_update_policy(update = True, 
                                 np_fixture = policy1,
                                 ingress= ingress_list)
+        time.sleep(5) #Give some time for the policy to get update
         assert self.validate_nginx_lb([self.web1_pod_ns1,self.web2_pod_ns1], 
                                       service_ns1.cluster_ip,
                                       test_pod=self.client1_pod_ns1, expectation=False)
