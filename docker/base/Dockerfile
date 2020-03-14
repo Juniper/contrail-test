@@ -30,7 +30,7 @@ RUN wget -c http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64
     chmod ugo+rx /usr/bin/chromedriver
 
 # pip install python packages
-COPY requirements*.txt /
-RUN pip install -r /requirements.txt
-RUN pip3 install -r /requirements3.txt
+COPY *requirements*.txt /
+RUN pip install -r /indirect_requirements.txt -r /requirements.txt
+RUN pip3 install -r /indirect_requirements3.txt -r /requirements3.txt
 COPY entrypoint.sh /
