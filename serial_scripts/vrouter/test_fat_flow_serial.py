@@ -1,6 +1,6 @@
+from common.vrouter.base import BaseVrouterTest
 from builtins import str
 from tcutils.wrappers import preposttest_wrapper
-from common.vrouter.base import BaseVrouterTest
 import test
 from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain

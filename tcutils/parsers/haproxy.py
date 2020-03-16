@@ -47,7 +47,8 @@ def parse_haproxy(filename, host, username, password, container=None, **kwargs):
     iters = re.finditer(pattern, output)
     if iters:
         indices = [match.start() for match in iters]
-        matches = list(map(output.__getslice__, indices, indices[1:] + [len(output)]))
+        #matches = list(map(output.__getslice__, indices, indices[1:] + [len(output)]))
+        matches = list(map(output.__getitem__, map(slice, indices, indices[1:] + [len(output)])))
 
     for match in matches:
         match = match.strip()

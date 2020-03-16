@@ -5,6 +5,7 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from common.heat.base import BaseHeatTest
 import os
 import fixtures
 from vm_test import VMFixture
@@ -20,8 +21,6 @@ from netaddr import IPNetwork, IPAddress
 from common.ecmp.ecmp_traffic import ECMPTraffic
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.servicechain.verify import VerifySvcChain
-
-from common.heat.base import BaseHeatTest
 
 class TestBasicHeat(BaseHeatTest, ECMPTraffic, ECMPVerify):
 

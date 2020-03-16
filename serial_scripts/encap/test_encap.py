@@ -6,6 +6,7 @@
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 # Set the env variable MX_GW_TESTto 1 to run the test
 #
+from encap import base
 from builtins import str
 import os
 from time import sleep
@@ -15,7 +16,6 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.operations import get, put
 from tcutils.wrappers import preposttest_wrapper
-from encap import base
 from vn_test import *
 from vm_test import *
 from floating_ip import *
@@ -761,8 +761,8 @@ class TestEncapCases(base.BaseEncapTest):
             out2, err = execute_cmd_out(session, cmd2, self.logger)
             cmd3 = 'tcpdump  -r %s | grep GRE | wc -l' % pcaps2
             out3, err = execute_cmd_out(session, cmd3, self.logger)
-            count2 = int(out2.strip('\n'))
-            count3 = int(out3.strip('\n'))
+            count2 = int(out2.decode().strip('\n'))
+            count3 = int(out3.decode().strip('\n'))
             if count2 != 0 and count3 == 0:
                 self.logger.info(
                     "%s UDP encapsulated packets are seen and %s GRE encapsulated packets are seen as expected" %
@@ -780,8 +780,8 @@ class TestEncapCases(base.BaseEncapTest):
             out2, err = execute_cmd_out(session, cmd2, self.logger)
             cmd3 = 'tcpdump  -r %s | grep GRE | wc -l' % pcaps2
             out3, err = execute_cmd_out(session, cmd3, self.logger)
-            count2 = int(out2.strip('\n'))
-            count3 = int(out3.strip('\n'))
+            count2 = int(out2.decode().strip('\n'))
+            count3 = int(out3.decode().strip('\n'))
             if count2 == 0 and count3 != 0:
                 self.logger.info(
                     "%s GRE encapsulated packets are seen and %s UDP encapsulated packets are seen as expected" %
@@ -805,12 +805,12 @@ class TestEncapCases(base.BaseEncapTest):
             out2, err = execute_cmd_out(session, cmd2, self.logger)
             cmd3 = 'tcpdump  -r %s | grep GRE | wc -l' % pcaps2
             out3, err = execute_cmd_out(session, cmd3, self.logger)
-            count2 = int(out2.strip('\n'))
-            count3 = int(out3.strip('\n'))
+            count2 = int(out2.decode().strip('\n'))
+            count3 = int(out3.decode().strip('\n'))
 
             cmd3 = 'tcpdump  -r %s | grep UDP |wc -l' % pcaps3
             out3, err = execute_cmd_out(session, cmd3, self.logger)
-            count = int(out3.strip('\n'))
+            count = int(out3.decode().strip('\n'))
 
             if count2 == 0 and count3 == 0 and count != 0:
                 self.logger.info(
@@ -821,7 +821,7 @@ class TestEncapCases(base.BaseEncapTest):
                     cmd4 = 'tcpdump -AX -r %s | grep ' % pcaps3 + \
                         vxlan_id + ' |wc -l'
                     out4, err = execute_cmd_out(session, cmd4, self.logger)
-                    count_vxlan_id = int(out4.strip('\n'))
+                    count_vxlan_id = int(out4.decode().strip('\n'))
 
                     if count_vxlan_id < count:
                         errmsg = "%s vxlan packet are seen with %s vxlan_id . Not Expected . " % (
@@ -844,7 +844,7 @@ class TestEncapCases(base.BaseEncapTest):
             if vlan_id is not None:
                 cmd5 = 'tcpdump -AX -r %s | grep %s |wc -l' % (pcaps3, vlan_id)
                 out5, err = execute_cmd_out(session, cmd5, self.logger)
-                count_vlan_id = int(out5.strip('\n'))
+                count_vlan_id = int(out5.decode().strip('\n'))
 
                 if count_vlan_id < count:
                     errmsg = "%s vxlan packet are seen with %s vlan_id . Not Expected . " % (

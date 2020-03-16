@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from .base import BackupRestoreBaseTest
 #Define environment variable FABRIC_UTILS_PATH and provide path to fabric_utils before running
 import time
 import os
@@ -12,7 +13,6 @@ from fabric.api import run
 from fabric.state import connections
 import test
 from upgrade.verify import VerifyFeatureTestCases
-from .base import BackupRestoreBaseTest
 
 class TestBackupRestore(BackupRestoreBaseTest,VerifyFeatureTestCases):
     ''' backup and restore the configurations '''

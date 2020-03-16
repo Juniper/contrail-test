@@ -960,7 +960,7 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
             sleep(3)
             cmd = 'sudo tcpdump -n -r %s %s | wc -l' % (pcap, filt)
             out, err = execute_cmd_out(session, cmd, self.logger)
-            count = int(out.strip('\n'))
+            count = int(out.decode().strip('\n'))
             cmd = 'sudo tcpdump -n -r %s' % pcap
             #TODO
             # Temporary for debugging

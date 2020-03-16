@@ -51,8 +51,6 @@ class ECMPTraffic(VerifySvcChain):
         timeout = 5
         result = True
         flow_pattern = {}
-        svms = self.get_svms_in_si(si_fix)
-        svms = sorted(set(svms))
         svm_list = si_fix.svm_list
         svm_index = 0
         vm_fix_pcap_pid_files = []
@@ -60,8 +58,6 @@ class ECMPTraffic(VerifySvcChain):
         # Capturing packets based upon source port
         sports = [str(SPORT+index) for index in range(flow_count)]
         filters = '\'(src port '+' or src port '.join(sports)+')\''
-        if None in svms:
-            svms.remove(None)
         for svm_fixture in svm_list:
             svm = svm_fixture.vm_obj
             if svm.status == 'ACTIVE':
@@ -188,8 +184,8 @@ class ECMPTraffic(VerifySvcChain):
             for stream in traffic_objs:
                 src_ip = stream.src_ip
                 dst_ip = stream.dst_ip
-                src_port = unicode(stream.sport)
-                dest_port = unicode(stream.dport)
+                src_port = str(stream.sport)
+                dest_port = str(stream.dport)
                 protocol = proto_map.get(stream.proto) or str(stream.proto)
                 flow_rec = inspect_h.get_vna_fetchflowrecord(nh=nh_id,
                     sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port,
@@ -198,8 +194,8 @@ class ECMPTraffic(VerifySvcChain):
                     flow_result = False
         else:
             for i in range(0, flow_count):
-                src_port = unicode(SPORT+i)
-                dest_port = unicode(DPORT+i)
+                src_port = str(SPORT+i)
+                dest_port = str(DPORT+i)
                 flow_rec = inspect_h.get_vna_fetchflowrecord(nh=nh_id,
                     sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port,
                     protocol=protocol)

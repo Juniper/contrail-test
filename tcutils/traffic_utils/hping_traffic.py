@@ -147,7 +147,7 @@ class Hping3(object):
         '''
         ret_val = ''
         for (k,v) in list(kwargs.items()):
-            key = string.replace(k, '_', '-')
+            key = k.replace('_', '-')
             key = '--%s' % (key)
             if type(v) == bool:
                 if v:

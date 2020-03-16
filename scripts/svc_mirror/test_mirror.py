@@ -1,5 +1,6 @@
 """Servcie chain mirroring Regression tests."""
 from __future__ import absolute_import
+from .base import BaseMirrorTest
 import os
 import unittest
 import fixtures
@@ -10,7 +11,6 @@ from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
 from common.servicechain.mirror.verify import VerifySvcMirror
-from .base import BaseMirrorTest
 
 
 class TestSVCV2Mirror(BaseMirrorTest, VerifySvcMirror):

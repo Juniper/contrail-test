@@ -1,7 +1,6 @@
+from common.vrouter.base import BaseVrouterTest
 import test
 from tcutils.wrappers import preposttest_wrapper
-
-from common.vrouter.base import BaseVrouterTest
 from tcutils.util import *
 
 # Use common vlan id for all tests for now

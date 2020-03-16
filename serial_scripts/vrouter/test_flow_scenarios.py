@@ -1,10 +1,10 @@
+from common.flow_tests.base import *
 from builtins import str
 from builtins import range
 from string import Template
 import time
 
 
-from common.flow_tests.base import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import skip_because, is_almost_same
 from tcutils.traffic_utils.hping_traffic import Hping3

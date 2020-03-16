@@ -6,6 +6,7 @@ from __future__ import absolute_import
 #
 from future import standard_library
 standard_library.install_aliases()
+from .base import BaseRsyslogTest
 from builtins import str
 from builtins import range
 import os
@@ -27,7 +28,6 @@ import re
 from tcutils.rsyslog_utils import restart_collector_to_listen_on_port
 from tcutils.rsyslog_utils import restart_rsyslog_client_to_send_on_port
 from tcutils.rsyslog_utils import update_rsyslog_client_connection_details
-from .base import BaseRsyslogTest
 RSYSLOG_CONF_FILE = '/etc/rsyslog.conf'
 COLLECTOR_CONF_FILE = '/etc/contrail/contrail-collector.conf'
 

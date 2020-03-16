@@ -1,5 +1,6 @@
 from future import standard_library
 standard_library.install_aliases()
+from common.base import GenericTestBase
 from builtins import next
 from builtins import str
 import re
@@ -8,7 +9,6 @@ import test_v1
 from netaddr import *
 from vnc_api.vnc_api import *
 from common.connections import ContrailConnections
-from common.base import GenericTestBase
 from common import isolated_creds
 from common import create_public_vn
 from vn_test import VNFixture

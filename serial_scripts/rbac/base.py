@@ -1,3 +1,4 @@
+import test_v1
 from rbac_test import RbacFixture
 from vn_test import VNFixture
 from vm_test import VMFixture
@@ -13,7 +14,6 @@ from tcutils.config.vnc_introspect_utils import VNCApiInspect
 from vnc_api.exceptions import PermissionDenied
 from common.openstack_libs import neutron_forbidden
 from vnc_api.vnc_api import VirtualNetworkType
-import test_v1
 import os
 
 class BaseRbac(test_v1.BaseTestCase_v1):

@@ -1,15 +1,12 @@
 from builtins import str
 from builtins import range
+from common.pbb_evpn.base import *
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
 import test
-
-from common.pbb_evpn.base import *
-
 from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
 import socket
-
 from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
 from tcutils.traffic_utils.traffic_analyzer import TrafficAnalyzer
 from tcutils.util import get_random_mac

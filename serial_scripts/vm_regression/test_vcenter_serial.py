@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from .base import *
 from fixtures import Fixture
 from user_test import UserFixture
 from multiple_vn_vm_test import *
@@ -9,7 +10,6 @@ from common.connections import *
 import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
-from .base import *
 from vcenter import *
 import test
 from tcutils.contrail_status_check import ContrailStatusChecker

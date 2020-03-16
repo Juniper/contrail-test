@@ -3,12 +3,12 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from common.neutron.base import BaseNeutronTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import *
 import test_v1
 from common import isolated_creds
 from common.connections import ContrailConnections
-from common.neutron.base import BaseNeutronTest
 from tcutils.control.cn_introspect_utils import ControlNodeInspect 
 from common.device_connection import NetconfConnection
 from control_node import CNFixture

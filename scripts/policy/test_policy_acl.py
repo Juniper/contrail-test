@@ -4,11 +4,11 @@ from __future__ import absolute_import
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from .base import BasePolicyTest
 from builtins import str
 import os
 import fixtures
 import tcutils.wrappers
-from .base import BasePolicyTest
 import time
 from vn_test import VNFixture
 from vm_test import VMFixture
@@ -633,14 +633,14 @@ class TestPolicyAcl(BasePolicyTest):
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:D(Policy)\|Action:D(OutPolicy)'"
+            cmd = cmd + "| grep \"Action:D(Policy)\|Action:D(OutPolicy)\""
             cmd = cmd + " | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info("Found %s matching flows" % flow_record)
                 self.logger.info("Test with src as policy and dst as cidr PASSED")
             else:
@@ -758,13 +758,13 @@ class TestPolicyAcl(BasePolicyTest):
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info("Test with src as VN and dst as cidr PASSED")
             else:
                 result = False
@@ -938,13 +938,13 @@ class TestPolicyAcl(BasePolicyTest):
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info("Test with src as VN and dst as cidr PASSED")
             else:
                 result = False
@@ -961,13 +961,13 @@ class TestPolicyAcl(BasePolicyTest):
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM31_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info("Test with src as VN and dst as cidr PASSED")
             else:
                 result = False
@@ -1085,13 +1085,13 @@ class TestPolicyAcl(BasePolicyTest):
         if ((ret1 == True) and (ret2 == True)):
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info("Found %s matching flows" % flow_record)
                 self.logger.info("Test with src as CIDR and dst as ANY PASSED")
             else:
@@ -1308,13 +1308,13 @@ class TestPolicyAcl(BasePolicyTest):
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                   self.VM11_fixture.vm_ip, self.VM12_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info(
                 "ICMP traffic is not allowed between VM11 and VM12, by policy1112 and policy1211.")
                 self.logger.info("Above test Passed.")
@@ -1336,13 +1336,13 @@ class TestPolicyAcl(BasePolicyTest):
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                   self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:F' | wc -l"
+            cmd = cmd + "| grep \"Action:F\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info(
                 "ICMP traffic is allowed between VM11 and VM21, by policy1121 and policy2111.")
                 self.logger.info("Above test Passed.")

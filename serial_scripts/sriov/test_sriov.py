@@ -5,10 +5,9 @@ from __future__ import absolute_import
 # To run tests, you can do 'python -m testtools.run tests'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
-
+from . import base
 from tcutils.wrappers import preposttest_wrapper
 from .verify import VerifySriovCases
-from . import base
 import test
 
 class TestSriov(base.BaseSriovTest, VerifySriovCases):

@@ -1,7 +1,7 @@
+from common.base import *
 from tcutils.util import *
 import fixtures
 import re
-from common.base import *
 import time
 
 class BaseDropStats(GenericTestBase) :

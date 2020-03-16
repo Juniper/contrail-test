@@ -4,6 +4,7 @@ from __future__ import absolute_import
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from .base import TestLlgrBase
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import *
 from common.neutron.lbaasv2.base import BaseLBaaSTest
@@ -14,7 +15,6 @@ import time
 from vn_test import VNFixture
 from vm_test import VMFixture
 from test import attr
-from .base import TestLlgrBase
 from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
      stop_tcpdump_for_intf, verify_tcpdump_count
 import test

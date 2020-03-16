@@ -1,13 +1,12 @@
 from __future__ import absolute_import
 from builtins import range
-import unittest
+from common.securitygroup.base import BaseSGTest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
 from common.securitygroup.verify import VerifySecGroup
 from policy_test import PolicyFixture
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
-from common.securitygroup.base import BaseSGTest
 from common.policy.config import ConfigPolicy
 from security_group import SecurityGroupFixture, get_secgrp_id_from_name,\
     set_default_sg_rules

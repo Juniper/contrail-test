@@ -1,5 +1,6 @@
 """Intf mirroring Regression tests."""
 from __future__ import absolute_import
+from .base import BaseIntfMirrorTest
 import os
 import unittest
 import fixtures
@@ -10,7 +11,6 @@ from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
 from tcutils.wrappers import preposttest_wrapper
 from common.intf_mirroring.verify import VerifyIntfMirror
-from .base import BaseIntfMirrorTest
 
 class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
 

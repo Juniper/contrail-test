@@ -7,10 +7,8 @@
 #
 from builtins import str
 import os
-
-from tcutils.wrappers import preposttest_wrapper
-
 from common.vrouter.base import BaseVrouterTest
+from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import *
 from netaddr import IPNetwork, IPAddress
 import test

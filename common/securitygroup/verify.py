@@ -2,6 +2,7 @@ from builtins import str
 from builtins import range
 import os
 import sys
+from common.vrouter.base import BaseVrouterTest
 from time import sleep
 from tcutils.util import retry
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
@@ -14,7 +15,6 @@ sys.path.append(os.path.realpath('tcutils/traffic_utils'))
 from base_traffic import *
 from security_group import list_sg_rules
 from tcutils.tcpdump_utils import *
-from common.vrouter.base import BaseVrouterTest
 import random
 
 class VerifySecGroup(BaseVrouterTest):

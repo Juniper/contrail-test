@@ -6,6 +6,7 @@
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
 from __future__ import unicode_literals
+from common.vdns.base import BasevDNSTest
 from builtins import str
 import os
 import unittest
@@ -21,7 +22,6 @@ from tcutils.pkgs.Traffic.traffic.core.profile import create, ContinuousProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
 from tcutils.util import skip_because
-from common.vdns.base import BasevDNSTest
 from common import isolated_creds
 import inspect
 from vnc_api import vnc_api

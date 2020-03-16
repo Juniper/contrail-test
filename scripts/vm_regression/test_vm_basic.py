@@ -1,4 +1,5 @@
 from __future__ import absolute_import, unicode_literals
+from .base import BaseVnVmTest
 from builtins import str
 from builtins import range
 import traffic_tests
@@ -14,7 +15,6 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from .base import BaseVnVmTest
 from common import isolated_creds
 import inspect
 import time

@@ -1,4 +1,5 @@
 from __future__ import print_function
+from analytics import base
 from builtins import str
 from builtins import range
 import os
@@ -20,7 +21,6 @@ from traffic.core.helpers import Sender, Receiver
 
 from common.servicechain.verify import VerifySvcChain
 from fabric.api import run, local
-from analytics import base
 import fixtures
 
 import test

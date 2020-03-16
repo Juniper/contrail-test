@@ -7,7 +7,7 @@ from __future__ import absolute_import
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 # Test to upgrade to new contrail version  from existing version usage :
 # fab run_sanity:upgrade,rpmfile
-
+from . import base 
 import re
 import time
 import os
@@ -28,7 +28,6 @@ from tcutils.util import *
 from fabric.api import run
 from fabric.state import connections
 from common.securitygroup.config import ConfigSecGroup
-from . import base 
 import test
 from .verify import VerifyFeatureTestCases
 class UpgradeTestSanityWithResource(base.UpgradeBaseTest,VerifyFeatureTestCases):

@@ -6,6 +6,7 @@ from __future__ import print_function
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from common.heat.base import BaseHeatTest
 import os
 import fixtures
 from vm_test import VMFixture
@@ -24,7 +25,6 @@ from common.servicechain.verify import VerifySvcChain
 
 try:
     from heat_test import *
-    from common.heat.base import BaseHeatTest
 
     class TestHeat(BaseHeatTest, ECMPTraffic, ECMPVerify):
 

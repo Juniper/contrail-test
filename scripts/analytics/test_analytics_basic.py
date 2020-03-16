@@ -1,3 +1,4 @@
+from analytics import base
 from builtins import str
 from builtins import range
 import os
@@ -6,7 +7,6 @@ import time
 from vn_test import *
 from vm_test import *
 from tcutils.wrappers import preposttest_wrapper
-from analytics import base
 import test
 from tcutils.collector.opserver_util import OpServerUtils
 

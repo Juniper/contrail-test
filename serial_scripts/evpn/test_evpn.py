@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from . import base
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -9,7 +10,6 @@ from __future__ import absolute_import
 
 from tcutils.wrappers import preposttest_wrapper
 from .verify import VerifyEvpnCases
-from . import base
 import test
 from tcutils.util import skip_because
 

@@ -1,7 +1,7 @@
+from common.policygen.base import BasePolicyGenTest
 import time
 import datetime
 from tcutils.wrappers import preposttest_wrapper
-from common.policygen.base import BasePolicyGenTest
 from common.policygen.base import MatchOp
 
 TRAFFIC_TIME = 5

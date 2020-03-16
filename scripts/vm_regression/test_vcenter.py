@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from .base import *
 from builtins import str
 from builtins import range
 from fixtures import Fixture
@@ -10,7 +11,6 @@ from common.connections import *
 import time,random
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
-from .base import *
 from vcenter import *
 import test
 from collections import defaultdict

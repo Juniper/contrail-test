@@ -1,6 +1,6 @@
+from common.base import GenericTestBase
 from common.connections import ContrailConnections
 from common import isolated_creds
-from common.base import GenericTestBase
 import testtools
 
 import ast
