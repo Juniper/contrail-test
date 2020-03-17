@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e3a6a8c6_beba331b",
+        "filename": "scripts/k8s_scripts/test_ingress.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 41,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T06:21:14Z",
+      "side": 1,
+      "message": "Can you check if wait_till_contrail_cluster_stable(nodes\u003dself.inputs.bgp_contrail_ips) will serve you need?",
+      "revId": "21f09a340a50c4e72d9348123e14745b0cad9c3c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
