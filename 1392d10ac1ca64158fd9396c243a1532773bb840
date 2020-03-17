@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d6808fa6_02efadf1",
+        "filename": "scripts/multicloud/mc_def.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "pls remove empty lines",
+      "revId": "1392d10ac1ca64158fd9396c243a1532773bb840",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}

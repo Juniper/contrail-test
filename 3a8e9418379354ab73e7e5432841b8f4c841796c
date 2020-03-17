@@ -1,0 +1,174 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "132f3bd6_c6414f42",
+        "filename": "scripts/multicloud/mc_def.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "This snippet of getting the list of cloud-computes seems to be repeated in most function. Instead setUpClass could be used to construct this list once, in var cls.cloud_computes, cls.cloud_gateways.",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f3418ed1_61a45d97",
+        "filename": "scripts/multicloud/mc_def.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "onprem_pod is overwritten in each iteration of the loop, losing the reference to on-prem pod launched in the last iteration. Do you want to move this snippet outside the loop",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c986ed2b_96113507",
+        "filename": "scripts/multicloud/mc_def.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "Do you not want any toleration for packet loss?",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "65c1df49_15372198",
+        "filename": "scripts/multicloud/mc_def.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "too much nesting, harder to read, better to recode it as,\nif condition:\n   assert failure case\nsuccess case",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d9884207_2c1196f7",
+        "filename": "scripts/multicloud/mc_def.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "pls remove empty lines",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "87776676_f3367103",
+        "filename": "scripts/multicloud/test_mc.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "shouldn\u0027t loop be \u0027for count in self.vpc_count:\u0027 ?",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dc1a59f9_ff0a9874",
+        "filename": "scripts/multicloud/test_mc.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "shouldn\u0027t loop be \u0027for count in self.vpc_count:\u0027 ?",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "019ba0b4_ed3b29d2",
+        "filename": "scripts/multicloud/test_mc.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "same here",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8b5c41be_4ac0b2c3",
+        "filename": "scripts/multicloud/test_mc.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 123,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "same here",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a66922d5_27361bfc",
+        "filename": "scripts/multicloud/test_mc.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 140,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-17T07:23:32Z",
+      "side": 1,
+      "message": "same here",
+      "revId": "3a8e9418379354ab73e7e5432841b8f4c841796c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
