@@ -5,7 +5,7 @@ ARG SKU=ocata
 ARG OPENSTACK_REPO
 ARG CONTRAIL_REPO
 
-COPY requirements*.txt *.rpm /
+COPY *requirements*.txt *.rpm /
 
 RUN cp -r /etc/yum.repos.d /etc/yum.repos.d.orig
 COPY *.repo prepare_repos.sh /etc/yum.repos.d/
@@ -18,8 +18,8 @@ RUN /etc/yum.repos.d/prepare_repos.sh && \
       python-contrail contrail-test python-setuptools && \
     yum --setopt=obsoletes=0 install -y python-neutronclient && \
     yum clean all -y && rm -rf /var/cache/yum && \
-    pip install -r /requirements.txt && \
-    pip3 install -r /requirements.txt -r /requirements3.txt && \
+    pip install -r /indirect_requirements.txt -r /requirements.txt && \
+    pip3 install -r /indirect_requirements3.txt -r /requirements.txt -r /requirements3.txt && \
     rm -rf /etc/yum.repos.d && \
     mv /etc/yum.repos.d.orig /etc/yum.repos.d && \
     mkdir -p /contrail-test/images
