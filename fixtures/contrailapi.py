@@ -28,7 +28,8 @@ class ContrailVncApi(object):
         return self._vnc.network_policy_read(fq_name=fq_name)
 
     def create_project(self, project_name):
-        return self._vnc.project_create(project_name)
+        project = Project(project_name)
+        return self._vnc.project_create(project)
 
     def delete_project(self, project_name):
         return self._vnc.project_delete(project_name)
