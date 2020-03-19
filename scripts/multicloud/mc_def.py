@@ -35,7 +35,7 @@ class Multicloud(BaseK8sTest):
         cmd = "ping -c %s %s %s" % (count, pkt_size, ip)
         try:
             output = run_cmd_on_server(cmd, host, 'root','c0ntrail123')
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while trying ping from Controller')
             return False
