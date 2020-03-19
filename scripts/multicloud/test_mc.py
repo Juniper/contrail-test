@@ -1,7 +1,7 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 import test
-from mc_def import *
+from scripts.multicloud.mc_def import *
 from tcutils.util import *
 import re
 
