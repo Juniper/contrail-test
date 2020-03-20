@@ -439,7 +439,7 @@ class WebuiCommon(object):
                 except:
                     pass
                 return False
-	    self.logger.info(
+            self.logger.info(
 	        "Click on save button %s successful" %
 	        (element_type))
         else:
