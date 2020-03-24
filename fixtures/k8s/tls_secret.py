@@ -81,8 +81,8 @@ class TLSSecretFixture(fixtures.Fixture):
             return secret_exists
         self.already_exists = False
         self.get_cert_key()
-        self.data['tls.crt'] = base64.b64encode(self.cert)
-        self.data['tls.key'] = base64.b64encode(self.key)
+        self.data['tls.crt'] = base64.b64encode(self.cert.encode()).decode()
+        self.data['tls.key'] = base64.b64encode(self.key.encode()).decode()
 
         self.obj = self.k8s_client.create_secret(
             self.namespace,
