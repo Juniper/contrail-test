@@ -4,6 +4,8 @@ from tcutils.wrappers import preposttest_wrapper
 import test
 import time
 from common import isolated_creds
+from tcutils.util import get_random_cidr
+from tcutils.util import get_random_name
 
 class TestSvcHC(BaseHC, VerifySvcFirewall):
 
@@ -19,6 +21,29 @@ class TestSvcHC(BaseHC, VerifySvcFirewall):
         assert si_fixture.verify_hc_in_agent()
         assert si_fixture.verify_hc_is_active()
     # end test_svc_hc_basic
+
+    @preposttest_wrapper
+    def test_svc_hc_link_local_attach_to_vmi(self):
+        assert self.attach_to_vmi_common()
+
+
+    def attach_to_vmi_common(self, hc_type='link-local'):
+        # Only link-local type for non svmi
+        vn_name = get_random_name('vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+        vm1 = self.create_vm(vn_fixture, 'vm1',
+                                    image_name='cirros')
+        assert vm1.wait_till_vm_is_up()
+        vm_port = vm1.vmi_ids[vm1.vn_fq_name]
+        local_ip = vm1.vm_ip
+        shc_fixture = self.create_hc(hc_type=hc_type)
+        self.attach_shc_to_vmi(shc_fixture, vm1)
+        self.addCleanup(self.detach_shc_from_vmi,
+                        shc_fixture, vm1)
+        assert vm1.verify_hc_in_agent()
+        assert vm1.verify_hc_is_active()
+        return True
 
     @preposttest_wrapper
     def test_svc_hc_e2e_fail_svm(self):
@@ -103,23 +128,55 @@ class TestSvcHC(BaseHC, VerifySvcFirewall):
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_trans_segment_right_hc_fail_svm(self):
-        ret_dict = self.verify_svc_chain(service_mode='transparent',
+        assert self.svc_hc_fail_svm_common()
+
+    @preposttest_wrapper
+    def test_svc_in_net_right_hc_link_local_fail_svm(self):
+        assert self.svc_hc_fail_svm_common(svc_mode='in-network', hc_type='link-local', intf='right' )
+    @preposttest_wrapper
+    def test_svc_in_net_left_hc_link_local_fail_svm(self):
+        assert self.svc_hc_fail_svm_common(svc_mode='in-network', hc_type='link-local', intf='left' )
+    @preposttest_wrapper
+    def test_svc_in_net_nat_left_hc_link_local_fail_svm(self):
+        assert self.svc_hc_fail_svm_common(svc_mode='in-network-nat', hc_type='link-local', intf='left' )
+
+    @preposttest_wrapper
+    def test_svc_in_net_right_hc_end_to_end_fail_svm(self):
+        assert self.svc_hc_fail_svm_common(svc_mode='in-network', hc_type='end-to-end', intf='right' )
+
+    def svc_hc_fail_svm_common(self, svc_mode='transparent', hc_type='segment', intf='right'):
+        ret_dict = self.verify_svc_chain(service_mode=svc_mode,
                                          create_svms=True, max_inst=1)
+
         si_fixture = ret_dict['si_fixture']
         left_vm_fixture = ret_dict['left_vm_fixture']
         right_vm_fixture = ret_dict['right_vm_fixture']
         left_vn_fixture = ret_dict['left_vn_fixture']
         left_vn_fq_name = left_vn_fixture.vn_fq_name
-        hc_fixture = self.create_hc(
-            hc_type='segment')
-        si_fixture.associate_hc(hc_fixture.uuid, 'right')
+        if hc_type == 'end-to-end':
+            hc_fixture = self.create_hc(
+                hc_type='end-to-end', http_url=right_vm_fixture.vm_ip)
+        elif hc_type == 'segment':
+            hc_fixture = self.create_hc(
+                hc_type=hc_type)
+        elif hc_type == 'link-local':
+            hc_fixture = self.create_hc(hc_type=hc_type)
+        si_fixture.associate_hc(hc_fixture.uuid, intf)
         self.addCleanup(si_fixture.disassociate_hc, hc_fixture.uuid)
         assert si_fixture.verify_hc_in_agent()
         assert si_fixture.verify_hc_is_active()
-
+        if intf == 'left':
+            vmi = 'eth1'
+        else:
+            vmi = 'eth2'
         self.logger.info(
             'Disabling bridging to stop forwarding on SVM. This should cause HC to fail the SVC, by withdrawing the leaked routes')
-        si_fixture.svm_list[0].run_cmd_on_vm(cmds=['ifconfig eth1 down'], as_sudo=True)
+        local_ip = None
+        for key in si_fixture.svm_list[0].local_ips:
+            if key.find('mgmt') != -1:
+                local_ip = si_fixture.svm_list[0].local_ips[key]
+        si_fixture.svm_list[0].vm_ip_dict.keys()
+        si_fixture.svm_list[0].run_cmd_on_vm(cmds=['ifconfig ' + vmi + ' down'], as_sudo=True, local_ip=local_ip)
         delay = ((hc_fixture.delay + hc_fixture.timeout)
                  * hc_fixture.max_retries) + 1
         self.logger.info('Will sleep for %ss for HC to kick in' % delay)
@@ -131,13 +188,15 @@ class TestSvcHC(BaseHC, VerifySvcFirewall):
 
         self.logger.info(
             'Enabling bridging on SVM. This should cause HC to restore the SVC, by restoring leaked routes')
-        si_fixture.svm_list[0].run_cmd_on_vm(cmds=['ifconfig eth1 up'], as_sudo=True)
+        si_fixture.svm_list[0].run_cmd_on_vm(cmds=['ifconfig ' + vmi + ' up'], as_sudo=True, local_ip=local_ip)
         time.sleep(delay)
         assert si_fixture.verify_hc_is_active()
         assert left_vm_fixture.ping_with_certainty(
             right_vm_fixture.vm_ip, expectation=True)
         assert self.validate_svc_action(
             left_vn_fq_name, si_fixture, right_vm_fixture, 'left')[0]
+        return True
+    # end
 
     @preposttest_wrapper
     def test_svc_trans_segment_left_hc_fail_svm(self):

@@ -276,6 +276,35 @@ class VMFixture(fixtures.Fixture):
         result = self.vnc_h.detach_shc_from_vmi(vmi_uuid, shc_id)
         return result
 
+    @retry(delay=2, tries=10)
+    def verify_hc_in_agent(self):
+        if not self.shc_id:
+            return False
+        vm_node_ip = self._vm_node_ip
+        self.hc_fix = self.useFixture(
+            HealthCheckFixture(connections=self.connections,uuid=self.shc_id))
+        self.hc_list.append(self.hc_fix)
+        if not self.hc_fix.verify_in_agent(vm_node_ip):
+            return False
+        return True
+
+    def get_hc_status(self):
+        if self.hc_list == []:
+            return False
+        inspect_h = self.connections.agent_inspect[self.vm_node_ip]
+        for hc in self.hc_list:
+            vmi_id = self.get_vmi_ids().values()[0]
+        hc_obj = inspect_h.get_health_check(hc.uuid)
+        if not hc_obj or not vmi_id:
+            return False
+        if not hc_obj.is_hc_active(vmi_id):
+            return False
+        return True
+
+    @retry(delay=2, tries=10)
+    def verify_hc_is_active(self):
+        return self.get_hc_status()
+
     def set_image_details(self, vm_obj):
         '''
         Need to update image details for the setup where we manipulate image name in orchestrator
