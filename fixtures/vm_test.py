@@ -262,19 +262,49 @@ class VMFixture(fixtures.Fixture):
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
                 self.vm_id = self.vm_objs[0].id
+                self.shc_id = None
+                self.hc_fix = None
 
     # end setUp
-
 
     def attach_shc(self, shc_id):
         vmi_uuid = self.get_vmi_ids().values()[0]
         result = self.vnc_h.attach_shc_to_vmi(vmi_uuid, shc_id)
+        self.shc_id = shc_id
         return result
 
     def detach_shc(self, shc_id):
         vmi_uuid = self.get_vmi_ids().values()[0]
         result = self.vnc_h.detach_shc_from_vmi(vmi_uuid, shc_id)
         return result
+
+    @retry(delay=2, tries=10)
+    def verify_hc_in_agent(self):
+        if not self.shc_id:
+            return False
+        vm_node_ip = self.vm_node_ip
+        self.hc_fix = self.useFixture(
+            HealthCheckFixture(connections=self.connections,uuid=self.shc_id))
+        if not self.hc_fix.verify_in_agent(vm_node_ip):
+            return False
+        return True
+
+    def get_hc_status(self):
+        if not self.hc_fix:
+            return False
+        inspect_h = self.connections.agent_inspect[self.vm_node_ip]
+        vmi_id = self.get_vmi_ids().values()[0]
+        hc_obj = inspect_h.get_health_check(self.hc_fix.uuid)
+        if not hc_obj or not vmi_id:
+            return False
+        if not hc_obj.is_hc_active(vmi_id):
+            return False
+        return True
+
+    @retry(delay=2, tries=10)
+    def verify_hc_is_active(self):
+        return self.get_hc_status()
+
 
     def set_image_details(self, vm_obj):
         '''

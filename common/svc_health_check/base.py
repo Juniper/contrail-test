@@ -1,8 +1,8 @@
-import test_v1
+from common.base import GenericTestBase
 from svc_hc_fixture import HealthCheckFixture
 from tcutils.util import get_random_name
 
-class BaseHC(test_v1.BaseTestCase_v1):
+class BaseHC(GenericTestBase):
 
     @classmethod
     def setUpClass(cls):
