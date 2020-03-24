@@ -2,6 +2,108 @@
   "comments": [
     {
       "key": {
+        "uuid": "3bf708ff_f2a0ceca",
+        "filename": "common/svc_health_check/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "This import is no longer required",
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9c5d4abb_e78ddea7",
+        "filename": "common/svc_health_check/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "Move this import to line:1",
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "176e3af6_331d9df2",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 281,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "Initialize attribute \u0027shc_id\u0027 in __init__. Also you may want to modify attach_shc \u0026 detach_shc methods to set \u0026 unset \u0027shc_id\u0027 respectively.",
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a201d802_b03b2758",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 283,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "Better to use property method, self.vm_node_ip",
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2675adc0_60fcfe2c",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 286,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "Suspect some code is missing. Is hc_list initialized to list? If there is only on HC, then no need for list object.",
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ef3b6ad3_28b15653",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 295,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "This iteration not required? Or may be code alignment issue, lines:297-301 don\u0027t align with iteration statement. The statement within loop doesn\u0027t refer to iterator",
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "5fdfe6c4_eed0b36c",
         "filename": "scripts/svc_health_check/test_svc_health_check.py",
         "patchSetId": 1
@@ -19,6 +121,46 @@
         "endLine": 130,
         "endChar": 48
       },
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f8db02f2_6cb0348c",
+        "filename": "scripts/svc_health_check/test_svc_health_check.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 163,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "lines 159-163, may be recoded to\nelse:\n    hc_fixture \u003d self.create_hc(hc_type\u003dhc_type)",
+      "range": {
+        "startLine": 159,
+        "startChar": 8,
+        "endLine": 163,
+        "endChar": 56
+      },
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "992bedbf_a26651d0",
+        "filename": "scripts/svc_health_check/test_svc_health_check.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 178,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T10:58:48Z",
+      "side": 1,
+      "message": "unused?",
       "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
