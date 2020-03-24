@@ -1,0 +1,44 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c827438f_7f7441fa",
+        "filename": "scripts/ecmp/test_ecmp.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1620,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T11:29:56Z",
+      "side": 1,
+      "message": "Better to use get_an_ip function from tcutils.util",
+      "revId": "5642167bb68033a636a482a2403bc7f5c5e3b5ce",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7163c73a_31f4cb96",
+        "filename": "scripts/ecmp/test_ecmp.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1657,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T11:29:56Z",
+      "side": 1,
+      "message": "Probably not required, right? wait_till_vm_is_up, invoked in lines:1652-53, calls wait_for_ssh_on_vm method",
+      "range": {
+        "startLine": 1655,
+        "startChar": 0,
+        "endLine": 1657,
+        "endChar": 37
+      },
+      "revId": "5642167bb68033a636a482a2403bc7f5c5e3b5ce",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
