@@ -288,19 +288,24 @@ class BaseNeutronTest(GenericTestBase):
             self.assoc_fixed_ip_to_fip(fip_id, fixed_ip, **kwargs)
         return (fip_ip, fip_id)
 
-    def config_aap(self, port, prefix, prefix_len=32, mac='', aap_mode='active-standby', contrail_api=False):
-        self.logger.info('Configuring AAP on port %s' % port)
-        if is_v6(prefix):
-            prefix_len = 128
-        if contrail_api:
-            self.vnc_h.add_allowed_address_pair(
-                port, prefix, prefix_len, mac, aap_mode)
+
+    def config_aap(self, port, prefix, prefix_len=32, mac='', aap_mode='active-standby', contrail_api=False, left_vn_name=None):
+        if left_vn_name is not None:
+            self.vnc_h.add_allowed_address_pair(prefix, si_fq_name=port,   
+prefix_len=prefix_len, mac=mac, mode=aap_mode, left_vn_name=left_vn_name)
         else:
-            port_dict = {'allowed_address_pairs': [
-                {"ip_address": prefix + '/' + str(prefix_len), "mac_address": mac}]}
-            port_rsp = self.update_port(port, port_dict)
-        return True
-    # end config_aap
+            self.logger.info('Configuring AAP on port %s' % port)
+            if is_v6(prefix):
+                prefix_len = 128
+            if contrail_api:
+                self.vnc_h.add_allowed_address_pair(
+                    prefix, vmi_id=port, prefix_len=prefix_len, mac=mac, mode=aap_mode)
+            else:
+                port_dict = {'allowed_address_pairs': [
+                    {"ip_address": prefix + '/' + str(prefix_len), "mac_address": mac}]}
+                port_rsp = self.update_port(port, port_dict)
+         # end config_aap 
+
 
     def config_vrrp_on_vsrx(self, src_vm=None, dst_vm=None, vip=None, priority='100', interface='ge-0/0/1'):
         cmdList = []
@@ -312,12 +317,33 @@ class BaseNeutronTest(GenericTestBase):
         cmdList.append('deactivate security policies')
         vm_ip = dst_vm.vm_ips[int(interface[-1])]
         vsrx_vrrp_config = ['set interfaces ' + interface + ' unit 0 family inet address ' + vm_ip
-                            + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
+                            + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data',
+                           'set security zones security-zone left interfaces ' + interface + ' host-inbound-traffic protocols all']
         cmdList = cmdList + vsrx_vrrp_config
         cmd_string = (';').join(cmdList)
         assert self.set_config_via_netconf(src_vm, dst_vm,
-                                             cmd_string, timeout=10, device='junos', hostkey_verify="False", reboot_required=False), 'Could not configure VRRP thru Netconf'
-    # end config_vrrp_on_vsrx
+                      cmd_string, timeout=10, device='junos', hostkey_verify="False", reboot_required=False), 'Could not configure VRRP thru Netconf'
+        # end config_vrrp_on_vsrx 
+
+
+    def vrrp_mas_bkp_chk_vsrx(self, src_vm, master_vm, backup_vm):
+        self.logger.info('Will verify who the VRRP master and who the backup')
+        chk_dict={'master': master_vm, 'backup': backup_vm}
+        for role, vsrx_vm in chk_dict.items():
+            vrrp_mas_chk_cmd = 'show vrrp'
+            result = self.get_config_via_netconf(src_vm, vsrx_vm, vrrp_mas_chk_cmd, timeout=10, device='junos',
+                    hostkey_verify="False", format='text')
+            if result == False:
+                return result
+            if role in result:
+                self.logger.info('%s is selected as the VRRP %s' %(vsrx_vm.vm_name, role))
+                result = True
+            else:
+                result = False
+                self.logger.error('% is not selected as VRRP %s' %(vsrx_vm.vm_name, role))
+        return result
+
+
 
     @retry(delay=5, tries=20)
     def set_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False", reboot_required=False):
