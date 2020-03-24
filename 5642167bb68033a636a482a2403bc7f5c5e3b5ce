@@ -2,6 +2,40 @@
   "comments": [
     {
       "key": {
+        "uuid": "8b53c046_f44c1b56",
+        "filename": "common/neutron/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 328,
+      "author": {
+        "id": 76
+      },
+      "writtenOn": "2020-03-24T12:45:39Z",
+      "side": 1,
+      "message": "Please see if this can be handled using vrrp_mas_chk().",
+      "revId": "5642167bb68033a636a482a2403bc7f5c5e3b5ce",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "628d737e_1cd79b6a",
+        "filename": "fixtures/contrailapi.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 76
+      },
+      "writtenOn": "2020-03-24T12:45:39Z",
+      "side": 1,
+      "message": "Can\u0027t the earlier def() be used for this too? It is eventually adding AAP on VMI(which is the intf) and updating it.",
+      "revId": "5642167bb68033a636a482a2403bc7f5c5e3b5ce",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c827438f_7f7441fa",
         "filename": "scripts/ecmp/test_ecmp.py",
         "patchSetId": 1
@@ -30,6 +64,30 @@
       "writtenOn": "2020-03-24T11:29:56Z",
       "side": 1,
       "message": "Probably not required, right? wait_till_vm_is_up, invoked in lines:1652-53, calls wait_for_ssh_on_vm method",
+      "range": {
+        "startLine": 1655,
+        "startChar": 0,
+        "endLine": 1657,
+        "endChar": 37
+      },
+      "revId": "5642167bb68033a636a482a2403bc7f5c5e3b5ce",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "86f96aff_4fb5ee11",
+        "filename": "scripts/ecmp/test_ecmp.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1657,
+      "author": {
+        "id": 76
+      },
+      "writtenOn": "2020-03-24T12:45:39Z",
+      "side": 1,
+      "message": "I think it is required here cause the vSRX reboots after the configuration of VRRP. We can have this here or in that method itself.",
+      "parentUuid": "7163c73a_31f4cb96",
       "range": {
         "startLine": 1655,
         "startChar": 0,
