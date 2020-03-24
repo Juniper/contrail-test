@@ -149,6 +149,6 @@ class NetworkAttachmentFixture(fixtures.Fixture):
 
     def run_kubectl_cmd_on_master(self, nad_name, namespace='default', operation="get"):
         kubectl_command = 'kubectl %s network-attachment-definition %s -n %s' % (operation,nad_name,namespace)
-        output = self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,
+        output = self.inputs.run_cmd_on_server(self.inputs.k8s_master_ip,
                                                kubectl_command)
         return output
