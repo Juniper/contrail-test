@@ -156,6 +156,22 @@ class ContrailVncApi(object):
         vmi.set_virtual_machine_interface_allowed_address_pairs(aaps)
         self._vnc.virtual_machine_interface_update(vmi)
 
+    def add_allowed_address_pair_si(self, si_fq_name, prefix, prefix_len, mac, mode, left_vn_name):
+        si_obj = self._vnc.service_instance_read(fq_name=si_fq_name)
+        si_props = si_obj.get_service_instance_properties()
+        intf_list = si_props.get_interface_list()
+        ip = SubnetType(ip_prefix=prefix, ip_prefix_len=prefix_len)
+        aap = AllowedAddressPair(ip=ip, mac=mac)
+        aap.set_address_mode(mode)
+        aaps = AllowedAddressPairs(allowed_address_pair=[aap])
+        for intf in intf_list:
+            if intf.virtual_network == left_vn_name:
+                intf.allowed_address_pairs = aaps
+                si_props.set_interface_list(intf_list)
+                si_obj.set_service_instance_properties(si_props)
+                self._vnc.service_instance_update(si_obj)
+        return
+
     def get_allowed_address_pair(self, vmi_id):
         vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
         return vmi.get_virtual_machine_interface_allowed_address_pairs()

@@ -312,12 +312,37 @@ class BaseNeutronTest(GenericTestBase):
         cmdList.append('deactivate security policies')
         vm_ip = dst_vm.vm_ips[int(interface[-1])]
         vsrx_vrrp_config = ['set interfaces ' + interface + ' unit 0 family inet address ' + vm_ip
-                            + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
+                            + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data', 
+                           'set security zones security-zone left interfaces ' + interface + ' host-inbound-traffic protocols all']
         cmdList = cmdList + vsrx_vrrp_config
         cmd_string = (';').join(cmdList)
         assert self.set_config_via_netconf(src_vm, dst_vm,
                                              cmd_string, timeout=10, device='junos', hostkey_verify="False", reboot_required=False), 'Could not configure VRRP thru Netconf'
     # end config_vrrp_on_vsrx
+
+
+    def config_aap_on_si(self, si_fq_name, prefix, prefix_len=32, mac='', aap_mode='active-standby', left_vn_name=None):
+        self.vnc_h.add_allowed_address_pair_si(si_fq_name, prefix, prefix_len, mac, aap_mode, left_vn_name)
+        return True
+
+    def vrrp_mas_bkp_chk_vsrx(self, src_vm, master_vm, backup_vm):
+        self.logger.info('Will verify who the VRRP master and who the backup')
+        chk_dict={'master': master_vm, 'backup': backup_vm}
+        for role, vsrx_vm in chk_dict.items():
+            vrrp_mas_chk_cmd = 'show vrrp'
+            result = self.get_config_via_netconf(src_vm, vsrx_vm, vrrp_mas_chk_cmd, timeout=10, device='junos',
+                    hostkey_verify="False", format='text')
+            if result == False:
+                return result
+            if role in result:
+                self.logger.info('%s is selected as the VRRP %s' %(vsrx_vm.vm_name, role))
+                result = True
+            else:
+                result = False
+                self.logger.error('% is not selected as VRRP %s' %(vsrx_vm.vm_name, role))
+        return result
+
+
 
     @retry(delay=5, tries=20)
     def set_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False", reboot_required=False):
