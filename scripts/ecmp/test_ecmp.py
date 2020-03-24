@@ -20,6 +20,8 @@ sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
 import test
+from common.neutron.base import BaseNeutronTest
+import time
 
 class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
     @test.attr(type=['cb_sanity', 'sanity'])
@@ -1593,4 +1595,74 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_vm_suspend_restart
 
+class TestVRRPwithSVM(BaseNeutronTest, ECMPTestBase, VerifySvcFirewall):
+    @preposttest_wrapper
+    @skip_because(min_nodes=2)
+    def test_vrrp_with_svm_toggle_admin_port(self):
+        """
+        Description: Verify vrrp functionality works for SVM
+        Test steps:
+        1. Create left VN, left VM, right VN, right VM
+        2. Create svm0 and svm1 using vsrx, create mgmt vm to push configuration to svm 0 and 1
+        3. Configure aap on interface type left of SI
+        4. Configure vrrp on svm 0 and 1
+        5. Verify vrrp master and it's entry in agent introspect
+        6. Verify ping to master using vIP
+        7. Reduce priority of master, so that backup become new master
+        8. Verify vrrp new master and it's entry in agent introspect
+        9. Verify ping to master using vIP
+        Pass criteria: Verify steps 5,6,8 and 9 should pass
+        Maintainer : kpatel@juniper.net
+        """
 
+        ret_dict = self.verify_svc_chain(max_inst=2,
+                service_mode='in-network', svc_img_name='vsrx',
+                create_svms=True, **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+
+        mgmt_vm_name = get_random_name('mgmt')
+        mgmt_vn_fixture = self.common_args['mgmt_vn_fixture']
+        port_obj = self.create_port(net_id=mgmt_vn_fixture.vn_id)
+        mgmt_vm_fixture = self.create_vm(mgmt_vn_fixture, mgmt_vm_name,
+                image_name='ubuntu-traffic', port_ids=[port_obj['id']])
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        left_vn_fq_name = left_vn_fixture.vn_fq_name
+        left_vn_name = left_vn_fq_name.split(':')[-1] if left_vn_fq_name else None
+
+        vIP = get_an_ip(left_vn_fixture.vn_subnet_objs[0]['cidr'], 10)
+        self.logger.info('VRRP vIP is: %s' % vIP)
+
+        svm0_fix = ret_dict['svm_fixtures'][0]
+        svm1_fix = ret_dict['svm_fixtures'][1]
+
+        self.config_aap_on_si(si_fixture.si_fq_name, vIP, mac='00:00:5e:00:01:01', left_vn_name=left_vn_name)
+
+        svm0_fix.wait_till_vm_is_up()
+        svm1_fix.wait_till_vm_is_up()
+        mgmt_vm_fixture.wait_till_vm_is_up()
+
+        self.logger.info('We will configure VRRP on the two vSRX')
+        self.config_vrrp_on_vsrx(src_vm=mgmt_vm_fixture, dst_vm=svm0_fix, vip=vIP, priority='200', interface='ge-0/0/1')
+        self.config_vrrp_on_vsrx(src_vm=mgmt_vm_fixture, dst_vm=svm1_fix, vip=vIP, priority='100', interface='ge-0/0/1')
+
+        self.logger.info('Will wait for both the vSRXs to come up')
+        svm0_fix.wait_for_ssh_on_vm()
+        svm1_fix.wait_for_ssh_on_vm()
+
+        self.logger.info('Verify master and it's entry in agent')
+        assert self.vrrp_mas_chk(src_vm=mgmt_vm_fixture, dst_vm=svm0_fix, vn=left_vn_fixture, ip=vIP, vsrx=True)
+        self.logger.info('Verify ping to vIP responded by master only')
+        assert self.verify_vrrp_action(left_vm_fixture, svm0_fix, vIP, vsrx=True)
+
+        self.logger.info('Will reduce the VRRP priority on %s, causing a VRRP mastership switch' % svm0_fix.vm_name)
+        self.config_vrrp_on_vsrx(src_vm=mgmt_vm_fixture, dst_vm=svm0_fix, vip=vIP, priority='80', interface='ge-0/0/1')
+        time.sleep(2)
+
+        self.logger.info('Verify new master and it's entry in agent')
+        assert self.vrrp_mas_chk(src_vm=mgmt_vm_fixture, dst_vm=svm1_fix, vn=left_vn_fixture, ip=vIP, vsrx=True)
+        self.logger.info('Verify ping to vIP responded by master only')
+        assert self.verify_vrrp_action(left_vm_fixture, svm1_fix, vIP, vsrx=True)
+
+        return True
