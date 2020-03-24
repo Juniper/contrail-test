@@ -1,0 +1,191 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2cc6d69f_15a7b12e",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "pls avoid import all.",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9c37712c_0e4e46e0",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "Unused, can be removed",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8f5ae3ba_78a1df02",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "suggestion feel free to ignore: parameter \u0027agg_name\u0027 may be made optional \u0026 random name may be generated in the fixture.",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4548bf0c_9425d7fc",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "Most fixtures will check if the resource is present already and create only if not. If not required for this fixture, then ignore",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "943f8775_7b51005c",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "When route-aggregate is configured, will /32 route leak? If not, then a negative check ensuring the same, will be good.",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9f42e1df_0f8c92b6",
+        "filename": "scripts/route_aggregate/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "This class/file can be removed, since it has no functionality. This file/class can be added when needed",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e1c99527_0a3320ff",
+        "filename": "scripts/route_aggregate/test_route_aggregate.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "Add this as the first import\n+ from common.base import GenericTestBase",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "554691d4_0ade3f42",
+        "filename": "scripts/route_aggregate/test_route_aggregate.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "remove",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "761ea6f2_b38ec9dc",
+        "filename": "scripts/route_aggregate/test_route_aggregate.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "Better to spell what is being imported, pls avoid import all.",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8f5d47d2_433117ae",
+        "filename": "scripts/route_aggregate/test_route_aggregate.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "+ class TestRouteAggregate(GenericTestBase, VerifySvcFirewall):\n- class TestRouteAggregate(RouteAggregateBase, VerifySvcFirewall):",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dae33d91_e2601e46",
+        "filename": "scripts/route_aggregate/test_route_aggregate.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-03-24T09:37:24Z",
+      "side": 1,
+      "message": "Is this required? service-chain is created again in line:61",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
