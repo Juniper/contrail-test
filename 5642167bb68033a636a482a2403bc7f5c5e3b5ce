@@ -97,6 +97,30 @@
       "revId": "5642167bb68033a636a482a2403bc7f5c5e3b5ce",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "be5966c3_2b8067d3",
+        "filename": "scripts/ecmp/test_ecmp.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1657,
+      "author": {
+        "id": 725
+      },
+      "writtenOn": "2020-03-24T13:23:23Z",
+      "side": 1,
+      "message": "It\u0027s require because \u0027config_vrrp_on_vsrx reboot the vm after configuration",
+      "parentUuid": "7163c73a_31f4cb96",
+      "range": {
+        "startLine": 1655,
+        "startChar": 0,
+        "endLine": 1657,
+        "endChar": 37
+      },
+      "revId": "5642167bb68033a636a482a2403bc7f5c5e3b5ce",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
