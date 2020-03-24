@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "23085c1d_a20b2150",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-24T09:57:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "2cc6d69f_15a7b12e",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "9c37712c_0e4e46e0",
         "filename": "fixtures/route_agg.py",
         "patchSetId": 2
@@ -33,6 +51,24 @@
       "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a17213a2_4f8d86a9",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-24T09:57:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9c37712c_0e4e46e0",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "e549dd9a_bddc6d12",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-24T09:57:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "8f5ae3ba_78a1df02",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "4548bf0c_9425d7fc",
         "filename": "fixtures/route_agg.py",
         "patchSetId": 2
@@ -64,6 +118,24 @@
       "writtenOn": "2020-03-24T09:37:24Z",
       "side": 1,
       "message": "Most fixtures will check if the resource is present already and create only if not. If not required for this fixture, then ignore",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "766f50ea_043a5999",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-24T09:57:22Z",
+      "side": 1,
+      "message": "check not required",
+      "parentUuid": "4548bf0c_9425d7fc",
       "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -87,6 +159,24 @@
     },
     {
       "key": {
+        "uuid": "15fbc556_23fb36d5",
+        "filename": "fixtures/route_agg.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-24T09:57:22Z",
+      "side": 1,
+      "message": "/32 route will not present only route with aggreegate prefix will present",
+      "parentUuid": "943f8775_7b51005c",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "9f42e1df_0f8c92b6",
         "filename": "scripts/route_aggregate/base.py",
         "patchSetId": 2
@@ -101,6 +191,24 @@
       "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4ce5d3c9_fc3e262b",
+        "filename": "scripts/route_aggregate/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-24T09:57:22Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9f42e1df_0f8c92b6",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -183,6 +291,24 @@
       "writtenOn": "2020-03-24T09:37:24Z",
       "side": 1,
       "message": "Is this required? service-chain is created again in line:61",
+      "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "709abcda_39d24ec2",
+        "filename": "scripts/route_aggregate/test_route_aggregate.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 57,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-24T09:57:22Z",
+      "side": 1,
+      "message": "not required",
+      "parentUuid": "dae33d91_e2601e46",
       "revId": "a8ee7a38d7c3e65f4f1a666710edf948953fea1e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
