@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5fdfe6c4_eed0b36c",
+        "filename": "scripts/svc_health_check/test_svc_health_check.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-24T09:03:28Z",
+      "side": 1,
+      "message": "have details about what each TC is expected to do, pass/fail criteria",
+      "range": {
+        "startLine": 130,
+        "startChar": 8,
+        "endLine": 130,
+        "endChar": 48
+      },
+      "revId": "8823db7d08c84dfc2d677ec36890808c0c0a0e51",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
