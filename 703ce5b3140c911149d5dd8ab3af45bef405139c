@@ -1,0 +1,142 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1fd36dc4_867f651f",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 213
+      },
+      "writtenOn": "2020-03-24T10:49:36Z",
+      "side": 1,
+      "message": "Is it passing? As far as i know, tunnel encaps come from route that points to vrouter",
+      "range": {
+        "startLine": 16,
+        "startChar": 21,
+        "endLine": 16,
+        "endChar": 120
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4deed5e7_a9d46f6d",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 213
+      },
+      "writtenOn": "2020-03-24T10:49:36Z",
+      "side": 1,
+      "message": "same thing here, none of the path attributes are maintained in control node, they are taken from the route that is advertised by vrouter.",
+      "range": {
+        "startLine": 94,
+        "startChar": 21,
+        "endLine": 94,
+        "endChar": 105
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "64f38664_1b0cb3f5",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 213
+      },
+      "writtenOn": "2020-03-24T10:49:36Z",
+      "side": 1,
+      "message": "again not too sure if it is supposed to work",
+      "range": {
+        "startLine": 213,
+        "startChar": 21,
+        "endLine": 214,
+        "endChar": 20
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2c3a3c62_89e66f5d",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 534,
+      "author": {
+        "id": 213
+      },
+      "writtenOn": "2020-03-24T10:49:36Z",
+      "side": 1,
+      "message": "i hope there is no minimum hold time in bird? In Junos, I think, minimum hold time is 12s. please make sure there is no such limitation in bird. If I am not wrong, even contrail does not take less than 3 secs. It does not give error but internally uses 3 secs if given anything less than 3. Please verify before adding this test",
+      "range": {
+        "startLine": 534,
+        "startChar": 12,
+        "endLine": 534,
+        "endChar": 50
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "af9f4802_1b107e29",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 565,
+      "author": {
+        "id": 213
+      },
+      "writtenOn": "2020-03-24T10:49:36Z",
+      "side": 1,
+      "message": "since we have a 4 byte asn also, I am assuming 4 byte asn field will be enabled in contrail for that. Please confirm",
+      "range": {
+        "startLine": 565,
+        "startChar": 21,
+        "endLine": 565,
+        "endChar": 41
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ed28731b_3dac8953",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 786,
+      "author": {
+        "id": 213
+      },
+      "writtenOn": "2020-03-24T10:49:36Z",
+      "side": 1,
+      "message": "last we checked it was not working. not sure why.",
+      "range": {
+        "startLine": 786,
+        "startChar": 22,
+        "endLine": 786,
+        "endChar": 38
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
