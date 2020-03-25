@@ -43,13 +43,14 @@ class BMSFixture(fixtures.Fixture):
         self.static_ip = kwargs.get('static_ip', bool(not self.inputs.get_csn()))
         self.port_fixture = kwargs.get('port_fixture')
         self.fabric_fixture = kwargs.get('fabric_fixture')
-        self.security_groups = kwargs.get('security_groups') #UUID List
+        self.security_groups = kwargs.get('security_groups') or list()
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id') or 0
         self.port_profiles = kwargs.get('port_profiles') or list()
         self.tor_port_vlan_tag = kwargs.get('tor_port_vlan_tag')
         self._port_group_name = kwargs.get('port_group_name', None)
+        self.ep_style = kwargs.get('ep_style', True)
         self._vpg_fixture = None
         self.bond_name = kwargs.get('bond_name') or 'bond%s'%get_random_string(2,
                          chars=string.ascii_letters)
@@ -115,11 +116,12 @@ class BMSFixture(fixtures.Fixture):
             intf_dict['fabric'] = self.fabric_fixture.name
             bms_info.append(intf_dict)
         binding_profile = {'local_link_information': bms_info}
+        security_groups = None if self.ep_style else self.security_groups
         self.port_fixture = PortFixture(
                                  connections=self.connections,
                                  vn_id=self.vn_fixture.uuid,
                                  mac_address=self.bms_mac,
-                                 security_groups=self.security_groups,
+                                 security_groups=security_groups,
                                  fixed_ips=fixed_ips,
                                  api_type='contrail',
                                  vlan_id=self.vlan_id,
@@ -129,6 +131,8 @@ class BMSFixture(fixtures.Fixture):
                              )
         self.port_fixture.setUp()
         self.add_port_profiles(self.port_profiles)
+        if self.ep_style:
+            self.add_security_groups(self.security_groups)
 
     @retry(delay=10, tries=30)
     def is_lacp_up(self, interfaces=None, expectation=True):
@@ -278,6 +282,7 @@ class BMSFixture(fixtures.Fixture):
         dest_dir = '%s@%s:%s' % (self.username, self.mgmt_ip, dstdir or '')
         remote_copy(localfile, dest_dir, dest_password=self.password,
                     with_sudo=True)
+        time.sleep(2)
         self.copied_files[localfile] = dstdir
     # end copy_file_to_vm
 
@@ -637,3 +642,15 @@ class BMSFixture(fixtures.Fixture):
         self.run_namespace('arp -s %s %s' % (ip, mac), as_sudo=True)
         self.logger.info('Added static arp %s:%s on BMS %s' % (ip, mac,
                                                               self.name))
+
+    def add_security_groups(self, security_groups):
+        if self.ep_style:
+            self.vpg_fixture.add_security_groups(security_groups)
+        else:
+            self.port_fixture.add_security_groups(security_groups)
+
+    def delete_security_groups(self, security_groups):
+        if self.ep_style:
+            self.vpg_fixture.delete_security_groups(security_groups)
+        else:
+            self.port_fixture.delete_security_groups(security_groups)

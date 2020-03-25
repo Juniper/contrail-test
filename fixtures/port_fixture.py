@@ -42,7 +42,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.name = kwargs.get('name') or get_random_name('vmi')
         self.fixed_ips = kwargs.get('fixed_ips', [])
         self.mac_address = kwargs.get('mac_address', [])
-        self.security_groups = kwargs.get('security_groups', [])
+        self.security_groups = kwargs.get('security_groups') or []
         self.extra_dhcp_opts = kwargs.get('extra_dhcp_opts', [])
         self.api_type = kwargs.get('api_type', 'neutron')
         if self.inputs.orchestrator == 'vcenter':
@@ -417,6 +417,14 @@ class PortFixture(vnc_api_test.VncLibFixture):
     def delete_port_profiles(self, port_profiles):
         for pp_uuid in port_profiles:
             self.vnc_h.disassoc_port_profile_from_vmi(pp_uuid, self.uuid)
+
+    def add_security_groups(self, security_groups):
+        for sg_uuid in security_groups:
+            self.vnc_h.add_security_group(sg_id=sg_uuid, vmi_id=self.uuid)
+
+    def delete_security_groups(self, security_groups):
+        for sg_uuid in security_groups:
+            self.vnc_h.remove_security_group(sg_id=sg_uuid, vmi_id=self.uuid)
 
 # end PortFixture
 
