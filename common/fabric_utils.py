@@ -11,6 +11,7 @@ from tcutils.util import retry, get_random_name
 from lxml import etree
 from tcutils.verification_util import elem2dict
 import time
+import random
 
 NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k',
                  'juniper-qfx5k', 'juniper-qfx5k-lean', 'juniper-srx']
@@ -30,7 +31,7 @@ class FabricUtils(object):
         return (True, fabric)
 
     def onboard_fabric(self, fabric_dict, wait_for_finish=True,
-                       name=None, cleanup=False, enterprise_style=True, dc_asn=None):
+                       name=None, cleanup=False, enterprise_style=True, dc_asn=None, abort=False):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         name = get_random_name(name) if name else get_random_name('fabric')
@@ -70,6 +71,9 @@ class FabricUtils(object):
             payload['os_version'] = os_version
         self.logger.info('Onboarding new fabric %s %s'%(name, payload))
         execution_id = self.vnc_h.execute_job(fq_name, payload)
+        if abort:
+            time.sleep(random.randint(2, 15))
+            self.vnc_h.abort_job(job_template_id=execution_id)
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
         if cleanup:
@@ -102,7 +106,7 @@ class FabricUtils(object):
 
     def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
                                 name=None, cleanup=False,
-                                enterprise_style=True, dc_asn=None):
+                                enterprise_style=True, dc_asn=None, abort=False):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         name = get_random_name(name) if name else get_random_name('fabric')
@@ -126,6 +130,10 @@ class FabricUtils(object):
                    }
         self.logger.info('Onboarding existing fabric %s %s' %(name, payload))
         execution_id = self.vnc_h.execute_job(fq_name, payload)
+        if abort:
+            time.sleep(random.randint(2, 15))
+            self.vnc_h.abort_job(job_template_id=execution_id)
+            return
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
         if cleanup:
