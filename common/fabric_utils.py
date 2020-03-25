@@ -11,6 +11,7 @@ from tcutils.util import retry, get_random_name
 from lxml import etree
 from tcutils.verification_util import elem2dict
 import time
+import random
 
 NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k',
                  'juniper-qfx5k', 'juniper-qfx5k-lean', 'juniper-srx']
@@ -30,7 +31,7 @@ class FabricUtils(object):
         return (True, fabric)
 
     def onboard_fabric(self, fabric_dict, wait_for_finish=True,
-                       name=None, cleanup=False, enterprise_style=True, dc_asn=None):
+                       name=None, cleanup=False, enterprise_style=True, dc_asn=None, abort_mode=False):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         name = get_random_name(name) if name else get_random_name('fabric')
@@ -70,6 +71,15 @@ class FabricUtils(object):
             payload['os_version'] = os_version
         self.logger.info('Onboarding new fabric %s %s'%(name, payload))
         execution_id = self.vnc_h.execute_job(fq_name, payload)
+        if abort_mode:
+            self.logger.info('Aborting onboarding the fabric')
+            time.sleep(random.randint(2, 15))
+            if 'graceful' in abort_mode:
+                mode_abort = 'graceful'
+            elif 'force' in abort_mode:
+                mode_abort = 'force'
+            self.vnc_h.abort_job(job_execution_ids=execution_id, abort_mode=mode_abort)
+            return
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
         if cleanup:
@@ -102,7 +112,7 @@ class FabricUtils(object):
 
     def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
                                 name=None, cleanup=False,
-                                enterprise_style=True, dc_asn=None):
+                                enterprise_style=True, dc_asn=None, abort_mode=False):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         name = get_random_name(name) if name else get_random_name('fabric')
@@ -126,6 +136,15 @@ class FabricUtils(object):
                    }
         self.logger.info('Onboarding existing fabric %s %s' %(name, payload))
         execution_id = self.vnc_h.execute_job(fq_name, payload)
+        if abort_mode:
+            self.logger.info('Aborting onboarding the fabric')
+            time.sleep(random.randint(2, 15))
+            if 'graceful' in abort_mode:
+                mode_abort = 'graceful'
+            elif 'force' in abort_mode:
+                mode_abort = 'force'
+            self.vnc_h.abort_job(job_execution_ids=execution_id, abort_mode=mode_abort)
+            return
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
         if cleanup:
@@ -350,7 +369,7 @@ class FabricUtils(object):
                                     hardware_name=name+'-hw')
         return cards, hardwares, node_profiles
 
-    def assign_roles(self, fabric, devices, rb_roles=None, wait_for_finish=True):
+    def assign_roles(self, fabric, devices, rb_roles=None, wait_for_finish=True, abort_mode=False):
         ''' eg: rb_roles = {device1: ['CRB-Access'], device2: ['CRB-Gateway', 'DC-Gateway']}'''
         rb_roles = rb_roles or dict()
         roles_dict = dict()
@@ -383,6 +402,15 @@ class FabricUtils(object):
                 if role.lower() in VALID_OVERLAY_ROLES:
                     self.vnc_h.associate_rb_role(device, role.lower())
         execution_id = self.vnc_h.execute_job(fq_name, payload)
+        if abort_mode:
+            self.logger.info('Aborting assigning roles to the fabric')
+            time.sleep(random.randint(2, 10))
+            if 'graceful' in abort_mode:
+                mode_abort = 'graceful'
+            elif 'force' in abort_mode:
+                mode_abort = 'force'
+            self.vnc_h.abort_job(job_execution_ids=execution_id, abort_mode=mode_abort)
+            return
         self.logger.info('Started assigning roles for %s'%devices)
         if wait_for_finish:
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)

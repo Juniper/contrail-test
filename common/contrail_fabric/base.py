@@ -22,29 +22,38 @@ class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, Ge
         self.inputs = connections.inputs
         self.logger = connections.logger
 
-    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False, dc_asn=None):
+    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False, dc_asn=None, abort_mode=False):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
         if ztp:
             self.fabric, self.devices, self.interfaces = \
                 self.onboard_fabric(fabric_dict, cleanup=False,
-                    enterprise_style=enterprise_style)
+                    enterprise_style=enterprise_style, abort_mode=abort_mode)
         else:
-            self.fabric, self.devices, self.interfaces = \
-                self.onboard_existing_fabric(fabric_dict, cleanup=False,
-                    enterprise_style=enterprise_style)
+            if not('roles' in abort_mode):
+                self.fabric, self.devices, self.interfaces = \
+                    self.onboard_existing_fabric(fabric_dict, cleanup=False,
+                        enterprise_style=enterprise_style, abort_mode=abort_mode)
+            else:
+                self.fabric, self.devices, self.interfaces = \
+                    self.onboard_existing_fabric(fabric_dict, cleanup=False,
+                        enterprise_style=enterprise_style)
             if len(self.inputs.fabrics) > 1:
                 fabric_dict = self.inputs.fabrics[1]
                 self.fabric2, self.devices2, self.interfaces2 = \
                 self.onboard_existing_fabric(fabric_dict, cleanup=False,
-                    enterprise_style=enterprise_style, dc_asn=dc_asn)
+                    enterprise_style=enterprise_style, dc_asn=dc_asn, abort_mode=abort_mode)
                 assert self.interfaces2, 'Failed to onboard existing fabric %s'%fabric_dict
                 self.logger.info("Assigning roles for devices in the fabric2")
                 self.assign_roles(self.fabric2, self.devices2, rb_roles=rb_roles)
         assert self.interfaces, 'Failed to onboard fabric %s'%fabric_dict
 
+        if 'onboard' in abort_mode:
+            return
         self.logger.info("Assigning roles for devices in the fabric")
-        self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
+        self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles, abort_mode=abort_mode)
+        if 'roles' in abort_mode:
+            return
         if ztp:
             self.logger.info("Create provisioning infra network")
             self.infra_ipam, self.infra_vn, self.tag_id = \
@@ -140,11 +149,13 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             try:
                 obj.create_fabric(self.rb_roles,
                     enterprise_style=self.enterprise_style, ztp=self.ztp,
-                    dc_asn=self.dci_ebgp_asn if self.dci_mode == 'ebgp' else None)
+                    dc_asn=self.dci_ebgp_asn if self.dci_mode == 'ebgp' else None, abort_mode = self.abort_mode if 'abort_mode' in dir(self) else 'default1')
             except:
                 obj.cleanup()
             if self.inputs.is_ironic_enabled:
                 obj.create_ironic_provision_vn(self.admin_connections)
+        if 'abort_mode' in dir(self):
+            return
         assert obj.fabric and obj.devices and obj.interfaces 
         if len(self.inputs.fabrics) > 1:
             assert obj.fabric2 and obj.devices2, "Onboarding fabric failed"
