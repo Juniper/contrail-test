@@ -620,3 +620,9 @@ class BMSFixture(fixtures.Fixture):
         self.run_namespace('arp -s %s %s' % (ip, mac), as_sudo=True)
         self.logger.info('Added static arp %s:%s on BMS %s' % (ip, mac,
                                                               self.name))
+
+    def add_security_group(self,security_groups):
+        self.port_fixture.add_security_group(security_groups)
+
+    def delete_security_group(self,security_groups):
+        self.port_fixture.delete_security_group(security_groups)
