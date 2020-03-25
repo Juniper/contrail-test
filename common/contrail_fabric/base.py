@@ -22,22 +22,24 @@ class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, Ge
         self.inputs = connections.inputs
         self.logger = connections.logger
 
-    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False, dc_asn=None):
+    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False, dc_asn=None, abort=False):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
         if ztp:
             self.fabric, self.devices, self.interfaces = \
                 self.onboard_fabric(fabric_dict, cleanup=False,
-                    enterprise_style=enterprise_style)
+                    enterprise_style=enterprise_style, abort=abort)
         else:
             self.fabric, self.devices, self.interfaces = \
                 self.onboard_existing_fabric(fabric_dict, cleanup=False,
-                    enterprise_style=enterprise_style)
+                    enterprise_style=enterprise_style, abort=abort)
+            if abort: 
+                return
             if len(self.inputs.fabrics) > 1:
                 fabric_dict = self.inputs.fabrics[1]
                 self.fabric2, self.devices2, self.interfaces2 = \
                 self.onboard_existing_fabric(fabric_dict, cleanup=False,
-                    enterprise_style=enterprise_style, dc_asn=dc_asn)
+                    enterprise_style=enterprise_style, dc_asn=dc_asn, abort=abort)
                 assert self.interfaces2, 'Failed to onboard existing fabric %s'%fabric_dict
                 self.logger.info("Assigning roles for devices in the fabric2")
                 self.assign_roles(self.fabric2, self.devices2, rb_roles=rb_roles)
@@ -117,6 +119,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
     enterprise_style = True
     ztp = False
     dci_mode = 'ibgp'
+    abort=False
     @classmethod
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
