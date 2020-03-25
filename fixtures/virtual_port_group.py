@@ -20,6 +20,7 @@ class VPGFixture(vnc_api_test.VncLibFixture):
         self.fq_name = ['default-global-system-config',
             self.fabric_name, self.name]
         self.port_profiles = kwargs.get('port_profiles') or list()
+        self.security_groups = kwargs.get('security_groups') or list()
         self.created = False
 
     def setUp(self):
@@ -65,6 +66,17 @@ class VPGFixture(vnc_api_test.VncLibFixture):
             self.read()
         self.associate_physical_interfaces(self.pifs)
         self.add_port_profiles(self.port_profiles)
+        self.add_security_groups(self.security_groups)
+
+    def add_security_groups(self, security_groups):
+        for sg_uuid in security_groups or []:
+            self.vnc_h.assoc_security_group_to_vpg(sg_uuid, self.uuid)
+        self.security_groups = list(set(self.security_groups).union(
+                                  set(security_groups)))
+
+    def delete_security_groups(self, security_groups=None):
+        for sg_uuid in security_groups or self.security_groups:
+            self.vnc_h.disassoc_security_group_from_vpg(sg_uuid, self.uuid)
 
     def add_port_profiles(self, port_profiles):
         for pp_uuid in port_profiles:

@@ -426,6 +426,7 @@ class FabricUtils(object):
         bms = self.useFixture(BMSFixture(
                               connections=self.connections,
                               name=bms_name,
+                              ep_style=getattr(self, 'enterprise_style', True),
                               **kwargs))
         status, msg = bms.run_dhclient()
         assert status, 'DHCP failed to fetch address'

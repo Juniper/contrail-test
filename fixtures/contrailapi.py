@@ -178,11 +178,15 @@ class ContrailVncApi(object):
         vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
         return vmi.get_virtual_machine_interface_allowed_address_pairs()
 
-    def add_security_group(self, vm_id, sg_id, **kwargs):
+    def add_security_group(self, vm_id=None, sg_id=None, **kwargs):
         sg = self.get_security_group(sg_id)
-        vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
-        vmis = [vmi['uuid']
-                for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
+        vmi_id = kwargs.get('vmi_id')
+        if vmi_id:
+            vmis = [vmi_id]
+        else:
+            vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
+            vmis = [vmi['uuid']
+                        for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
         vmis = [
             self._vnc.virtual_machine_interface_read(
                 id=vmi) for vmi in vmis]
@@ -198,7 +202,7 @@ class ContrailVncApi(object):
         sgs = [self.get_security_group(sg_id) for sg_id in sg_ids]
         vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
         vmis = [vmi['uuid']
-                for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
+                    for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
         vmis = [
             self._vnc.virtual_machine_interface_read(
                 id=vmi) for vmi in vmis]
@@ -209,11 +213,15 @@ class ContrailVncApi(object):
             vmi.set_security_group_list(sg_lst)
             self._vnc.virtual_machine_interface_update(vmi)
 
-    def remove_security_group(self, vm_id, sg_id, **kwargs):
+    def remove_security_group(self, vm_id=None, sg_id=None, **kwargs):
         sg = self.get_security_group(sg_id)
-        vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
-        vmis = [vmi['uuid']
-                for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
+        vmi_id = kwargs.get('vmi_id')
+        if vmi_id:
+            vmis = [vmi_id]
+        else:
+            vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
+            vmis = [vmi['uuid']
+                        for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
         vmis = [
             self._vnc.virtual_machine_interface_read(
                 id=vmi) for vmi in vmis]
@@ -3626,6 +3634,15 @@ class ContrailVncApi(object):
         self._log.debug('Deleting port profile %s' % kwargs)
         return self._vnc.port_profile_read(**kwargs)
 
+    def read_security_group(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting port profile %s' % kwargs)
+        return self._vnc.security_group_read(**kwargs)
+
     def assoc_sc_to_port_profile(self, pp_uuid, sc_uuid):
         sc_obj = self.read_storm_control_profile(id=sc_uuid)
         obj = self.read_port_profile(id=pp_uuid)
@@ -3637,6 +3654,18 @@ class ContrailVncApi(object):
         obj = self.read_port_profile(id=pp_uuid)
         obj.del_storm_control_profile(sc_obj)
         return self._vnc.port_profile_update(obj)
+
+    def assoc_security_group_to_vpg(self, sg_uuid, vpg_id):
+        sg_obj = self.read_security_group(id=sg_uuid)
+        obj = self.read_virtual_port_group(id=vpg_id)
+        obj.add_security_group(sg_obj)
+        return self._vnc.virtual_port_group_update(obj)
+
+    def disassoc_security_group_from_vpg(self, sg_uuid, vpg_id):
+        sg_obj = self.read_security_group(id=sg_uuid)
+        obj = self.read_virtual_port_group(id=vpg_id)
+        obj.del_security_group(sg_obj)
+        return self._vnc.virtual_port_group_update(obj)
 
     def assoc_port_profile_to_vpg(self, pp_uuid, vpg_id):
         pp_obj = self.read_port_profile(id=pp_uuid)
