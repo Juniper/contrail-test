@@ -315,16 +315,16 @@ class OpenstackOrchestrator(Orchestrator):
            if 'security_group' in rule['src_addresses'][0]:
                if rule['src_addresses'][0]['security_group'] == 'local':
                    direction = 'egress'
-                   port_range_min = rule['src_ports'][0]['start_port']
-                   port_range_max = rule['src_ports'][0]['end_port']
+                   port_range_min = rule['dst_ports'][0]['start_port']
+                   port_range_max = rule['dst_ports'][0]['end_port']
                else:
                    if rule['dst_addresses'][0]['security_group'] != None:
                        remote_group_id = self.get_security_group(sg_id=rule['src_addresses'][0]['security_group'].split(':')).uuid
            if 'security_group' in rule['dst_addresses'][0]:
                if rule['dst_addresses'][0]['security_group'] == 'local':
                    direction = 'ingress'
-                   port_range_min = rule['dst_ports'][0]['start_port']
-                   port_range_max = rule['dst_ports'][0]['end_port']
+                   port_range_min = rule['src_ports'][0]['start_port']
+                   port_range_max = rule['src_ports'][0]['end_port']
                else:
                    if rule['dst_addresses'][0]['security_group'] != None:
                       remote_group_id = self.get_security_group(sg_id=rule['dst_addresses'][0]['security_group'].split(':')).uuid
