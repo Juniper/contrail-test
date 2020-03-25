@@ -996,7 +996,7 @@ class TestFabricOverlay(TestSPStyleFabric):
         4. Do basic traffic test with newly added device.
         '''
         def cleanup_reonboard(fabric_dict):
-            fabric, self.devices, self.interfaces = self.onboard_existing_fabric(
+            fabric, self.devices, self.interfaces, _ = self.onboard_existing_fabric(
                 fabric_dict, enterprise_style=True, name=self.fabric.name,
                 cleanup=False)
             self.singleton.devices = self.devices
@@ -1031,7 +1031,7 @@ class TestFabricOverlay(TestSPStyleFabric):
         self.logger.info("Add device to fabric.")
 
         fabric_dict['namespaces'].update({'management' : mgmt_ip})
-        self.fabric, self.devices, self.interfaces = self.onboard_existing_fabric(
+        self.fabric, self.devices, self.interfaces, _ = self.onboard_existing_fabric(
             fabric_dict, cleanup=False, enterprise_style=True, name=fabName)
 
         # Add roles to newly added devices.

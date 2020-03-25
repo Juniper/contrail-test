@@ -30,12 +30,12 @@ class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, Ge
                 self.onboard_fabric(fabric_dict, cleanup=False,
                     enterprise_style=enterprise_style)
         else:
-            self.fabric, self.devices, self.interfaces = \
+            self.fabric, self.devices, self.interfaces, _ = \
                 self.onboard_existing_fabric(fabric_dict, cleanup=False,
                     enterprise_style=enterprise_style)
             if len(self.inputs.fabrics) > 1:
                 fabric_dict = self.inputs.fabrics[1]
-                self.fabric2, self.devices2, self.interfaces2 = \
+                self.fabric2, self.devices2, self.interfaces2, _ = \
                 self.onboard_existing_fabric(fabric_dict, cleanup=False,
                     enterprise_style=enterprise_style, dc_asn=dc_asn)
                 assert self.interfaces2, 'Failed to onboard existing fabric %s'%fabric_dict
@@ -134,6 +134,9 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
     @skip_because(function='is_test_applicable')
     def setUp(self):
         super(BaseFabricTest, self).setUp()
+        self._setup_fabric()
+
+    def _setup_fabric(self):
         self.allow_all_on_default_fwaas_policy()
         obj = FabricSingleton(self.connections)
         self.singleton = obj

@@ -153,7 +153,24 @@ class FabricUtils(object):
                     lif = LogicalInterfaceFixture(uuid=port, connections=self.connections)
                     lif.read()
                     interfaces['logical'].append(lif)
-        return (fabric, devices, interfaces)
+        return (fabric, devices, interfaces, execution_id)
+
+    def abort_job(self, execution_id, abort_mode, action):
+        self.logger.info('Abort job %s; action %s, mode: %s'%(
+            execution_id, action, abort_mode))
+        if action == 'onboard':
+            fq_name = ['default-global-system-config',
+                       'existing_fabric_onboard_template']
+        elif action == 'assign_roles':
+            fq_name = ['default-global-system-config',
+                       'role_assignment_template']
+        self.vnc_h.abort_job(job_execution_ids=execution_id, abort_mode=abort_mode)
+        try:
+            status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            assert not status, 'job %s didnt get aborted'%execution_id
+        except AssertionError:
+            self.logger.info('Job %s got aborted as expected'%execution_id)
+        time.sleep(30)
 
     def cleanup_fabric(self, fabric, devices=None, interfaces=None,
                        verify=True, wait_for_finish=True, retry=True):
