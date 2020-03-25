@@ -3,6 +3,8 @@ import re
 import os
 import sys
 from tcutils.util import get_random_name
+from vm_test import VMFixture
+from bms_fixture import BMSFixture
 dir_path = os.path.dirname(os.path.realpath(__file__))
 TCPSERVER = dir_path+'/../tcpechoserver.py'
 TCPCLIENT = dir_path+'/../tcpechoclient.py'
@@ -24,11 +26,11 @@ class SocketTrafficUtil(object):
         self.server_stats_file = '/tmp/server-%s.stats'%random_name
         self.server_log_file = '/tmp/server-%s.log'%random_name
 
-    def start(self, sender_vm, receiver_vm, proto, sport, dport,
+    def start(self, sender, receiver, proto, sport, dport,
               count=0, fip=None, sender_vn_fqname=None,
               receiver_vn_fqname=None, af=None, slow=False):
-        self.client_vm = sender_vm
-        self.server_vm = receiver_vm
+        self.client = sender
+        self.server = receiver
         if proto.lower() == 'tcp':
             self.server_script = TCPSERVER
             self.client_script = TCPCLIENT
@@ -40,13 +42,20 @@ class SocketTrafficUtil(object):
         self.proto = proto
         self.sport = sport
         self.dport = dport
-        self.logger = self.client_vm.inputs.logger
+        self.logger = self.client.inputs.logger
         self.count = count
         self.slow = slow
-        self.src_ip = self.client_vm.get_vm_ips(
-                          vn_fq_name=sender_vn_fqname, af=af)[0]
-        self.dst_ip = fip if fip else self.server_vm.get_vm_ips(
-                          vn_fq_name=receiver_vn_fqname, af=af)[0]
+        if isinstance(self.client,VMFixture):
+                self.src_ip = self.client.get_vm_ips(
+                                vn_fq_name=sender_vn_fqname, af=af)[0]
+        else:
+                self.src_ip = self.client.get_bms_ips()[0]
+
+        if isinstance(self.server,VMFixture):
+                self.dst_ip = fip if fip else self.server.get_vm_ips(
+                                vn_fq_name=receiver_vn_fqname, af=af)[0]
+        else:
+                self.dst_ip = self.server.get_bms_ips()[0]
         assert self.start_server(), 'Unable to start server'
         assert self.start_client(), 'Unanle to start client'
         return True
@@ -57,9 +66,14 @@ class SocketTrafficUtil(object):
             self.server_stats_file)
         cmd = 'python /tmp/%s %s'%(os.path.basename(self.server_script), cmd)
         cmd = cmd + ' 0<&- &> %s'%self.server_log_file
-        self.server_vm.copy_file_to_vm(self.server_script, '/tmp/')
-        self.server_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True, as_daemon=True)
-        return True
+        if isinstance(self.server,VMFixture):
+                self.server.copy_file_to_vm(self.server_script, '/tmp/')
+                self.server.run_cmd_on_vm(cmds=[cmd], as_sudo=True, as_daemon=True)
+                return True
+        else:
+                self.server.copy_file_to_bms(self.server_script, '/tmp/')
+                self.server.run_namespace(cmd, as_sudo=True, as_daemon=True)
+                return True
 
     def start_client(self):
         slow = '--slow' if self.slow else ''
@@ -69,9 +83,14 @@ class SocketTrafficUtil(object):
             self.client_stats_file)
         cmd = 'python /tmp/%s %s'%(os.path.basename(self.client_script), cmd)
         cmd = cmd + ' 0<&- &> %s'%self.client_log_file
-        self.client_vm.copy_file_to_vm(self.client_script, '/tmp/')
-        self.client_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True, as_daemon=True)
-        return True
+        if isinstance(self.client,VMFixture):
+                self.client.copy_file_to_vm(self.client_script, '/tmp/')
+                self.client.run_cmd_on_vm(cmds=[cmd], as_sudo=True, as_daemon=True)
+                return True
+        else:
+                self.client.copy_file_to_bms(self.client_script, '/tmp/')
+                self.client.run_namespace(cmd, as_sudo=True, as_daemon=True)
+                return True
 
     def stop(self):
         return self.get_packet_count(poll=False)
@@ -81,15 +100,21 @@ class SocketTrafficUtil(object):
         if poll is True:
             signal = '-USR1'
         cmd = 'kill %s $(cat %s); sync; cat %s'%(signal, pid_file, stats_file)
-        output = vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-        pattern = 'dport: (?P<dport>\d+) -.* ip: (?P<ip>.*) - ' \
-                   + 'sent: (?P<sent>\d+) - recv: (?P<recv>\d+)'
-        return [m.groupdict() for m in re.finditer(pattern, output[cmd] or '')]
+        if isinstance(vm,VMFixture):
+                output = vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+                pattern = 'dport: (?P<dport>\d+) -.* ip: (?P<ip>.*) - ' \
+                        + 'sent: (?P<sent>\d+) - recv: (?P<recv>\d+)'
+                return [m.groupdict() for m in re.finditer(pattern, output[cmd] or '')]
+        else:
+                cmd = vm.run_namespace(cmd)
+                pattern = 'dport: (?P<dport>\d+) -.* ip: (?P<ip>.*) - ' \
+                        + 'sent: (?P<sent>\d+) - recv: (?P<recv>\d+)'
+                return [m.groupdict() for m in re.finditer(pattern, cmd or '')]
 
     def get_packet_count(self, dport=None, poll=True):
-        client_stats = self.get_stats(self.client_vm,
+        client_stats = self.get_stats(self.client,
             self.client_pid_file, self.client_stats_file, poll=poll)
-        server_stats = self.get_stats(self.server_vm,
+        server_stats = self.get_stats(self.server,
             self.server_pid_file, self.server_stats_file, poll=poll)
         self.client_sent = sum([int(d['sent']) for d in client_stats])
         self.server_sent = sum([int(d['sent']) for d in server_stats])
