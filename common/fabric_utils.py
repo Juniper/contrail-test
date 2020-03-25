@@ -102,7 +102,7 @@ class FabricUtils(object):
 
     def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
                                 name=None, cleanup=False,
-                                enterprise_style=True, dc_asn=None):
+                                enterprise_style=True, dc_asn=None, abort_mode=False):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         name = name if name else get_random_name('fabric')
@@ -127,6 +127,9 @@ class FabricUtils(object):
         self.logger.info('Onboarding existing fabric %s %s' %(name, payload))
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         status, fabric = self._get_fabric_fixture(name)
+        if abort_mode:
+            abort_status = self.vnc_h.abort_job(job_execution_ids=execution_id, abort_mode=abort_mode)
+            return (fabric, devices, interfaces, abort_status)
         assert fabric, 'Create fabric seems to have failed'
         if cleanup:
             self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
@@ -154,6 +157,29 @@ class FabricUtils(object):
                     lif.read()
                     interfaces['logical'].append(lif)
         return (fabric, devices, interfaces)
+
+    def abort_job(self, fabric_ref, rb_roles=False, abort_mode=False, wait_for_finish=False):
+        if abort_mode:
+            if 'graceful' in abort_mode:
+                mode_abort = 'graceful'
+                self.logger.info('Gracefully aborting the fabric')
+            elif 'force' in abort_mode:
+                mode_abort = 'force'
+                self.logger.info('Forcefully aborting the fabric')
+            #find out if onboarding or role assignment has to be aborted
+            if 'onboard' in abort_mode:
+                self.logger.info('Will start and abort onboarding of the fabric')
+                self.fabric, self.devices, self.interfaces, self.abort_status = \
+                    self.onboard_existing_fabric(fabric_ref, cleanup=True,
+                        enterprise_style=False, abort_mode=mode_abort, wait_for_finish=False)
+            if 'roles' in abort_mode:
+                self.fabric, self.devices, self.interfaces = \
+                    self.onboard_existing_fabric(fabric_ref, cleanup=False,
+                        enterprise_style=False)
+                self.logger.info('Will start and abort role assignment of the fabric')
+                self.abort_status = self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles, abort_mode=mode_abort, wait_for_finish=False)
+            # Todo skiranh: use analytics api to find out the job has aborted
+            self.cleanup_fabric(self.fabric, self.devices, self.interfaces)
 
     def cleanup_fabric(self, fabric, devices=None, interfaces=None,
                        verify=True, wait_for_finish=True, retry=True):
@@ -354,7 +380,7 @@ class FabricUtils(object):
                                     hardware_name=name+'-hw')
         return cards, hardwares, node_profiles
 
-    def assign_roles(self, fabric, devices, rb_roles=None, wait_for_finish=True):
+    def assign_roles(self, fabric, devices, rb_roles=None, wait_for_finish=True, abort_mode=False):
         ''' eg: rb_roles = {device1: ['CRB-Access'], device2: ['CRB-Gateway', 'DC-Gateway']}'''
         rb_roles = rb_roles or dict()
         roles_dict = dict()
@@ -387,6 +413,10 @@ class FabricUtils(object):
                 if role.lower() in VALID_OVERLAY_ROLES:
                     self.vnc_h.associate_rb_role(device, role.lower())
         execution_id = self.vnc_h.execute_job(fq_name, payload)
+        if abort_mode:
+            abort_status = self.vnc_h.abort_job(job_execution_ids=execution_id, abort_mode=abort_mode)
+            return abort_status
+
         self.logger.info('Started assigning roles for %s'%devices)
         if wait_for_finish:
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
