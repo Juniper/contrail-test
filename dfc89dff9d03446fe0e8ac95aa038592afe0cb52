@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "eb5893eb_0a06000e",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-03-26T06:23:22Z",
+      "side": 1,
+      "message": "Since abort\u003dFalse , job abort work flow wont get executed .( Should we try this  test case with abort\u003dTrue first and then re-onboard with abort\u003dFalse).",
+      "range": {
+        "startLine": 20,
+        "startChar": 8,
+        "endLine": 21,
+        "endChar": 56
+      },
+      "revId": "dfc89dff9d03446fe0e8ac95aa038592afe0cb52",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
