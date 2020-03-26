@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "5007cad6_ba4f1191",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-03-26T07:17:40Z",
+      "side": 1,
+      "message": "Need to status of aborted job ( same like SUCCESS/FAIL .In this case this should be aborted)",
+      "range": {
+        "startLine": 135,
+        "startChar": 12,
+        "endLine": 135,
+        "endChar": 61
+      },
+      "revId": "dfc89dff9d03446fe0e8ac95aa038592afe0cb52",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "eb5893eb_0a06000e",
         "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
         "patchSetId": 2
