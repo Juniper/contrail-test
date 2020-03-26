@@ -72,6 +72,29 @@
     },
     {
       "key": {
+        "uuid": "680584ca_f0b4e0f9",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-26T15:27:43Z",
+      "side": 1,
+      "message": "provide steps as what this TC is expected to do? and PASS/FAIL criteria.\nAlso is the automation coverage is only for brownfield discover process?",
+      "range": {
+        "startLine": 19,
+        "startChar": 8,
+        "endLine": 19,
+        "endChar": 36
+      },
+      "revId": "dfc89dff9d03446fe0e8ac95aa038592afe0cb52",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "eb5893eb_0a06000e",
         "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
         "patchSetId": 2
