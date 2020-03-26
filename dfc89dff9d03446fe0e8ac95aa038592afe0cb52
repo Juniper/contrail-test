@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "db6aeea7_6cdf7caa",
+        "filename": "common/contrail_fabric/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-03-26T08:47:12Z",
+      "side": 1,
+      "message": "Please ignore this,",
+      "parentUuid": "5b2fed9b_5aab95b0",
+      "range": {
+        "startLine": 25,
+        "startChar": 101,
+        "endLine": 25,
+        "endChar": 103
+      },
+      "revId": "dfc89dff9d03446fe0e8ac95aa038592afe0cb52",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "5007cad6_ba4f1191",
         "filename": "common/fabric_utils.py",
         "patchSetId": 2
@@ -85,6 +109,29 @@
       "range": {
         "startLine": 20,
         "startChar": 7,
+        "endLine": 21,
+        "endChar": 56
+      },
+      "revId": "dfc89dff9d03446fe0e8ac95aa038592afe0cb52",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1bf18849_5655ea87",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-03-26T08:47:12Z",
+      "side": 1,
+      "message": "Please ignore comments. I had assumed work flow as 1) Onboard 2) Abort 3) Onboard. ( Could see that work flow is 1) Abort 2) Onboard.",
+      "range": {
+        "startLine": 20,
+        "startChar": 8,
         "endLine": 21,
         "endChar": 56
       },
