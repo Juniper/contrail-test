@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "b41f4bad_7953b198",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-26T10:58:06Z",
+      "side": 1,
+      "message": "there is a bug for this and you closed it saying not done\nhttps://contrail-jws.atlassian.net/browse/CEM-12956\nneed to remove this testcase",
+      "parentUuid": "1fd36dc4_867f651f",
+      "range": {
+        "startLine": 16,
+        "startChar": 21,
+        "endLine": 16,
+        "endChar": 120
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "4deed5e7_a9d46f6d",
         "filename": "scripts/bgpaas/test_bgpaas.py",
         "patchSetId": 2
@@ -71,6 +95,30 @@
     },
     {
       "key": {
+        "uuid": "58e46dc4_851c292b",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-26T10:58:06Z",
+      "side": 1,
+      "message": "its not working so vagesan raised a bug https://contrail-jws.atlassian.net/browse/CEM-12957",
+      "parentUuid": "64f38664_1b0cb3f5",
+      "range": {
+        "startLine": 213,
+        "startChar": 21,
+        "endLine": 214,
+        "endChar": 20
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "2c3a3c62_89e66f5d",
         "filename": "scripts/bgpaas/test_bgpaas.py",
         "patchSetId": 2
@@ -82,6 +130,30 @@
       "writtenOn": "2020-03-24T10:49:36Z",
       "side": 1,
       "message": "i hope there is no minimum hold time in bird? In Junos, I think, minimum hold time is 12s. please make sure there is no such limitation in bird. If I am not wrong, even contrail does not take less than 3 secs. It does not give error but internally uses 3 secs if given anything less than 3. Please verify before adding this test",
+      "range": {
+        "startLine": 534,
+        "startChar": 12,
+        "endLine": 534,
+        "endChar": 50
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d60e259c_e6dd9c15",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 534,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-26T10:58:06Z",
+      "side": 1,
+      "message": "not sure need to check",
+      "parentUuid": "2c3a3c62_89e66f5d",
       "range": {
         "startLine": 534,
         "startChar": 12,
@@ -117,6 +189,30 @@
     },
     {
       "key": {
+        "uuid": "d0230279_7d3ec0db",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 565,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-26T10:58:06Z",
+      "side": 1,
+      "message": "yes we are enabling as4 flag",
+      "parentUuid": "af9f4802_1b107e29",
+      "range": {
+        "startLine": 565,
+        "startChar": 21,
+        "endLine": 565,
+        "endChar": 41
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "ed28731b_3dac8953",
         "filename": "scripts/bgpaas/test_bgpaas.py",
         "patchSetId": 2
@@ -128,6 +224,30 @@
       "writtenOn": "2020-03-24T10:49:36Z",
       "side": 1,
       "message": "last we checked it was not working. not sure why.",
+      "range": {
+        "startLine": 786,
+        "startChar": 22,
+        "endLine": 786,
+        "endChar": 38
+      },
+      "revId": "703ce5b3140c911149d5dd8ab3af45bef405139c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "22d97788_cfb430c0",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 786,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-03-26T10:58:06Z",
+      "side": 1,
+      "message": "yes we have bug for this https://contrail-jws.atlassian.net/browse/CEM-12823",
+      "parentUuid": "ed28731b_3dac8953",
       "range": {
         "startLine": 786,
         "startChar": 22,
