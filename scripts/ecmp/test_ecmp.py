@@ -626,7 +626,6 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
                     svms.remove(svm)
             si_fixture.verify_svm()        
             svms = self.get_svms_in_si(si_fixture)
-            svms = sorted(set(svms))
             new_count = len(svms)
             errmsg = 'The SVMs count has not decreased'
             assert new_count < old_count, errmsg
