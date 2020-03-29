@@ -1,0 +1,211 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8920e5e6_e9c46bd2",
+        "filename": "common/contrail_fabric/base.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "bring this down to next line, always make sure you don\u0027t go beyond 80 chars per line.\nwhat is \u0027default1\u0027? if abort_mode is not there then it should be set to False.",
+      "range": {
+        "startLine": 152,
+        "startChar": 83,
+        "endLine": 152,
+        "endChar": 93
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "77ac49c2_31ec263d",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "why can\u0027t this common code be put in a function and called from all 3 functions - onboard_existing_fabriic, onboard_fabric and assign_roles.",
+      "range": {
+        "startLine": 74,
+        "startChar": 0,
+        "endLine": 74,
+        "endChar": 8
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b79328bc_885e0f40",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "don\u0027t we have to check for return from this function?\nI don\u0027t know what it returns ...",
+      "range": {
+        "startLine": 81,
+        "startChar": 23,
+        "endLine": 81,
+        "endChar": 32
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a08b1c53_495b9b1b",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "on",
+      "range": {
+        "startLine": 18,
+        "startChar": 36,
+        "endLine": 18,
+        "endChar": 38
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b6869a9e_4d7e11ac",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "I assume that as part of this review only brownfield is handled. But your design should be able to handle both green and brown field deployments (think about future also). If the same class can\u0027t be used then make this class specific to brownfield. But i prefer a common class.",
+      "range": {
+        "startLine": 21,
+        "startChar": 6,
+        "endLine": 21,
+        "endChar": 36
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "47c56f70_f9fd6e8c",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "This can\u0027t be greenfield, change the name to brownfield, as you are not setting ztp value.",
+      "range": {
+        "startLine": 29,
+        "startChar": 8,
+        "endLine": 29,
+        "endChar": 36
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "213ebdc7_bb85f00f",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "we need to add TC to reassign the roles after abort and bringup VN, VM, BMS and ping test",
+      "range": {
+        "startLine": 56,
+        "startChar": 8,
+        "endLine": 56,
+        "endChar": 13
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7035a295_e8da7dac",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "same as above, add TC to onboard after force abort and run ping test",
+      "range": {
+        "startLine": 63,
+        "startChar": 8,
+        "endLine": 63,
+        "endChar": 13
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d4a33ecb_6075caab",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-29T11:12:54Z",
+      "side": 1,
+      "message": "same as above, add TC to assign roles after force abort and run ping test",
+      "range": {
+        "startLine": 70,
+        "startChar": 8,
+        "endLine": 70,
+        "endChar": 13
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
