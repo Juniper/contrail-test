@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "79683398_21f74c0b",
+        "filename": "common/contrail_fabric/base.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 163
+      },
+      "writtenOn": "2020-03-30T15:01:09Z",
+      "side": 1,
+      "message": "I will run the pep8 at the end",
+      "parentUuid": "8920e5e6_e9c46bd2",
+      "range": {
+        "startLine": 152,
+        "startChar": 83,
+        "endLine": 152,
+        "endChar": 93
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "77ac49c2_31ec263d",
         "filename": "common/fabric_utils.py",
         "patchSetId": 4
@@ -36,6 +60,30 @@
       "writtenOn": "2020-03-29T11:12:54Z",
       "side": 1,
       "message": "why can\u0027t this common code be put in a function and called from all 3 functions - onboard_existing_fabriic, onboard_fabric and assign_roles.",
+      "range": {
+        "startLine": 74,
+        "startChar": 0,
+        "endLine": 74,
+        "endChar": 8
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0ef0a68f_2e37f28e",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 163
+      },
+      "writtenOn": "2020-03-30T15:01:09Z",
+      "side": 1,
+      "message": "This is not common code. There are different lines for onboard_fabric and assign_roles functions",
+      "parentUuid": "77ac49c2_31ec263d",
       "range": {
         "startLine": 74,
         "startChar": 0,
@@ -71,6 +119,30 @@
     },
     {
       "key": {
+        "uuid": "f77493ef_d2bdd1d6",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 163
+      },
+      "writtenOn": "2020-03-30T15:01:09Z",
+      "side": 1,
+      "message": "The abort job returns the job id, which the script already has.",
+      "parentUuid": "b79328bc_885e0f40",
+      "range": {
+        "startLine": 81,
+        "startChar": 23,
+        "endLine": 81,
+        "endChar": 32
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "a08b1c53_495b9b1b",
         "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
         "patchSetId": 4
@@ -82,6 +154,30 @@
       "writtenOn": "2020-03-29T11:12:54Z",
       "side": 1,
       "message": "on",
+      "range": {
+        "startLine": 18,
+        "startChar": 36,
+        "endLine": 18,
+        "endChar": 38
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "32799245_66f81031",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 163
+      },
+      "writtenOn": "2020-03-30T15:01:09Z",
+      "side": 1,
+      "message": "Will change this.",
+      "parentUuid": "a08b1c53_495b9b1b",
       "range": {
         "startLine": 18,
         "startChar": 36,
@@ -117,6 +213,30 @@
     },
     {
       "key": {
+        "uuid": "fd4d6093_6238cb80",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 163
+      },
+      "writtenOn": "2020-03-30T15:01:09Z",
+      "side": 1,
+      "message": "The workflow is different for greenfield and brownfield. Thats how the fabric test infra is.",
+      "parentUuid": "b6869a9e_4d7e11ac",
+      "range": {
+        "startLine": 21,
+        "startChar": 6,
+        "endLine": 21,
+        "endChar": 36
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "47c56f70_f9fd6e8c",
         "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
         "patchSetId": 4
@@ -140,6 +260,30 @@
     },
     {
       "key": {
+        "uuid": "a9c20aae_3ae71d6b",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 163
+      },
+      "writtenOn": "2020-03-30T15:01:09Z",
+      "side": 1,
+      "message": "Yes.",
+      "parentUuid": "47c56f70_f9fd6e8c",
+      "range": {
+        "startLine": 29,
+        "startChar": 8,
+        "endLine": 29,
+        "endChar": 36
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "213ebdc7_bb85f00f",
         "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
         "patchSetId": 4
@@ -151,6 +295,30 @@
       "writtenOn": "2020-03-29T11:12:54Z",
       "side": 1,
       "message": "we need to add TC to reassign the roles after abort and bringup VN, VM, BMS and ping test",
+      "range": {
+        "startLine": 56,
+        "startChar": 8,
+        "endLine": 56,
+        "endChar": 13
+      },
+      "revId": "b2dfc2a6e1ca6b7990d0e588c7a6f9eeafeae0cd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7c17e841_b253b647",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 163
+      },
+      "writtenOn": "2020-03-30T15:01:09Z",
+      "side": 1,
+      "message": "This class inherits from basic GracefulOnboard class. The TC you mentioned above(abort, bringup VM etc) is covered in base class, it should be covered here as well.",
+      "parentUuid": "213ebdc7_bb85f00f",
       "range": {
         "startLine": 56,
         "startChar": 8,
