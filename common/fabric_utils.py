@@ -105,7 +105,7 @@ class FabricUtils(object):
                                 enterprise_style=True, dc_asn=None):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
-        name = get_random_name(name) if name else get_random_name('fabric')
+        name = name if name else get_random_name('fabric')
         fq_name = ['default-global-system-config',
                    'existing_fabric_onboard_template']
         payload = {'fabric_fq_name': ["default-global-system-config", name],
@@ -196,15 +196,16 @@ class FabricUtils(object):
         return execution_id, devices
 
     def cleanup_discover(self, fabric, devices=None, wait_for_finish=True):
-        device_list = [device.uuid for device in devices or []]
+        device_list = [device.name for device in devices or []]
         self.logger.info('Cleanup discovered devices %s for fabric %s'%(
                          device_list, fabric.name))
 #        fabric.disassociate_devices()
 #        for device in devices or []:
 #            device.cleanUp(force=True)
         fq_name = ['default-global-system-config', 'device_deletion_template']
-        payload = {'fabric_fq_name': fabric.fq_name}
-        execution_id = self.vnc_h.execute_job(fq_name, payload, device_list)
+        payload = {'fabric_fq_name': fabric.fq_name, 'devices' : device_list}
+
+        execution_id = self.vnc_h.execute_job(fq_name, payload)
         if wait_for_finish:
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
             self.logger.info('cleanup discover status after wait_for_job_to_finish : %s' % status)
