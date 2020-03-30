@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2a94a885_3de5685f",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1055,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-30T18:06:28Z",
+      "side": 1,
+      "message": "why only leaf? what about other roles?",
+      "range": {
+        "startLine": 1055,
+        "startChar": 14,
+        "endLine": 1055,
+        "endChar": 22
+      },
+      "revId": "4fd537e857b04c6670434c7682245bd8f422af2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2105e18b_4f788824",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1058,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-30T18:06:28Z",
+      "side": 1,
+      "message": "can\u0027t we have a case to add new device apart from deleting and adding the same device?",
+      "range": {
+        "startLine": 1058,
+        "startChar": 14,
+        "endLine": 1058,
+        "endChar": 22
+      },
+      "revId": "4fd537e857b04c6670434c7682245bd8f422af2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "72bdfeff_e7012da6",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1078,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2020-03-30T18:06:28Z",
+      "side": 1,
+      "message": "why roles for spine and pnf to be checked? you have re-added only leaf right?",
+      "range": {
+        "startLine": 1073,
+        "startChar": 12,
+        "endLine": 1078,
+        "endChar": 40
+      },
+      "revId": "4fd537e857b04c6670434c7682245bd8f422af2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
