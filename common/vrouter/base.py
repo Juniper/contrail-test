@@ -1128,12 +1128,10 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
         return result
 
     def send_traffic_verify_flow_dst_compute(self, src_vm_fix, dst_vm_fix,
-            proto, ff_exp=0, rf_exp=0, exp=True):
+            proto, sport=10000, dport=11000, ff_exp=0, rf_exp=0, exp=True):
 
         src_ip = src_vm_fix.vm_ip
         dst_ip = dst_vm_fix.vm_ip
-        sport = 10000
-        dport = 11000
 
         assert self.send_nc_traffic(src_vm_fix, dst_vm_fix, sport, dport,
             proto, exp=exp)
