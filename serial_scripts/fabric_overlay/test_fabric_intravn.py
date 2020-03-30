@@ -1033,6 +1033,74 @@ class TestFabricOverlay(TestSPStyleFabric):
         assert len(curr_hw_inventory) == 1 and \
             curr_hw_inventory != orig_hw_inventory
 
+
+    @preposttest_wrapper
+    def test_brownfield_user_workflow(self):
+
+        '''
+        Testcase to validate below work flow.Brownfield user workflow test(CEM-9241).
+        1. Remove device from fabric.
+        2. Add device to fabric.
+        3. Reonboard device.
+        4. Do basic traffic test with newly added device.
+        '''
+
+        self.inputs.set_af('dual')
+        self.addCleanup(self.inputs.set_af, 'v4')
+        fabric_dict = self.inputs.fabrics[0]
+
+        # Workflow to remove/add device.
+        self.logger.info("Workflow to remove/Add device.")
+        mgmt_ip =list()
+        # Workflow to remove spine.
+        if len(self.spines) > 1:
+            spine = self.spines[0]
+            self.cleanup_discover(self.fabric, [spine])
+            mgmt_ip.append({'cidr' : str(spine.mgmt_ip + '/32')})
+        # Workflow to remove leaf.
+        leaf = self.leafs[0]
+        self.logger.info("Remove device from fabric.")
+        self.cleanup_discover(self.fabric, [leaf])
+        mgmt_ip.append({'cidr' : str(leaf.mgmt_ip + '/32')})
+
+        # Workflow to add leaf and spine
+        self.logger.info("Add device to fabric.")
+        fabric_dict['namespaces'].update({'management' : mgmt_ip})
+        fabName = self.fabric.name
+        self.fabric, self.devices, self.interfaces = self.onboard_existing_fabric(fabric_dict, cleanup=False, enterprise_style=True,name=fabName)
+
+        # Add roles to newly added devices.
+        self.logger.info("Add roles to newly added devices.")
+        self.spines =list()
+        self.leafs =list()
+        for device in self.devices:
+            role = self.get_role_from_inputs(device.name)
+            if role == 'spine':
+                self.spines.append(device)
+            elif role == 'leaf':
+                self.leafs.append(device)
+        devices = list()
+        devices.append(leaf)
+        devices.append(spine)
+        self.addCleanup(self.assign_roles, self.fabric, self.devices)
+        self.assign_roles(self.fabric, devices)
+
+        # Reonboard devices
+        self.logger.info("Workflow to reonboard device interface.")
+        self.onboard([self.leafs[0]])
+
+        # Validate basic traffic tests.
+        self.logger.info("Validate basic traffic tests.")
+        bms_fixtures = list()
+        vn = self.create_vn()
+        vm1 = self.create_vm(vn_fixture=vn, image_name='ubuntu')
+        for bms in self.get_bms_nodes():
+            bms_fixtures.append(self.create_bms(bms_name=bms,
+                vn_fixture=vn, tor_port_vlan_tag=10))
+        vm1.wait_till_vm_is_up()
+        self.do_ping_mesh(bms_fixtures+[vm1])
+
+
 class TestVxlanID(GenericTestBase):
     @preposttest_wrapper
     def test_check_vxlan_id_reuse(self):
