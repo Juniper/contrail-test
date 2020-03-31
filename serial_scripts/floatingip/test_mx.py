@@ -111,7 +111,7 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
         else:
             self.logger.error(
 	        "Ping should fail. But ping is successful even with wrong RT values")
-        result = result and False
+            result = result and False
 
         # Change the RT value to correct one.
         routing_instance = self.public_vn_obj.public_vn_fixture.ri_name
