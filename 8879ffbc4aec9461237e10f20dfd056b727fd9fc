@@ -1,0 +1,157 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fbe2cfcc_b17cec85",
+        "filename": "fixtures/contrailapi.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "Please use 4 spacings. Please update the same everywhere",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d16567c7_a97d2349",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "Please change tabs to spaces... it would fail with Pep8",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "01c09a18_3d0a0998",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 72,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "Have a sleep of 30 to 60 seconds after add/delete of Security Group or Rules or otherwise we need to modify verify_traffic with retry loop.",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fe0c865e_1a144d73",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "We dont need this Info message, since ping_with_certainty itself prints debug messages.",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ff62edae_cf8b96bb",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "Can we also add a traffic check here after SG delete, the tcp/udp traffic should fail however the icmp should be fine?",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "132b42bf_5baaf929",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "Can we also make sure the existing SG also works fine. In the sense both VM1 and VM2 tcp should work fine for certain ports(8004-8006) and not for other ports.",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c2cdbc0d_f67efc9e",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "Also we need to add tests if there were multiple vlans in the same BMS.\nTests to validate BMS to BMS traffic (VN-CIDR rule)",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6134341f_03f22c1d",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 153,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "This wouldnt work since BMS1_2 doesnt allow the return traffic. Did the test pass?",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3d1eca45_b07fbab9",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_sg.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 156,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-03-31T19:03:07Z",
+      "side": 1,
+      "message": "This shouldnt work too since BMS1 doesnt allow ICMP",
+      "revId": "8879ffbc4aec9461237e10f20dfd056b727fd9fc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
