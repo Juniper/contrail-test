@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "42b95d6d_a42672cd",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1070,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T06:50:00Z",
+      "side": 1,
+      "message": "Currently onboard_existing_fabric doesnt check if all the devices are part of the fabric.\nWould be good if you can we add a check for the same either here explicitly or part of the onboard_existing_fabric api itself.",
+      "revId": "551cdc39c156b9c075005f8a6b21701d6ba8e6a3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ca64e606_dfbbc39b",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1101,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T06:50:00Z",
+      "side": 1,
+      "message": "Can we have spine deletion part after the BMS instance is launched and lets remove one of the spines and add back the spine with RouteReflector role and check if the newly added spine is part of RR Group and there is no traffic impact during these operations.\n\nAlso add another test to remove the RR role from one of the spines and back the RR role, when we remove it, the RR removed spine shouldnt have RR-Group and should have neighborship to RR-enabled spine alone. Believe there were some bugs around RR remove and add and not sure if they were fixed yet. Hence the request to catch them as part of regression.",
+      "revId": "551cdc39c156b9c075005f8a6b21701d6ba8e6a3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
