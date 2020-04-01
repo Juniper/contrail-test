@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "f57c2f60_8e0ccdb0",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1055,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-01T04:17:47Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "2a94a885_3de5685f",
+      "range": {
+        "startLine": 1055,
+        "startChar": 14,
+        "endLine": 1055,
+        "endChar": 22
+      },
+      "revId": "4fd537e857b04c6670434c7682245bd8f422af2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "2105e18b_4f788824",
         "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
         "patchSetId": 1
@@ -36,6 +60,30 @@
       "writtenOn": "2020-03-30T18:06:28Z",
       "side": 1,
       "message": "can\u0027t we have a case to add new device apart from deleting and adding the same device?",
+      "range": {
+        "startLine": 1058,
+        "startChar": 14,
+        "endLine": 1058,
+        "endChar": 22
+      },
+      "revId": "4fd537e857b04c6670434c7682245bd8f422af2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "610ec087_def177c1",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1058,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-01T04:17:47Z",
+      "side": 1,
+      "message": "We need to add new variables in test input file for this, as all devices in input file will be on-boarded. Code flow for adding device will be same (for new and already deleted devices).",
+      "parentUuid": "2105e18b_4f788824",
       "range": {
         "startLine": 1058,
         "startChar": 14,
@@ -68,6 +116,30 @@
       "revId": "4fd537e857b04c6670434c7682245bd8f422af2a",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6a38812a_4c9278a5",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1078,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-01T04:17:47Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "72bdfeff_e7012da6",
+      "range": {
+        "startLine": 1073,
+        "startChar": 12,
+        "endLine": 1078,
+        "endChar": 40
+      },
+      "revId": "4fd537e857b04c6670434c7682245bd8f422af2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
