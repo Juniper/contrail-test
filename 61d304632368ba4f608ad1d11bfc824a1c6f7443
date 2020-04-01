@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa0ea013_433cff99",
+        "filename": "common/contrail_fabric/base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T07:28:22Z",
+      "side": 1,
+      "message": "Lets not add abort_mode here. If you wish to not onboard then override the setUp function",
+      "revId": "61d304632368ba4f608ad1d11bfc824a1c6f7443",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "07303731_7b829c4a",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T07:28:22Z",
+      "side": 1,
+      "message": "Please set wait_for_finish as false in the caller (Testcase) and let the testcase call abort_job explicitly.",
+      "revId": "61d304632368ba4f608ad1d11bfc824a1c6f7443",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "25b2b643_a614ea51",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 75,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T07:28:22Z",
+      "side": 1,
+      "message": "Please define abort_job as a separate function. Lets not modify each and every api with abort_job functionality.",
+      "revId": "61d304632368ba4f608ad1d11bfc824a1c6f7443",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "badce7b9_ff32c9f4",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T07:28:22Z",
+      "side": 1,
+      "message": "Same here",
+      "revId": "61d304632368ba4f608ad1d11bfc824a1c6f7443",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c2671a7d_bccb1e27",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 374,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T07:28:22Z",
+      "side": 1,
+      "message": "Same here",
+      "revId": "61d304632368ba4f608ad1d11bfc824a1c6f7443",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "121b7a4e_2c19976a",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T07:28:22Z",
+      "side": 1,
+      "message": "Hope we can have just one class and rest all are just testcases.",
+      "revId": "61d304632368ba4f608ad1d11bfc824a1c6f7443",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "80061bf4_773dd062",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_abort.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-01T07:28:22Z",
+      "side": 1,
+      "message": "Dont call super rather the individual testcases may call onboard/role_assign and abort as need be.\nAlso please validate if the jobs have aborted via AnalyticsAPI.",
+      "revId": "61d304632368ba4f608ad1d11bfc824a1c6f7443",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
