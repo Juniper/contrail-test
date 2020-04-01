@@ -61,6 +61,12 @@ class TestPodDeployment(BaseK8sTest):
         new_replicas = len(self.inputs.compute_ips)*3
         namespace = self.setup_namespace()
 
+        # By default, Openshift restricts SCC for API-access for Replication Controllers, below enables it
+        if self.inputs.deployer == 'openshift':
+            os_node = self.inputs.k8s_master_ip
+            ocad = "oc adm policy add-scc-to-user anyuid system:serviceaccount:%s:default"%(namespace.name)
+            self.inputs.run_cmd_on_server(os_node, ocad)
+
         client_pod = self.setup_busybox_pod(namespace=namespace.name)
         dep_1 = self.setup_nginx_deployment(namespace=namespace.name,
             replicas=replicas, pod_labels=labels)
@@ -82,4 +88,3 @@ class TestPodDeployment(BaseK8sTest):
             test_pod=client_pod)
 
     # end test_deployment_replica_updation
-
