@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7c1d214a_7e51d04a",
+        "filename": "common/k8s/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 958,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2020-04-01T22:18:57Z",
+      "side": 1,
+      "message": "Hi Sarath ..please add the same changes to test_deployment() routine as well.\nfor now none of the OpenShift sanity testcases uses this routine..but if you do a  full run might hit in another cases which uses that routing .",
+      "revId": "39eb3be8cbb754d42c64f68be7504ed454f0ceba",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
