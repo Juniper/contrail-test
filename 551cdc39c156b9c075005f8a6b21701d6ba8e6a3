@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "c8afa8d0_affe9b85",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1070,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-01T16:22:20Z",
+      "side": 1,
+      "message": "Ack . Added check to ensure device count is same as in fab input file provided.",
+      "parentUuid": "42b95d6d_a42672cd",
+      "revId": "551cdc39c156b9c075005f8a6b21701d6ba8e6a3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "ca64e606_dfbbc39b",
         "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
         "patchSetId": 2
@@ -33,6 +51,24 @@
       "revId": "551cdc39c156b9c075005f8a6b21701d6ba8e6a3",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "65fe5fb0_76509018",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1101,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-01T16:22:20Z",
+      "side": 1,
+      "message": "Ack\nAdded one test to handle RR deletion ( could see that, after deletion of RR role , spine is forming peering with all devices . So test is failing as of now) .\n\nRemoving leaf and spine in different steps will consume more time. Added bms steps in test_rr_deletion .",
+      "parentUuid": "ca64e606_dfbbc39b",
+      "revId": "551cdc39c156b9c075005f8a6b21701d6ba8e6a3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
