@@ -117,10 +117,12 @@ class NamespaceFixture(fixtures.Fixture):
             self.api_s_obj.uuid))
         return True
     # end verify_namespace_in_contrail_api
-    
+
     @retry(delay=2, tries=10)
     def verify_namespace_in_kube_manager(self):
         km_h = self.connections.get_kube_manager_h()
+        if not km_h:
+            return False
         self.namespace_info = km_h.get_namespace_info(ns_uuid = self.uuid)
         if self.namespace_info:
             if self.namespace_info['phase'] == "Active":
