@@ -69,6 +69,24 @@
       "revId": "551cdc39c156b9c075005f8a6b21701d6ba8e6a3",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "20b8aceb_58234a5e",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1101,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-02T16:01:58Z",
+      "side": 1,
+      "message": "Please raise a bug for the same.",
+      "parentUuid": "65fe5fb0_76509018",
+      "revId": "551cdc39c156b9c075005f8a6b21701d6ba8e6a3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
