@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a2f588b9_5c2ca0d3",
+        "filename": "fixtures/k8s/namespace.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-02T15:18:34Z",
+      "side": 1,
+      "message": "km_h is None then it means either the kubemanager service is down or we are unable to connect to the kubemanager introspect. So we shouldnt really be ignoring it here.\nIf we need retries with connecting to introspect then the retry logic should be implemented in get_kube_manager_h().",
+      "revId": "0041cab10d43702b1f011ed405030028a34139e8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
