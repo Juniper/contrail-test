@@ -16,6 +16,24 @@
       "revId": "39eb3be8cbb754d42c64f68be7504ed454f0ceba",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8cca3cc3_28e55b47",
+        "filename": "common/k8s/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 958,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2020-04-02T07:04:47Z",
+      "side": 1,
+      "message": "Ack\nHave take care of fixes also on this.\nPlease review..",
+      "parentUuid": "7c1d214a_7e51d04a",
+      "revId": "39eb3be8cbb754d42c64f68be7504ed454f0ceba",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
