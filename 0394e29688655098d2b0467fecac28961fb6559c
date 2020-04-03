@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "c17097f6_d7ced3b1",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 1073,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-03T03:24:06Z",
+      "side": 1,
+      "message": "Ack- Done",
+      "parentUuid": "3bdb1b9a_2e515cfb",
+      "revId": "0394e29688655098d2b0467fecac28961fb6559c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "af9d8e75_867a2c68",
         "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
         "patchSetId": 3
@@ -36,6 +54,24 @@
     },
     {
       "key": {
+        "uuid": "cce44c43_b82746fe",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 1101,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-03T03:24:06Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "af9d8e75_867a2c68",
+      "revId": "0394e29688655098d2b0467fecac28961fb6559c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "b165f876_5d3800a3",
         "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
         "patchSetId": 3
@@ -47,6 +83,24 @@
       "writtenOn": "2020-04-02T16:01:58Z",
       "side": 1,
       "message": "Even this could be wrong if the input doesnt have \u0027/32\u0027. Also we need to update onboard_fabric/onboard_existing_fabric functions to check if they are properly onboarded and not in the testcase so it will be useful for all of the testcases.\n\nFor now you may skip this validation, we shall look at it later.",
+      "revId": "0394e29688655098d2b0467fecac28961fb6559c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9bba625e_fd9ca640",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 1103,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2020-04-03T03:24:06Z",
+      "side": 1,
+      "message": "Commented this . Will take care of this later.",
+      "parentUuid": "b165f876_5d3800a3",
       "revId": "0394e29688655098d2b0467fecac28961fb6559c",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
