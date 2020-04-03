@@ -129,6 +129,10 @@ class NetconfConnection(AbstractConnection):
         output = self.handle.rpc.get_interface_information(terse=terse)
         return EtreeToDict('physical-interface').get_all_entry(output)
 
+    def get_bgp_peer_count(self):
+        output = self.handle.rpc.get_bgp_summary_information()
+        return EtreeToDict('peer-count').get_all_entry(output)
+
     def config(self, stmts=[], commit=True, merge=True, overwrite=False,
                path=None, ignore_errors=False, timeout=30):
         if path:
