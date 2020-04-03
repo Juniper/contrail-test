@@ -164,10 +164,10 @@ class ContrailVncApi(object):
         sg = self.get_security_group(sg_id)
         vmi_id = kwargs.get('vmi_id')
         if vmi_id:
-                vmis = [vmi_id]
+            vmis = [vmi_id]
         else:
-                vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
-                vmis = [vmi['uuid']
+            vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
+            vmis = [vmi['uuid']
                         for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
         vmis = [
             self._vnc.virtual_machine_interface_read(
@@ -184,7 +184,7 @@ class ContrailVncApi(object):
         sgs = [self.get_security_group(sg_id) for sg_id in sg_ids]
         vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
         vmis = [vmi['uuid']
-                for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
+                    for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
         vmis = [
             self._vnc.virtual_machine_interface_read(
                 id=vmi) for vmi in vmis]
@@ -199,10 +199,10 @@ class ContrailVncApi(object):
         sg = self.get_security_group(sg_id)
         vmi_id = kwargs.get('vmi_id')
         if vmi_id:
-                vmis = [vmi_id]
+            vmis = [vmi_id]
         else:
-                vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
-                vmis = [vmi['uuid']
+            vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
+            vmis = [vmi['uuid']
                         for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
         vmis = [
             self._vnc.virtual_machine_interface_read(
