@@ -34,6 +34,24 @@
       "revId": "0041cab10d43702b1f011ed405030028a34139e8",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "45330842_5dffbf70",
+        "filename": "fixtures/k8s/namespace.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-04-04T18:02:28Z",
+      "side": 1,
+      "message": "Can you check if the below patchset would work. (I havent vaildated the patch, it may have some typos)\n\nBTW, Would adding a delay between deployment and test execution help here or a check to see if the contrail-status says all the services are active before triggering the test helps rather than adding retries in test code to wait for the service to be up.\n\ndiff --git a/common/connections.py b/common/connections.py\nindex e2f8fb01..3e8d2815 100755\n--- a/common/connections.py\n+++ b/common/connections.py\n@@ -19,6 +19,7 @@ from vcenter import VcenterAuth, VcenterOrchestrator\n from vro import VroWorkflows\n from common.contrail_test_init import ContrailTestInit\n from vcenter_gateway import VcenterGatewayOrch\n+from tcutils.util import retry\n try:\n     from tcutils.kubernetes.api_client import Client as Kubernetes_client\n except ImportError:\n@@ -315,26 +316,33 @@ class ContrailConnections():\n                     break\n         return self._svc_mon_inspect\n\n+    @retry(delay\u003d3, tries\u003d10)\n+    def _get_kube_manager_h(self):\n+        if self.k8s_cluster:\n+            self._kube_manager_inspect \u003d KubeManagerInspect(\n+                self.k8s_cluster[\u0027master_public_ip\u0027],\n+                logger\u003dself.logger,\n+                args\u003dself.inputs,\n+                protocol\u003dself.inputs.introspect_protocol)\n+\n+        for km_ip in self.inputs.kube_manager_ips:\n+            #contrail-status would increase run time hence netstat approach\n+            cmd \u003d \u0027netstat -antp | grep :%s | grep LISTEN\u0027 % self.inputs.k8s_port\n+            if \u0027LISTEN\u0027 in self.inputs.run_cmd_on_server(km_ip, cmd,\n+                               container\u003d\u0027contrail-kube-manager\u0027):\n+                self._kube_manager_inspect \u003d KubeManagerInspect(km_ip,\n+                                       logger\u003dself.logger,\n+                                       args\u003dself.inputs,\n+                                       protocol\u003dself.inputs.introspect_protocol)\n+                break\n+        return self._kube_manager_inspect\n+\n     def get_kube_manager_h(self, refresh\u003dFalse):\n         if not getattr(self, \u0027_kube_manager_inspect\u0027, None) or refresh:\n-            if self.k8s_cluster:\n-                self._kube_manager_inspect \u003d KubeManagerInspect(\n-                                        self.k8s_cluster[\u0027master_public_ip\u0027],\n-                                        logger\u003dself.logger,\n-                                        args\u003dself.inputs,\n-                                        protocol\u003dself.inputs.introspect_protocol)\n-                return self._kube_manager_inspect\n-\n-            for km_ip in self.inputs.kube_manager_ips:\n-                #contrail-status would increase run time hence netstat approach\n-                cmd \u003d \u0027netstat -antp | grep :%s | grep LISTEN\u0027 % self.inputs.k8s_port\n-                if \u0027LISTEN\u0027 in self.inputs.run_cmd_on_server(km_ip, cmd,\n-                                   container\u003d\u0027contrail-kube-manager\u0027):\n-                    self._kube_manager_inspect \u003d KubeManagerInspect(km_ip,\n-                                           logger\u003dself.logger,\n-                                           args\u003dself.inputs,\n-                                           protocol\u003dself.inputs.introspect_protocol)\n-                    break\n+            self._kube_manager_inspect \u003d None\n+            self._get_kube_manager_h()\n+            msg \u003d \"Kubernetes manager service is not up\"\n+            assert self._kube_manager_inspect is not None, msg\n         return self._kube_manager_inspect\n     # end get_kube_manager_h",
+      "parentUuid": "861e6ab5_dc3a72d3",
+      "revId": "0041cab10d43702b1f011ed405030028a34139e8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
     }
   ]
 }
