@@ -16,6 +16,24 @@
       "revId": "0041cab10d43702b1f011ed405030028a34139e8",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "861e6ab5_dc3a72d3",
+        "filename": "fixtures/k8s/namespace.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 382
+      },
+      "writtenOn": "2020-04-04T16:11:32Z",
+      "side": 1,
+      "message": "I\u0027ve checked code of retry decorator which is set here and get_kube_manager_h function.\n\nFrom this analysis I suggest to leave this code.\nretry decorator already has required logic - \"Retries a function or method until it returns True. delay sets the initial delay in seconds.\". And it doesn\u0027t catch exceptions that leads to early exit from this function.\n\nBut for applying retry logic to get_kube_manager_h I have to change result of this function and all calls.\nAnother option is to implement another retry decorator that can be based on catching exceptions inside.",
+      "parentUuid": "a2f588b9_5c2ca0d3",
+      "revId": "0041cab10d43702b1f011ed405030028a34139e8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
     }
   ]
 }
