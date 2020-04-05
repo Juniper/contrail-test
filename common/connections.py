@@ -20,6 +20,7 @@ from vcenter import VcenterAuth, VcenterOrchestrator
 from vro import VroWorkflows
 from common.contrail_test_init import ContrailTestInit
 from vcenter_gateway import VcenterGatewayOrch
+from tcutils.util import retry
 try:
     from tcutils.kubernetes.api_client import Client as Kubernetes_client
 except ImportError:
@@ -67,7 +68,7 @@ class ContrailConnections(object):
 
         # ToDo: msenthil/sandipd rest of init needs to be better handled
         self.domain_id = None
-        if self.inputs.domain_isolation: 
+        if self.inputs.domain_isolation:
             #get admin auth to list domains and get domain_id
             auth = self.get_auth_h(username = self.inputs.admin_username,
                                    password=self.inputs.admin_password,
@@ -92,7 +93,7 @@ class ContrailConnections(object):
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()
-        elif self.inputs.orchestrator == 'vcenter': 
+        elif self.inputs.orchestrator == 'vcenter':
             self.orch = VcenterOrchestrator(user=self.inputs.vcenter_username,
                                             pwd= self.inputs.vcenter_password,
                                             host=self.inputs.vcenter_server,
@@ -152,7 +153,7 @@ class ContrailConnections(object):
 #            elif self.inputs.orchestrator == 'kubernetes':
 #                env[attr] = self.get_k8s_api_client_handle()
         return env.get(attr)
-    
+
     def get_vnc_lib_h(self, refresh=False):
         attr = '_vnc_lib_fixture_' + self.project_name + '_' + self.username
         cfgm_ip = self.inputs.command_server_ip or self.inputs.api_server_ip or \
@@ -168,8 +169,8 @@ class ContrailConnections(object):
             use_ssl = True
         if not getattr(env, attr, None) or refresh:
             if self.inputs.orchestrator == 'openstack' :
-                domain = self.orch_domain_name     
-            else:  
+                domain = self.orch_domain_name
+            else:
                 domain = self.domain_name
             env[attr] = VncLibFixture(
                 username=self.username, password=self.password,
@@ -316,28 +317,37 @@ class ContrailConnections(object):
                     break
         return self._svc_mon_inspect
 
-    def get_kube_manager_h(self, refresh=False):
-        if not getattr(self, '_kube_manager_inspect', None) or refresh:
-            if self.k8s_cluster:
-                self._kube_manager_inspect = KubeManagerInspect(
-                                        self.k8s_cluster['master_public_ip'],
+    @retry(delay=3, tries=10)
+    def _get_kube_manager_h(self, refresh=False):
+        if self.k8s_cluster:
+            self._kube_manager_inspect = KubeManagerInspect(
+                                    self.k8s_cluster['master_public_ip'],
+                                    logger=self.logger,
+                                    args=self.inputs,
+                                    protocol=self.inputs.introspect_protocol)
+            return True
+
+        for km_ip in self.inputs.kube_manager_ips:
+            #contrail-status would increase run time hence netstat approach
+            cmd = 'netstat -antp | grep :%s | grep LISTEN' % self.inputs.k8s_port
+            if 'LISTEN' in self.inputs.run_cmd_on_server(km_ip, cmd,
+                                container='contrail-kube-manager'):
+                self._kube_manager_inspect = KubeManagerInspect(km_ip,
                                         logger=self.logger,
                                         args=self.inputs,
                                         protocol=self.inputs.introspect_protocol)
-                return self._kube_manager_inspect
+                return True
 
-            for km_ip in self.inputs.kube_manager_ips:
-                #contrail-status would increase run time hence netstat approach
-                cmd = 'netstat -antp | grep :%s | grep LISTEN' % self.inputs.k8s_port
-                if 'LISTEN' in self.inputs.run_cmd_on_server(km_ip, cmd,
-                                   container='contrail-kube-manager'):
-                    self._kube_manager_inspect = KubeManagerInspect(km_ip,
-                                           logger=self.logger,
-                                           args=self.inputs,
-                                           protocol=self.inputs.introspect_protocol)
-                    break
-        return self._kube_manager_inspect
+        return False
     # end get_kube_manager_h
+
+    def get_kube_manager_h(self, refresh=False):
+        if not getattr(self, '_kube_manager_inspect', None) or refresh:
+            self._kube_manager_inspect = None
+            self._get_kube_manager_h(refresh=refresh)
+            msg = "Kubernetes manager service is not up"
+            assert self._kube_manager_inspect is not None, msg
+        return self._kube_manager_inspect
 
     @property
     def policy_generator_handle(self):
