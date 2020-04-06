@@ -300,6 +300,12 @@ class Client(api_client.Client):
         body = self.get_template('deployment')
         body['metadata'] = metadata
         body['spec']['template']['spec']['containers'] = modified_spec['template']['spec']['containers']
+
+        ## Selector should not be empty and it has to match the template labels
+        body['spec']['selector'] = modified_spec['selector']
+        body['spec']['template']['metadata'] = modified_spec['template']['metadata']
+        body['spec']['replicas'] =  modified_spec['replicas']
+
         if name:
             for container in  modified_spec['template']['spec']['containers']:
                 container['name'] = name

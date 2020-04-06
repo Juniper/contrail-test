@@ -952,6 +952,10 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         }
         if replicas:
             spec.update({'replicas': replicas})
+
+            # below mandatory for Openshift_client and as being part of existing spec should work fine for K8s_client also
+            selector_dict = {'match_labels': pod_labels}
+            spec.update({'selector': selector_dict})
         spec.update({
             'template': {
                 'metadata': template_metadata,
