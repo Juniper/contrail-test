@@ -32,7 +32,7 @@ docker_build_test_sku () {
   local tag=$3
   local build_arg_opts=''
   local dockerfile=${dir}'/Dockerfile'
-  docker_ver=$(docker -v | awk -F' ' '{print $3}' | sed 's/,//g')
+  docker_ver=$(sudo docker -v | awk -F' ' '{print $3}' | sed 's/,//g')
   if [[ "$docker_ver" < '17.06' ]] ; then
     cat $dockerfile | sed \
       -e 's/\(^ARG REGISTRY_SERVER=.*\)/#\1/' \
@@ -50,7 +50,7 @@ docker_build_test_sku () {
   build_arg_opts+=" --build-arg OPENSTACK_REPO=${OPENSTACK_REPO}"
 
   echo "Building test container ${name}:${tag} with opts ${build_arg_opts}"
-  docker build --network host -t ${name}:${tag} ${build_arg_opts} -f $dockerfile $dir || exit 1
+  sudo docker build --network host -t ${name}:${tag} ${build_arg_opts} -f $dockerfile $dir || exit 1
   echo "Built test container ${name}:${tag}"
 }
 
@@ -116,9 +116,9 @@ EOF
     fi
 
     docker_build_test_sku "docker/test" "contrail-test-test" "$TAG"
-    docker tag contrail-test-test:$TAG $REGISTRY_SERVER/contrail-test-test:$TAG
+    sudo docker tag contrail-test-test:$TAG $REGISTRY_SERVER/contrail-test-test:$TAG
     if [[ -n $POST ]]; then
-        docker push $REGISTRY_SERVER/contrail-test-test:$TAG
+        sudo docker push $REGISTRY_SERVER/contrail-test-test:$TAG
     fi
 }
 
@@ -154,12 +154,12 @@ EOF
         TAG=latest
     fi
     echo "Building base container"
-    docker build --network host -t contrail-test-base:$TAG docker/base || exit 1
+    sudo docker build --network host -t contrail-test-base:$TAG docker/base || exit 1
     if [[ -n $REGISTRY_SERVER ]]; then
-        docker tag contrail-test-base:$TAG $REGISTRY_SERVER/contrail-test-base:$TAG
+        sudo docker tag contrail-test-base:$TAG $REGISTRY_SERVER/contrail-test-base:$TAG
     fi
     if [[ -n $POST ]]; then
-        docker push $REGISTRY_SERVER/contrail-test-base:$TAG
+        sudo docker push $REGISTRY_SERVER/contrail-test-base:$TAG
     fi
     echo "Built base container contrail-test-base:$TAG"
 }
