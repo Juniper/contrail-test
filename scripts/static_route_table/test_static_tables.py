@@ -270,14 +270,14 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
         """
         self.config_basic(vm2=True)
         self.add_interface_route_table(self.vn1_fixture, self.vn2_fixture, self.vm1_fixture)
-        self.bind_interface_table(self, self.vn1_fixture, self.vn2_fixture, self.vm2_fixture)
+        self.bind_interface_table(self.vn1_fixture, self.vn2_fixture, self.vm2_fixture)
         self.addCleanup(self.delete_int_route_table)
         sport = 8001
         dport = 9001
         self.verify_traffic(
             self.left_vm_fixture, self.right_vm_fixture, 'udp', sport=sport, dport=dport)
         self.check_route_in_agent(expected_next_hops = 1)
-        self.unbind_interface_table(self, self.vn1_fixture, self.vn2_fixture, self.vm2_fixture)
+        self.unbind_interface_table(self.vn1_fixture, self.vn2_fixture, self.vm2_fixture)
 
     @preposttest_wrapper 
     def test_attach_multiple_network_route_table_to_vns(self):
