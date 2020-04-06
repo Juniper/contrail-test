@@ -68,7 +68,7 @@ class StaticRouteTableBase(BaseNeutronTest):
             self.vm2_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
     
     # create int route table and bind it to the middle vm's vmi's
-    def add_interface_route_table(self, src_vn_fix, dst_vn_fix, port1_fix, multiple_tables=1,si=False):
+    def add_interface_route_table(self, src_vn_fix, dst_vn_fix, port1_fix=None, multiple_tables=1,si=False):
         self.intf_table_to_right_objs = []
         self.intf_table_to_left_objs = []
         self.right_prefixes = []
@@ -101,7 +101,7 @@ class StaticRouteTableBase(BaseNeutronTest):
             self.intf_table_to_left_objs.append(intf_table_to_left_obj)
 
     # delete the created int route table
-    def delete_int_route_table(self,src_vn=None, dst_vn=None, port_fix=None):
+    def delete_int_route_table(self, src_vn=None, dst_vn=None, port_fix=None):
         src_vn_fix = src_vn or self.vn1_fixture
         dst_vn_fix = dst_vn or self.vn2_fixture
         port_fix = port_fix or self.vm1_fixture
@@ -129,8 +129,8 @@ class StaticRouteTableBase(BaseNeutronTest):
                 )
                 self.static_table_handle.bind_network_route_table_to_vn(
                     vn_uuid=vn2_fix.uuid,
-                    nw_route_table_obj=self.nw_handle_to_left)
-                self.left_prefixes.appeend(prefix)
+                    nw_route_table_obj=nw_handle_to_left)
+                self.left_prefixes.append(prefix)
             else:
                 prefix = self.get_prefix(vn2_fix,i)
                 nw_handle_to_right = self.static_table_handle.create_route_table(
@@ -144,7 +144,7 @@ class StaticRouteTableBase(BaseNeutronTest):
                 )
                 self.static_table_handle.bind_network_route_table_to_vn(
                     vn_uuid=vn1_fix.uuid,
-                    nw_route_table_obj=self.nw_handle_to_right)
+                    nw_route_table_obj=nw_handle_to_right)
                 self.right_prefixes.append(prefix)
             if str(self.vm1_fixture.vm_ips[1])[:-1] == str(self.right_vm_fixture.vm_ip)[:-1]:
                 prefix = self.get_prefix(vn1_fix,i)
@@ -159,8 +159,8 @@ class StaticRouteTableBase(BaseNeutronTest):
                 )
                 self.static_table_handle.bind_network_route_table_to_vn(
                     vn_uuid=vn2_fix.uuid,
-                    nw_route_table_obj=self.nw_handle_to_left)
-                self.left_prefixes.appeend(prefix)
+                    nw_route_table_obj=nw_handle_to_left)
+                self.left_prefixes.append(prefix)
             else:
                 prefix = self.get_prefix(vn2_fix,i)
                 nw_handle_to_right = self.static_table_handle.create_route_table(
@@ -174,13 +174,12 @@ class StaticRouteTableBase(BaseNeutronTest):
                 )
                 self.static_table_handle.bind_network_route_table_to_vn(
                     vn_uuid=vn1_fix.uuid,
-                    nw_route_table_obj=self.nw_handle_to_right)
+                    nw_route_table_obj=nw_handle_to_right)
                 self.right_prefixes.append(prefix)
             self.nw_handle_to_left_objs.append(nw_handle_to_left)
             self.nw_handle_to_right_objs.append(nw_handle_to_right)
     # delete net route table
     def del_nw_route_table(self):
-
         self.unbind_network_table(self.vn1_fixture, self.vn2_fixture)
         for nw_handle_to_right in self.nw_handle_to_right_objs:
             self.static_table_handle.delete_network_route_table(
@@ -209,7 +208,7 @@ class StaticRouteTableBase(BaseNeutronTest):
                 intf_table_to_right_obj)
         for intf_table_to_left_obj in self.intf_table_to_left_objs:
             self.static_table_handle.bind_vmi_to_interface_route_table(
-                str(port1_fix.get_vmi_ids()[dst_vn_fix.svn_fq_name]),
+                str(port1_fix.get_vmi_ids()[dst_vn_fix.vn_fq_name]),
                 intf_table_to_left_obj)
 
     # unbind the net route table from the vn provided
@@ -225,12 +224,14 @@ class StaticRouteTableBase(BaseNeutronTest):
 
     # bind the net route table to the vn provided
     def bind_network_table(self, src_vn_fix, dst_vn_fix):
-        self.static_table_handle.bind_network_route_table_to_vn(
-            vn_uuid=src_vn_fix.uuid,
-            nw_route_table_obj=self.nw_handle_to_right)
-        self.static_table_handle.bind_network_route_table_to_vn(
-            vn_uuid=dst_vn_fix.uuid,
-            nw_route_table_obj=self.nw_handle_to_left)
+        for nw_handle_to_right in self.nw_handle_to_right_objs:
+            self.static_table_handle.bind_network_route_table_to_vn(
+                vn_uuid=src_vn_fix.uuid,
+                nw_route_table_obj=nw_handle_to_right)
+        for nw_handle_to_left in self.nw_handle_to_left_objs:
+            self.static_table_handle.bind_network_route_table_to_vn(
+                vn_uuid=dst_vn_fix.uuid,
+                nw_route_table_obj=nw_handle_to_left)
 
     # create a neutron router in addition to the static tables
     def neutron_router_test(self):
@@ -262,7 +263,7 @@ class StaticRouteTableBase(BaseNeutronTest):
         inspect_h = self.agent_inspect[vm_fix.vm_node_ip]
         agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vn)
         agent_vrf_obj = vm_fix.get_matching_vrf(
-            agent_vrf_objs['vrf_list'], vn1_fix.vrf_name)
+            agent_vrf_objs['vrf_list'], vn_fix.vrf_name)
         vn_vrf_id = agent_vrf_obj['ucindex']
         if not prefix:
             prefix = self.right_prefixes[0]
