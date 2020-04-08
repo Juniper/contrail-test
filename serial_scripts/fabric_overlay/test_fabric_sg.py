@@ -56,19 +56,19 @@ class SecurityGroup(BaseFabricTest):
         vm2_ip = vm2.get_vm_ips()[0]+'/32'
         vn1_subnet = bms3.get_bms_ips()[0]+'/24'
         sg_rule_1 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
-                                                    cidr=vm1_ip, direction='egress')
+            cidr=vm1_ip, direction='egress')
         sg_rule_2 = self._get_secgrp_rule(protocol='udp', dst_ports=(8004, 8006),
-                                                    cidr=vm1_ip, direction='egress')
+            cidr=vm1_ip, direction='egress')
         sg_rule_3 = self._get_secgrp_rule(protocol='icmp',
-                                                    cidr=vm1_ip, direction='egress')
+            cidr=vm1_ip, direction='egress')
         sg_rule_4 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
-                                                    cidr=vm2_ip, direction='egress')
-		sg_rule_5 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
-                                                    cidr=vn1_subnet, direction='egress')
+            cidr=vm2_ip, direction='egress')
+        sg_rule_5 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
+            cidr=vn1_subnet, direction='egress')
 
         sg1 = self.create_security_group(rules=[sg_rule_1, sg_rule_2])
-        sg2 = self.create_security_group(rules=[sg_rule_3])
-		
+        sg2 = self.create_security_group(rules=[sg_rule_3,sg_rule_5])
+
         # Apply SG to BMS
         bms1.add_security_group([sg1.uuid, sg2.uuid])
         sleep(30)
@@ -79,25 +79,25 @@ class SecurityGroup(BaseFabricTest):
         # Ping Traffic from bms1 to vm2 should pass
 
         self.verify_traffic(bms1, vm1, 'tcp',
-                             sport=1111, dport=8006)
+            sport=1111, dport=8006)
         self.verify_traffic(bms1, vm1, 'tcp',
-                             sport=1111, dport=8020, expectation=False)
+            sport=1111, dport=8020, expectation=False)
         self.verify_traffic(bms1, vm1, 'udp',
-                             sport=1111, dport=8004)
+            sport=1111, dport=8004)
         assert vm1.ping_with_certainty(ip=bms1.bms_ip)
         assert vm2.ping_with_certainty(ip=bms1.bms_ip,
-                            expectation=False)
+            expectation=False)
         self.verify_traffic(bms1, bms2, 'tcp',
-                             sport=1111, dport=8006, expectation=False)
+                             sport=1111, dport=8006)
 
         #delete_security_group attached to BMS
         bms1.delete_security_group([sg1.uuid])
         sleep(30)
 
         self.verify_traffic(bms1, vm1, 'tcp',
-                             sport=1111, dport=8006, expectation=False)
+            sport=1111, dport=8006, expectation=False)
         self.verify_traffic(bms1, vm1, 'udp',
-                             sport=1111, dport=8004, expectation=False)
+            sport=1111, dport=8004, expectation=False)
         assert vm1.ping_with_certainty(ip=bms1.bms_ip)
 
 
@@ -110,11 +110,11 @@ class SecurityGroup(BaseFabricTest):
         bms1.add_security_group([sg1.uuid])
         sleep(30)
         self.verify_traffic(bms1, vm2, 'tcp',
-                             sport=1111, dport=8006)
+            sport=1111, dport=8006)
         self.verify_traffic(bms1, vm1, 'tcp',
-                             sport=1111, dport=8006)
+            sport=1111, dport=8006)
         self.verify_traffic(bms1, vm1, 'tcp',
-                             sport=1111, dport=8020, expectation=False)
+            sport=1111, dport=8020, expectation=False)
 
         #Remove secuity group reference and delete SG attached to BMS
         bms1.delete_security_group([sg1.uuid, sg2.uuid])
@@ -122,51 +122,58 @@ class SecurityGroup(BaseFabricTest):
 
 class SPStyleSecurityGroup(SecurityGroup):
     enterprise_style = False
-        @preposttest_wrapper
-        def test_security_group_bms(self):
-            vn1 = self.create_vn()
-            vn2 = self.create_vn()
-            self.create_logical_router([vn1, vn2])
-            bms1_vn1=bms_nodes[0]
-            bms1_vn2=bms_nodes[1]
-            bms1_intf = self.inputs.bms_data[bms1_vn1]['interfaces'][:1]
-            bms2_intf = self.inputs.bms_data[bms1_vn2]['interfaces'][1:]
+    @preposttest_wrapper
+    def test_security_group_bms(self):
+        vn1 = self.create_vn()
+        vn2 = self.create_vn()
+        self.create_logical_router([vn1, vn2])
+        bms_nodes = self.get_bms_nodes()
+        bms1_vn1=bms_nodes[0]
+        bms1_vn2=bms_nodes[1]
+        bms1_intf = self.inputs.bms_data[bms1_vn1]['interfaces'][:1]
+        bms2_intf = self.inputs.bms_data[bms1_vn2]['interfaces'][1:]
                 
-            bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
-                    vlan_id=10, interfaces=bms1_intf)
+        bms1 = self.create_bms(bms_name=bms1_vn1, vn_fixture=vn1,
+            vlan_id=10, interfaces=bms1_intf)
                 
-            bms2 = self.create_bms(bms_name=bms, vn_fixture=vn2,
-                                      or_port_vlan_tag=20, interfaces=bms2_intf)
-            self.do_ping_test(bms1, bms2.bms_ip)
+        bms2 = self.create_bms(bms_name=bms1_vn2, vn_fixture=vn2,
+            or_port_vlan_tag=20, interfaces=bms2_intf)
+        self.do_ping_test(bms1, bms2.bms_ip)
                     
-            bms1_2 = self.create_bms(bms_name=bms, vn_fixture=vn2,
-                tor_port_vlan_tag=30, interfaces=bms1_intf,
-                bond_name=bms1.bond_name,
-                port_group_name=bms1.port_group_name)
+        bms1_2 = self.create_bms(bms_name=bms1_vn1, vn_fixture=vn2,
+            tor_port_vlan_tag=20, interfaces=bms1_intf,
+            bond_name=bms1.bond_name,
+            port_group_name=bms1.port_group_name)
                 
-            self.do_ping_mesh([bms1, bms2, bms1_2])
+        self.do_ping_mesh([bms1, bms2, bms1_2])
 
-            vn1_subnet = bms1.get_bms_ips()[0]+'/32'
-            vn2_subnet = bms2.get_bms_ips()[0]+'/32'
+        vn1_subnet = bms1.get_bms_ips()[0]+'/32'
+        vn2_subnet = bms2.get_bms_ips()[0]+'/32'
 
-            sg_rule_1 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
-                                                                cidr=vn2_subnet, direction='egress')
-            sg_rule_2 = self._get_secgrp_rule(protocol='udp', dst_ports=(8004, 8006),
-                                                                cidr=vn2_subnet, direction='egress')
-            sg_rule_3 = self._get_secgrp_rule(protocol='icmp',
-                                                                cidr=vn1_subnet, direction='egress')
+        sg_rule_1 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
+            cidr=vn2_subnet, direction='egress')
+        sg_rule_2 = self._get_secgrp_rule(protocol='udp', dst_ports=(8004, 8006),
+            cidr=vn2_subnet, direction='egress')
+        sg_rule_3 = self._get_secgrp_rule(protocol='icmp',
+            cidr=vn1_subnet, direction='egress')
 
-            sg1 = self.create_security_group(rules=[sg_rule_1, sg_rule_2])
-            sg2 = self.create_security_group(rules=[sg_rule_3])
-
-
-            bms1.add_security_group([sg1.uuid])
-            bms1_2.add_security_group([sg2.uuid])
-
-            self.verify_traffic(bms1, bms1_2, 'tcp',
-                                     sport=1111, dport=8006)
-            self.verify_traffic(bms1, bms1_2, 'tcp',
-                                     sport=1111, dport=8020, expectation=False)
-            assert bms1_2.ping_with_certainty(ip=bms1.bms_ip)
+        sg1 = self.create_security_group(rules=[sg_rule_1, sg_rule_2])
+        sg2 = self.create_security_group(rules=[sg_rule_3])
 
 
+        bms1.add_security_group([sg1.uuid])
+        bms1_2.add_security_group([sg2.uuid])
+        sleep(30)
+
+        self.verify_traffic(bms1, bms2, 'tcp',
+            sport=1111, dport=8006)
+        self.verify_traffic(bms1, bms2, 'tcp',
+            sport=1111, dport=8020, expectation=False)
+        assert bms1.ping_with_certainty(ip=bms2.bms_ip, expectation=False)            
+        self.verify_traffic(bms1_2, bms2, 'tcp',
+            sport=1111, dport=8006, expectation=False)
+        assert bms1_2.ping_with_certainty(ip=bms2.bms_ip, expectation=False)
+
+        bms1.delete_security_group([sg1.uuid])
+        bms1_2.delete_security_group([sg2.uuid])
+        sleep(30)
