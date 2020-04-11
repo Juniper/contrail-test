@@ -155,3 +155,74 @@ class RPBase(test_v1.BaseTestCase_v1):
         else:
             rp.del_service_instance(vn_fixture.si_obj)
             self.vnc_lib.routing_policy_delete(id = rp.uuid)
+
+    def create_vm_in_all_nodes(self):
+        vn_pop1_name = get_random_name('pop1_vn')
+        vn_pop2_name = get_random_name('pop2_vn')
+        vn_main_name = get_random_name('main_vn')
+
+        vn_pop1_subnet = [get_random_cidr()]
+        vn_pop2_subnet = [get_random_cidr()]
+        vn_main_subnet = [get_random_cidr()]
+
+        rt_value = randint(50000, 60000)
+
+        vn_pop1_fixture = self.create_vn(vn_pop1_name, vn_pop1_subnet)
+        vn_pop1_fixture.add_route_target(vn_pop1_fixture.ri_name,
+                self.inputs.router_asn, rt_value)
+
+        vn_pop2_fixture = self.create_vn(vn_pop2_name, vn_pop2_subnet)
+        vn_pop2_fixture.add_route_target(vn_pop2_fixture.ri_name,
+                self.inputs.router_asn, rt_value)
+
+        vn_main_fixture = self.create_vn(vn_main_name, vn_main_subnet)
+        vn_main_fixture.add_route_target(vn_main_fixture.ri_name,
+                self.inputs.router_asn, rt_value)
+
+        compute_nodes = self.get_compute_nodes()
+        test_vm_pop1 = self.create_vm(vn_pop1_fixture, 'test_vm_pop1', image_name='cirros',
+                node_name=compute_nodes['pop1'][0])
+        test_vm_pop2 = self.create_vm(vn_pop2_fixture, 'test_vm_pop2', image_name='cirros',
+                node_name=compute_nodes['pop2'][0])
+        test_vm_main = self.create_vm(vn_main_fixture, 'test_vm_main', image_name='cirros',
+                node_name=compute_nodes['main'][0])
+
+        assert test_vm_pop1.wait_till_vm_is_up()
+        assert test_vm_pop2.wait_till_vm_is_up()
+        assert test_vm_main.wait_till_vm_is_up()
+
+        ret_dict = {
+                'vn_pop1_fixture' : vn_pop1_fixture,
+                'vn_pop2_fixture' : vn_pop2_fixture,
+                'vn_main_fixture' : vn_main_fixture,
+                'test_vm_pop1' : test_vm_pop1,
+                'test_vm_pop2' : test_vm_pop2,
+                'test_vm_main' : test_vm_main,
+                }
+        return ret_dict
+
+    def get_control_nodes(self):
+        # Get control nodes of subcluster pop1, pop2 and main controller.
+        control_nodes = {'pop1':[], 'pop2':[], 'main':[]}
+        for host in self.inputs.bgp_control_ips:
+            if self.inputs.host_data[host]['roles'].get('control'):
+                if self.inputs.host_data[host]['roles'].get('control').get('location') == 'pop1':
+                    control_nodes['pop1'].append(self.inputs.host_data[host]['host_ip'])
+                if self.inputs.host_data[host]['roles'].get('control').get('location') == 'pop2':
+                    control_nodes['pop2'].append(self.inputs.host_data[host]['host_ip'])
+            else:
+                control_nodes['main'] = self.inputs.host_data[host]['host_ip']
+        return control_nodes
+
+    def get_compute_nodes(self):
+        # Get compute nodes of subcluster pop1, pop2 and main compute.
+        compute_nodes = {'pop1':[], 'pop2':[], 'main':[]}
+        for host in self.inputs.compute_ips:
+            if self.inputs.host_data[host]['roles'].get('vrouter'):
+                if self.inputs.host_data[host]['roles'].get('vrouter').get('location') == 'pop1':
+                    compute_nodes['pop1'].append(self.inputs.host_data[host]['name'])
+                elif self.inputs.host_data[host]['roles'].get('vrouter').get('location') == 'pop2':
+                    compute_nodes['pop2'].append(self.inputs.host_data[host]['name'])
+                else:
+                    compute_nodes['main'].append(self.inputs.host_data[host]['name'])
+        return compute_nodes
