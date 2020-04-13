@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "07a42bf4_228713af",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-13T10:26:09Z",
+      "side": 1,
+      "message": "Suspect incorrect indentation",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9dedce53_b2e4c766",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 215,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-13T10:26:09Z",
+      "side": 1,
+      "message": "In case of multiple control-nodes, you may want\ncontrol_nodes[\u0027main\u0027].append(self.inputs.host_data[host][\u0027host_ip\u0027]) right?",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c630b61f_05104b2b",
+        "filename": "scripts/routing_policy/test_routing_policy_sub_cluster.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-13T10:26:09Z",
+      "side": 1,
+      "message": "Methods, is_test_applicable \u0026 setupUp need not be implemented",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6c8700ac_c43f867e",
+        "filename": "scripts/routing_policy/test_routing_policy_sub_cluster.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-13T10:26:09Z",
+      "side": 1,
+      "message": "Suggestion: Code to fetch sub-cluster, local-preference, etc may be implemented as method under TestRPSubCluster or RPBase, to avoid code duplication. Also, with a method, retry decorator may be used to account route propagation delays instead using sleep.",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
