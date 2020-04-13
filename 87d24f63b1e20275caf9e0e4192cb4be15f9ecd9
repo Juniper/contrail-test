@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "e8cd4034_dd48ff2e",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-04-13T16:14:45Z",
+      "side": 1,
+      "message": "can you move this code to common/contrail_test_init.py",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "07a42bf4_228713af",
         "filename": "scripts/routing_policy/base.py",
         "patchSetId": 2
@@ -30,6 +47,23 @@
       "writtenOn": "2020-04-13T10:26:09Z",
       "side": 1,
       "message": "In case of multiple control-nodes, you may want\ncontrol_nodes[\u0027main\u0027].append(self.inputs.host_data[host][\u0027host_ip\u0027]) right?",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "91ac92e1_e7378cda",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-04-13T16:14:45Z",
+      "side": 1,
+      "message": "can you move this code to common/contrail_test_init.py",
       "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
