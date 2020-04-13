@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "ab69363e_66976786",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 705
+      },
+      "writtenOn": "2020-04-13T21:02:03Z",
+      "side": 1,
+      "message": "Will do it as part of another review",
+      "parentUuid": "e8cd4034_dd48ff2e",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "07a42bf4_228713af",
         "filename": "scripts/routing_policy/base.py",
         "patchSetId": 2
@@ -30,6 +48,24 @@
       "writtenOn": "2020-04-13T10:26:09Z",
       "side": 1,
       "message": "Suspect incorrect indentation",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4d67d9c1_62f65a64",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 705
+      },
+      "writtenOn": "2020-04-13T21:02:03Z",
+      "side": 1,
+      "message": "The indentation is correct. For main controller, value for key \u0027control\u0027 in dict self.inputs.host_data[host][\u0027roles\u0027].get(\u0027control\u0027) is None. \n\ninstances:\n  all_contrail_roles_default_pop:  # Mandatory. Instance name\n    provider: bms                  # Mandatory. Instance runs on BMS\n    ip: 10.204.220.44\n    roles:                         # Optional. \n      openstack:\n      config_database:             # Optional.\n      config:                      # Optional.\n      control:                     # Optional.\n      analytics_database:          # Optional.\n      analytics:                   # Optional.\n      webui:   \n\nFor subclusters it has some value\n  control_1_only_pop1:            # Mandatory. Instance name\n    provider: bms                 # Mandatory. Instance runs on BMS\n    ip: 10.204.220.27\n    roles:\n      control:\n        location: pop1",
+      "parentUuid": "07a42bf4_228713af",
       "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "cdf61d5f_4c6d4a51",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 215,
+      "author": {
+        "id": 705
+      },
+      "writtenOn": "2020-04-13T21:02:03Z",
+      "side": 1,
+      "message": "Ack.",
+      "parentUuid": "9dedce53_b2e4c766",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "91ac92e1_e7378cda",
         "filename": "scripts/routing_policy/base.py",
         "patchSetId": 2
@@ -64,6 +118,24 @@
       "writtenOn": "2020-04-13T16:14:45Z",
       "side": 1,
       "message": "can you move this code to common/contrail_test_init.py",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "39124a36_0480e26c",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 705
+      },
+      "writtenOn": "2020-04-13T21:02:03Z",
+      "side": 1,
+      "message": "Will do it as part of another review",
+      "parentUuid": "91ac92e1_e7378cda",
       "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -87,6 +159,24 @@
     },
     {
       "key": {
+        "uuid": "5d35061b_f1b1a04b",
+        "filename": "scripts/routing_policy/test_routing_policy_sub_cluster.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 705
+      },
+      "writtenOn": "2020-04-13T21:02:03Z",
+      "side": 1,
+      "message": "Removing is_test_applicable as I am using skip_because instead.",
+      "parentUuid": "c630b61f_05104b2b",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "6c8700ac_c43f867e",
         "filename": "scripts/routing_policy/test_routing_policy_sub_cluster.py",
         "patchSetId": 2
@@ -98,6 +188,24 @@
       "writtenOn": "2020-04-13T10:26:09Z",
       "side": 1,
       "message": "Suggestion: Code to fetch sub-cluster, local-preference, etc may be implemented as method under TestRPSubCluster or RPBase, to avoid code duplication. Also, with a method, retry decorator may be used to account route propagation delays instead using sleep.",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "65009725_e935b7de",
+        "filename": "scripts/routing_policy/test_routing_policy_sub_cluster.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 705
+      },
+      "writtenOn": "2020-04-13T21:02:03Z",
+      "side": 1,
+      "message": "Have added get_sub_cluster and get_local_pref to avoid code duplication. retry decorator I will add it later, keeping it as it is for now because of timing contraints.",
+      "parentUuid": "6c8700ac_c43f867e",
       "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
