@@ -37,6 +37,24 @@
     },
     {
       "key": {
+        "uuid": "59e332bf_e78eeca7",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 204,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-14T05:20:16Z",
+      "side": 1,
+      "message": "This method seem to specific to this test feature. Only generalized methods should under common/contrail_test_init.py",
+      "parentUuid": "ab69363e_66976786",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "07a42bf4_228713af",
         "filename": "scripts/routing_policy/base.py",
         "patchSetId": 2
@@ -69,6 +87,24 @@
       "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "21134048_6284a998",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-14T05:20:16Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "4d67d9c1_62f65a64",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -142,6 +178,24 @@
     },
     {
       "key": {
+        "uuid": "75917ed8_1e14ee21",
+        "filename": "scripts/routing_policy/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-14T05:20:16Z",
+      "side": 1,
+      "message": "This method seem to specific to this test feature. Only generalized methods should under common/contrail_test_init.py",
+      "parentUuid": "39124a36_0480e26c",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c630b61f_05104b2b",
         "filename": "scripts/routing_policy/test_routing_policy_sub_cluster.py",
         "patchSetId": 2
@@ -209,6 +263,24 @@
       "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5afc13d0_7999ece3",
+        "filename": "scripts/routing_policy/test_routing_policy_sub_cluster.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-04-14T05:20:16Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "65009725_e935b7de",
+      "revId": "87d24f63b1e20275caf9e0e4192cb4be15f9ecd9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
