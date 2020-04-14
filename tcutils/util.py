@@ -1069,6 +1069,13 @@ def skip_because(*args, **kwargs):
                 if nodes < mins:
                     msg = ' '.join(("Skipped as test requires at least",
                             "%d analytics-nodes, but only %d found" % (mins, nodes)))
+
+            if 'remote_compute_setup' in kwargs:
+                if ((not self.inputs.config['test_configuration'].get(
+                    'remote_compute_setup', False))\
+                            and (kwargs["remote_compute_setup"] == False)):
+                    skip = True
+                    msg = "Skipped as not supported in non remote compute setup"
                     raise testtools.TestCase.skipException(msg)
             return f(self, *func_args, **func_kwargs)
         return wrapper
