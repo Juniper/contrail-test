@@ -7,6 +7,7 @@ import fixtures
 import string
 from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name_from_mac, run_cmd_on_server, get_random_string, get_af_type
 from port_fixture import PortFixture
+from virtual_port_group import VPGFixture
 import tempfile
 from tcutils.fabutils import *
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -49,6 +50,7 @@ class BMSFixture(fixtures.Fixture):
         self.port_profiles = kwargs.get('port_profiles') or list()
         self.tor_port_vlan_tag = kwargs.get('tor_port_vlan_tag')
         self._port_group_name = kwargs.get('port_group_name', None)
+        self._vpg_fixture = None
         self.bond_name = kwargs.get('bond_name') or 'bond%s'%get_random_string(2,
                          chars=string.ascii_letters)
         self.bms_created = False
@@ -124,9 +126,9 @@ class BMSFixture(fixtures.Fixture):
                                  binding_profile=binding_profile,
                                  port_group_name=self._port_group_name,
                                  tor_port_vlan_tag=self.tor_port_vlan_tag,
-                                 port_profiles=self.port_profiles
                              )
         self.port_fixture.setUp()
+        self.add_port_profiles(self.port_profiles)
 
     @retry(delay=10, tries=30)
     def is_lacp_up(self, interfaces=None, expectation=True):
@@ -176,6 +178,21 @@ class BMSFixture(fixtures.Fixture):
 
     def get_vpg_fqname(self):
         return self.port_fixture.get_vpg_fqname()
+
+    @property
+    def vpg_fixture(self):
+        if not self._vpg_fixture:
+            self._vpg_fixture = VPGFixture(self.fabric_fixture.name,
+                                           connections=self.connections,
+                                           name=self.port_group_name)
+            self._vpg_fixture.setUp()
+        return self._vpg_fixture
+
+    def add_port_profiles(self, port_profiles):
+        self.vpg_fixture.add_port_profiles(port_profiles)
+
+    def delete_port_profiles(self, port_profiles):
+        self.vpg_fixture.delete_port_profiles(port_profiles)
 
     def detach_physical_interface(self, interfaces):
         to_create_vmis = list()
