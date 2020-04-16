@@ -209,7 +209,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
         file_obj = tempfile.NamedTemporaryFile()
         user_data = USER_DATA % (vlan, vlan)
 
-        file_obj.write(user_data)
+        file_obj.write(user_data.encode('utf-8'))
         file_obj.seek(0)
         return file_obj
 
