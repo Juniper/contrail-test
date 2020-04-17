@@ -31,7 +31,7 @@ def create(obj):
     """
     objs = dumps(obj)
     for actual, encrypt in ENCRYPT:
-        objs = objs.replace(actual, encrypt)
+        objs = objs.replace(actual.encode(), encrypt.encode())
     return "\"%s\"" % objs
 
 

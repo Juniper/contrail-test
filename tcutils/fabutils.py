@@ -161,7 +161,7 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
             shell=shell,
             disable_known_hosts=True,
             abort_on_prompts=abort_on_prompts):
-        update_env_passwords(host_string, password, gateway, gateway_password)
+        update_env_passwords(host_string, password, gateway, gateway_password, timeout)
 
         logger.debug(cmd)
         output = None
@@ -331,7 +331,7 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
         local("cp -r %s %s" % (src_path, dest_path))
         return True
 
-def update_env_passwords(host, password=None, gateway=None, gateway_password=None):
+def update_env_passwords(host, password=None, gateway=None, gateway_password=None, timeout=None):
     """ Update env_passwords for the hosts provided
     Args:
         host: host string
@@ -340,6 +340,8 @@ def update_env_passwords(host, password=None, gateway=None, gateway_password=Non
         gateway_password: gateway password
     """
     env.forward_agent = True
+    if timeout is not None:
+        env.timeout = timeout
     gateway_hoststring = "fake_gateway"
     if gateway:
         gateway_hoststring = (gateway if re.match(r'\w+@[\d\.]+:\d+', gateway)
