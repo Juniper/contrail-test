@@ -15,6 +15,18 @@ from vnc_api.exceptions import PermissionDenied
 from common.openstack_libs import neutron_forbidden
 from vnc_api.vnc_api import VirtualNetworkType
 import os
+import fixtures
+
+class VerifySvcFirewallFixture(fixtures.Fixture, VerifySvcFirewall):
+
+    def __init__(self, connections, use_vnc_api=False):
+        self.use_vnc_api = use_vnc_api
+        self.connections = connections
+        self.inputs = connections.inputs
+        self.orch = connections.orch
+        self.vnc_lib = connections.vnc_lib
+        self.logger = connections.logger
+
 
 class BaseRbac(test_v1.BaseTestCase_v1):
     @classmethod
@@ -249,7 +261,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
 
     def create_sc(self, connections=None, st_version=1, **kwargs):
         connections = connections or self.connections
-        svc = self.create_fixture(VerifySvcFirewall,
+        svc = self.create_fixture(VerifySvcFirewallFixture,
                                   connections=connections,
                                   use_vnc_api=True, **kwargs)
         if svc:
