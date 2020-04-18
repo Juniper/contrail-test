@@ -986,7 +986,7 @@ class TestFabricOverlay(TestSPStyleFabric):
             single_bms = self.create_bms(bms_name=node, vlan_id=10,
                 interfaces=interfaces,
                 vn_fixture=vn)
-            single_bms.port_fixture.add_port_profiles([pp1.uuid])
+            single_bms.add_port_profiles([pp1.uuid])
             single_prouters = self.get_associated_prouters(node, interfaces)
             assert sc1.validate_config_pushed(single_prouters, single_bms.interfaces)
             pp = pp1; sc = sc1; bms = single_bms; prouters = single_prouters
@@ -996,16 +996,24 @@ class TestFabricOverlay(TestSPStyleFabric):
             assert sc1.validate_config_pushed(lag_prouters, lag_bms.interfaces)
         pp.delete_storm_control_profiles([sc.uuid])
         assert sc.validate_config_pushed(prouters, bms.interfaces, exp=False)
+        if lag_nodes and other_nodes:
+            assert sc.validate_config_pushed(lag_prouters, bms.interfaces, exp=False)
         pp.add_storm_control_profiles([sc.uuid])
         assert sc.validate_config_pushed(prouters, bms.interfaces)
-        bms.port_fixture.delete_port_profiles([pp.uuid])
+        if lag_nodes and other_nodes:
+            assert sc.validate_config_pushed(lag_prouters, bms.interfaces)
+        bms.delete_port_profiles([pp.uuid])
         assert sc.validate_config_pushed(prouters, bms.interfaces, exp=False)
-        bms.port_fixture.add_port_profiles([pp.uuid])
+        bms.add_port_profiles([pp.uuid])
         assert sc.validate_config_pushed(prouters, bms.interfaces)
         sc.update(action=list(), no_broadcast=False)
         assert sc.validate_config_pushed(prouters, bms.interfaces)
+        if lag_nodes and other_nodes:
+            assert sc.validate_config_pushed(lag_prouters, bms.interfaces)
         sc.update(no_multicast=False)
         assert sc.validate_config_pushed(prouters, bms.interfaces)
+        if lag_nodes and other_nodes:
+            assert sc.validate_config_pushed(lag_prouters, bms.interfaces)
         sc.update(no_registered_multicast=True)
         assert sc.validate_config_pushed(prouters, bms.interfaces)
         sc.update(no_registered_multicast=False)

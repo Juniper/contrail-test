@@ -3638,6 +3638,18 @@ class ContrailVncApi(object):
         obj.del_storm_control_profile(sc_obj)
         return self._vnc.port_profile_update(obj)
 
+    def assoc_port_profile_to_vpg(self, pp_uuid, vpg_id):
+        pp_obj = self.read_port_profile(id=pp_uuid)
+        obj = self.read_virtual_port_group(id=vpg_id)
+        obj.add_port_profile(pp_obj)
+        return self._vnc.virtual_port_group_update(obj)
+
+    def disassoc_port_profile_from_vpg(self, pp_uuid, vpg_id):
+        pp_obj = self.read_port_profile(id=pp_uuid)
+        obj = self.read_virtual_port_group(id=vpg_id)
+        obj.del_port_profile(pp_obj)
+        return self._vnc.virtual_port_group_update(obj)
+
     def assoc_port_profile_to_vmi(self, pp_uuid, vmi_id):
         pp_obj = self.read_port_profile(id=pp_uuid)
         obj = self.read_virtual_machine_interface(id=vmi_id)
