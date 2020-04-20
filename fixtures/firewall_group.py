@@ -37,6 +37,9 @@ class FirewallGroupFixture(vnc_api_test.VncLibFixture):
             self.delete()
         super(FirewallGroupFixture, self).cleanUp()
 
+    def get_object(self):
+        return self.neutron_handle.read_firewall_group(id=self.uuid)
+
     def read(self):
         obj = self.neutron_handle.read_firewall_group(id=self.uuid)
         self.name = obj['name']

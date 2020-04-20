@@ -1,6 +1,7 @@
 import vnc_api_test
 from vnc_api.exceptions import NoIdError
 from tcutils.util import get_random_name, retry
+from common.openstack_libs import neutron_exception
 
 class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
     '''Fixture to handle Firewall Policy object
@@ -18,7 +19,7 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         self.rules = kwargs.get('rules') or list()
         self.slo = kwargs.get('slo')
         self.shared = kwargs.get('shared', False)
-        self.audited = kwargs.get('audited')
+        self.audited = kwargs.get('audited', True)
         self.api_type = kwargs.get('api_type', 'contrail')
         self.created = False
         self.verify_is_run = False
@@ -84,8 +85,9 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         if not self.created:
             self.read()
 
-    def update(self, rules=None, shared=None, audited=None):
+    def update(self, name=None, rules=None, shared=None, audited=None):
         self.client_h.update_firewall_policy(
+                             name=name,
                              uuid=self.uuid,
                              rules=rules,
                              shared=shared,
@@ -102,7 +104,10 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         self.rules.extend(rules)
 
     def remove_firewall_rules(self, rules):
-        self.client_h.remove_firewall_rules(self.uuid, rules)
+        try:
+            self.client_h.remove_firewall_rules(self.uuid, rules)
+        except neutron_exception.BadRequest:
+            pass
         uuids = set(rule['uuid'] for rule in rules)
         self.rules = [rule for rule in self.rules if rule['uuid'] not in uuids]
 
