@@ -5,7 +5,7 @@ echo ""
 GIVEN_TEST_PATH=$OS_TEST_PATH
 
 TESTR=/usr/bin/testr
-if [[ ${PYTHON3} ]]; then
+if [ ${PYTHON3} -eq 1 ]; then
    export PYTHON=/usr/bin/python3
    export TESTR=/usr/local/bin/testr
 fi
