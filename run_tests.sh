@@ -7,10 +7,11 @@ source tools/common.sh
 PYTHON=/usr/bin/python
 TESTR=/usr/bin/testr
 SUBUNIT2JUNIT=/usr/bin/subunit2junitxml
-if [[ ${PYTHON3} ]]; then
+if [ ${PYTHON3} -eq 1 ]; then
     PYTHON=/usr/bin/python3
     TESTR=/usr/local/bin/testr
     SUBUNIT2JUNIT=/usr/local/bin/subunit2junitxml
+    rm -rf .testrepository
 fi
 export PYTHON=${PYTHON}
 
