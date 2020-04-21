@@ -155,7 +155,6 @@ class ServiceChainCreator(object):
                     itertools.combinations(stages, r) for r in range(max_stages + 1)))
                 self._remove_in_nat_in_middle(stages_combo)
                 stages_combo = self._remove_duplicate_modes(stages_combo)
-                stages_combo.sort()
                 stages_combo = list(
                     k for k, _ in itertools.groupby(stages_combo))
                 for stage_combo in stages_combo:
