@@ -525,7 +525,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         self.vcenter_compute = None
         self.vro_based = False
         with open(self.input_file, 'r') as fd:
-            self.config = yaml.load(fd)
+            self.config = yaml.load(fd, Loader=yaml.FullLoader)
         deployment_configs = self.config.get('deployment', {})
         self.deployer = deployment_configs.get('deployer', 'contrail-ansible-deployer')
         self.contrail_configs = contrail_configs = \
