@@ -45,8 +45,8 @@ class IntrospectUtil(object):
             resp = requests.get(url, timeout=self._timeout)
         except requests.ConnectionError:
             url = self._mk_url_str(path, True)
-            resp = requests.get(url, timeout=self._timeout, verify=\
-                    self._cacert, cert=(self._certfile, self._keyfile))
+            resp = requests.get(url, timeout=self._timeout, verify=False, #(self._cacert)
+                    cert=(self._certfile, self._keyfile))
         if resp.status_code == requests.codes.ok:
             return etree.fromstring(resp.text)
         else:
