@@ -153,6 +153,10 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         self.fabric = obj.fabric
         self.devices = obj.devices
         self.interfaces = obj.interfaces
+        self._populate_attrs()
+
+    def _populate_attrs(self):
+        self.leafs = list(); self.spines = list(); self.pnfs = list()
         for device in self.devices:
             role = self.get_role_from_inputs(device.name)
             if role == 'spine':
