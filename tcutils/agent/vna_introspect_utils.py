@@ -76,7 +76,7 @@ class AgentInspect (VerificationUtilBase):
 
         '''
         vnl = self.dict_get('Snh_VmListReq?uuid=')
-        if not vnl:
+        if vnl is None:
             return None
         avn = vnl.xpath('./VmListResp/vm_list/list/VmSandeshData/uuid') or \
                 vnl.xpath('./vm_list/list/VmSandeshData/uuid')
@@ -110,7 +110,7 @@ class AgentInspect (VerificationUtilBase):
         p = None
         vn_fq_name = ':'.join((domain, project, vn_name))
         vnl = self.dict_get('Snh_VnListReq?name=%s' %vn_fq_name)
-        if not vnl:
+        if vnl is None:
             return None
         vns = vnl.xpath('./VnListResp/vn_list/list/VnSandeshData') or \
                 vnl.xpath('./vn_list/list/VnSandeshData')
