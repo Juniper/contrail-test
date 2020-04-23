@@ -940,8 +940,7 @@ class TestFabricOverlay(TestSPStyleFabric):
         assert len(curr_hw_inventory) == 1 and \
             curr_hw_inventory != orig_hw_inventory
 
-
-
+#class TestBrownfieldUserWorkflow(BaseFabricTest):
     @preposttest_wrapper
     def test_rr_role_deletion(self):
         '''
@@ -950,23 +949,19 @@ class TestFabricOverlay(TestSPStyleFabric):
         2. Ensure that neighbourship is proper.
         3. Addback RR role.
         '''
-
-        self.inputs.set_af('dual')
-        self.addCleanup(self.inputs.set_af, 'v4')
-        fabric_dict = self.inputs.fabrics[0]
         mgmt_ip =list()
         if len(self.spines) > 1:
 
             bms_fixtures = list()
             vn = self.create_vn()
-            vm1 = self.create_vm(vn_fixture=vn, image_name='ubuntu')
-            for bms in self.get_bms_nodes():
+            vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
+            for bms in self.get_bms_nodes()[:2]:
                 bms_fixtures.append(self.create_bms(bms_name=bms,
                     vn_fixture=vn, tor_port_vlan_tag=10))
             vm1.wait_till_vm_is_up()
             # Validate bgp peers count is correct.
             spine = self.spines[0]
-            bgp_peers = len(self.spines) + len(self.leafs) + len(self.inputs.bgp_ips) -1 
+            bgp_peers = len(self.spines) + len(self.leafs) + len(self.inputs.bgp_ips) - 1
             count = int(spine.netconf.get_bgp_peer_count()['peer-count'])
             assert bgp_peers == count , "RR should form bgp session with all routers.\
                 Expected session %s act %s "%(bgp_peers,count)
@@ -977,19 +972,18 @@ class TestFabricOverlay(TestSPStyleFabric):
             self.addCleanup(self.assign_roles, self.fabric, [spine])
             self.assign_roles(self.fabric, [spine], rb_roles=rb_roles)
             count = int(spine.netconf.get_bgp_peer_count()['peer-count'])
-            exp_count = len(self.spines) -1
+            exp_count = len(self.spines) - 1
             assert exp_count == count , "Spine should form session only with RR.\
-                Expected session %s actual %s "%(exp_count,count)
+                Expected session %s actual %s "%(exp_count, count)
             # Add RR role
             self.assign_roles(self.fabric, [spine])
             count = int(spine.netconf.get_bgp_peer_count()['peer-count'])
             assert bgp_peers == count , "RR should form bgp session with all routers.\
-                Expected session %s act %s "%(bgp_peers,count)
+                Expected session %s act %s "%(bgp_peers, count)
             # Validate traffic
             self.do_ping_mesh(bms_fixtures+[vm1])
         else:
             raise self.skipTest("Skipping test. This test needs 2 spines.")
-
 
     @preposttest_wrapper
     def test_brownfield_user_workflow(self):
@@ -1001,10 +995,20 @@ class TestFabricOverlay(TestSPStyleFabric):
         3. Reonboard device.
         4. Do basic traffic test with newly added device.
         '''
+        def cleanup_reonboard(fabric_dict):
+            fabric, self.devices, self.interfaces = self.onboard_existing_fabric(
+                fabric_dict, enterprise_style=True, name=self.fabric.name,
+                cleanup=False)
+            self.singleton.devices = self.devices
+            self.singleton.interfaces = self.interfaces
+            self._populate_attrs()
+            self.assign_roles(fabric, self.devices)
 
         self.inputs.set_af('dual')
         self.addCleanup(self.inputs.set_af, 'v4')
-        fabric_dict = self.inputs.fabrics[0]
+        fabName = self.fabric.name
+        fabric_dict = copy.deepcopy(self.inputs.fabrics[0])
+        self.addCleanup(cleanup_reonboard, copy.deepcopy(fabric_dict))
 
         #assert len(fabric_dict['namespaces']['management']) == len(self.devices),\
         #    "All devices are not onboarded"
@@ -1027,26 +1031,13 @@ class TestFabricOverlay(TestSPStyleFabric):
         self.logger.info("Add device to fabric.")
 
         fabric_dict['namespaces'].update({'management' : mgmt_ip})
-        fabName = self.fabric.name
         self.fabric, self.devices, self.interfaces = self.onboard_existing_fabric(
-            fabric_dict, cleanup=False, enterprise_style=True,name=fabName)
+            fabric_dict, cleanup=False, enterprise_style=True, name=fabName)
 
         # Add roles to newly added devices.
         self.logger.info("Add roles to newly added devices.")
-
-        self.spines =list()
-        self.leafs =list()
-        for device in self.devices:
-            role = self.get_role_from_inputs(device.name)
-            if role == 'spine':
-                self.spines.append(device)
-            elif role == 'leaf':
-                self.leafs.append(device)
-        devices = list()
-        devices.append(leaf)
-        devices.append(spine)
-        self.addCleanup(self.assign_roles, self.fabric, self.devices)
-        self.assign_roles(self.fabric, devices)
+        self._populate_attrs()
+        self.assign_roles(self.fabric, self.devices)
 
         # Reonboard devices
         self.logger.info("Workflow to reonboard device.")
@@ -1058,13 +1049,12 @@ class TestFabricOverlay(TestSPStyleFabric):
 
         bms_fixtures = list()
         vn = self.create_vn()
-        vm1 = self.create_vm(vn_fixture=vn, image_name='ubuntu')
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros-0.4.0')
         for bms in self.get_bms_nodes():
             bms_fixtures.append(self.create_bms(bms_name=bms,
                 vn_fixture=vn, tor_port_vlan_tag=10))
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1])
-
 
 class TestVxlanID(GenericTestBase):
     @preposttest_wrapper

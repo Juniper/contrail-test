@@ -245,6 +245,8 @@ class BMSFixture(fixtures.Fixture):
         self.bms_ip6 = None
         self.bms_mac = None
         self.port_fixture = None
+        self._port_group_name = None
+        self._vpg_fixture = None
 
     def get_bms_ips(self, af=None):
         if not af:
