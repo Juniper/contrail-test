@@ -140,25 +140,30 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Pass criteria: Ping and UDP Traffic between the VMs should fail, while TCP traffic should reach vm2 from vm1.
            Maintainer : ganeshahv@juniper.net
         """
+        ret = True
         ret_dict = self.verify_svc_chain(max_inst=3,
                               service_mode='transparent',
                               create_svms=True,
                               proto='tcp',
                               **self.common_args)
-        self.left_vm_fixture.put_pub_key_to_vm()
-        self.right_vm_fixture.put_pub_key_to_vm()
-        # TFTP from Left VM to Right VM is expected to fail
-        errmsg1 = "TFTP to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.check_file_transfer(
-            dest_vm_fixture=self.right_vm_fixture, mode='tftp', size='333', expectation=False), errmsg1
-        # Ping from left VM to right VM; expected to fail
-        errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.ping_with_certainty(
-            self.right_vm_fixture.vm_ip, expectation=False), errmsg
-        # SCP from Left VM to Right VM is expected to pass
-        errmsg2 = "SCP to right VM ip %s from left VM failed; expected to pass" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.check_file_transfer(
-            dest_vm_fixture=self.right_vm_fixture, mode='scp', size='444'), errmsg2
+        self.sleep(5)
+        icmp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture, 'icmp')
+        udp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
+                                        'udp', sport=8000, dport=9000)
+        tcp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
+                                        'tcp', sport=8001, dport=9001)
+        self.sleep(10)
+        msg = ''
+        if not self.stop_traffic(icmp_traf, expectation=False):
+            msg += ' ICMP traffic expected to fail, but passed.'
+            ret = False
+        if not self.stop_traffic(udp_traf, expectation=False):
+            msg += ' UDP traffic expected to fail, but passed.'
+            ret = False
+        if not self.stop_traffic(tcp_traf, expectation=True):
+            msg += ' TCP traffic expected to pass, but failed.'
+            ret = False
+        assert ret, msg
     # end test_ecmp_in_pol_based_svc
 
     @preposttest_wrapper
@@ -175,25 +180,30 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                           After updating the policy, TCP traffic should be blocked, while UDP should flow thru.
            Maintainer : ganeshahv@juniper.net
         """
+        ret = True
         ret_dict = self.verify_svc_chain(max_inst=3,
                               service_mode='transparent',
                               create_svms=True,
                               proto='tcp',
                               **self.common_args)
-        self.left_vm_fixture.put_pub_key_to_vm()
-        self.right_vm_fixture.put_pub_key_to_vm()
-        # TFTP from Left VM to Right VM is expected to fail
-        errmsg1 = "TFTP to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.check_file_transfer(
-            dest_vm_fixture=self.right_vm_fixture, mode='tftp', size='111', expectation=False), errmsg1
-        # Ping from left VM to right VM; expected to fail
-        errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.ping_with_certainty(
-            self.right_vm_fixture.vm_ip, expectation=False), errmsg
-        # SCP from Left VM to Right VM is expected to pass
-        errmsg2 = "SCP to right VM ip %s from left VM failed; expected to pass" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.check_file_transfer(
-            dest_vm_fixture=self.right_vm_fixture, mode='scp', size='222'), errmsg2
+        self.sleep(5)
+        icmp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture, 'icmp')
+        udp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
+                                        'udp', sport=8000, dport=9000)
+        tcp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
+                                        'tcp', sport=8001, dport=9001)
+        self.sleep(10)
+        msg = ''
+        if not self.stop_traffic(icmp_traf, expectation=False):
+            msg += ' ICMP traffic expected to fail, but passed.'
+            ret = False
+        if not self.stop_traffic(udp_traf, expectation=False):
+            msg += ' UDP traffic expected to fail, but passed.'
+            ret = False
+        if not self.stop_traffic(tcp_traf, expectation=True):
+            msg += ' TCP traffic expected to pass, but failed.'
+            ret = False
+        assert ret, msg
         self.logger.info('Will update the policy to allow only udp')
         policy_fixture = ret_dict['policy_fixture']
         policy_id = policy_fixture.get_id()
@@ -202,18 +212,23 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         p_rules = policy_entries
         policy_fixture.update_policy(policy_id, p_rules)
         self.sleep(5)
-        # TFTP from Left VM to Right VM is expected to pass
-        errmsg1 = "TFTP to right VM ip %s from left VM failed; expected to pass" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.check_file_transfer(
-            dest_vm_fixture=self.right_vm_fixture, mode='tftp', size='101'), errmsg1
-        # Ping from left VM to right VM; expected to fail
-        errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.ping_with_certainty(
-            self.right_vm_fixture.vm_ip, expectation=False), errmsg
-        # SCP from Left VM to Right VM is expected to fail
-        errmsg2 = "SCP to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.check_file_transfer(
-            dest_vm_fixture=self.right_vm_fixture, mode='scp', size='202', expectation=False), errmsg2
+        icmp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture, 'icmp')
+        udp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
+                                        'udp', sport=8002, dport=9002)
+        tcp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
+                                        'tcp', sport=8003, dport=9003)
+        self.sleep(10)
+        msg = ''
+        if not self.stop_traffic(icmp_traf, expectation=False):
+            msg += ' ICMP traffic expected to fail, but passed.'
+            ret = False
+        if not self.stop_traffic(udp_traf, expectation=True):
+            msg += ' UDP traffic expected to pass, but failed.'
+            ret = False
+        if not self.stop_traffic(tcp_traf, expectation=False):
+            msg += ' TCP traffic expected to fail, but passed.'
+            ret = False
+        assert ret, msg
     # end test_ecmp_in_pol_based_svc_pol_update
 
     @test.attr(type=['cb_sanity', 'sanity','vcenter'])
