@@ -126,8 +126,8 @@ class TestNetworkAttachment(BaseK8sTest):
         output = output.strip()
         pprint(output)
         output1 = re.search('default\s+via\s+(\d+.\d+.\d+.\d+)\s+dev\s+eth(\d+)',output)
-        default_gw_ip = "10.47.255.254"
-        assert output1.groups()[0] == default_gw_ip
+        default_gw_ips = ["10.47.255.254","10.131.255.254"]
+        assert output1.groups()[0] in default_gw_ips
         assert output1.groups()[1] == '0'
         self.logger.info("\nDefault route check is PASSED :%s" %(output))
     #end verify_default_route
