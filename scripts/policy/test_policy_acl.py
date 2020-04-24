@@ -631,7 +631,7 @@ class TestPolicyAcl(BasePolicyTest):
         ret = self.VM11_fixture.ping_with_certainty(expectation=False,
                                     dst_vm_fixture=self.VM21_fixture)
         if ret == True :
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A3 | grep %s -A3 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
             cmd = cmd + "| grep \"Action:D(Policy)\|Action:D(OutPolicy)\""
             cmd = cmd + " | wc -l"
@@ -756,7 +756,7 @@ class TestPolicyAcl(BasePolicyTest):
                                     dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A3 | grep %s -A3 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
             cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
@@ -936,7 +936,7 @@ class TestPolicyAcl(BasePolicyTest):
                                     dst_vm_fixture=self.VM21_fixture)
 
         if ret == True :
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A3 | grep %s -A3 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
             cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
@@ -959,7 +959,7 @@ class TestPolicyAcl(BasePolicyTest):
                                     dst_vm_fixture=self.VM31_fixture)
 
         if ret == True :
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A3 | grep %s -A3 " % (
                    self.VM11_fixture.vm_ip, self.VM31_fixture.vm_ip)
             cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
@@ -1083,7 +1083,7 @@ class TestPolicyAcl(BasePolicyTest):
                                      dst_vm_fixture=self.VM11_fixture)
 
         if ((ret1 == True) and (ret2 == True)):
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A3 | grep %s -A3 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
             cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
@@ -1306,7 +1306,7 @@ class TestPolicyAcl(BasePolicyTest):
         ret = self.VM11_fixture.ping_with_certainty(expectation=False,
                                     dst_vm_fixture=self.VM12_fixture)
         if ret == True :
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A3 | grep %s -A3 " % (
                   self.VM11_fixture.vm_ip, self.VM12_fixture.vm_ip)
             cmd = cmd + "| grep \"Action:D(Policy)\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
@@ -1334,7 +1334,7 @@ class TestPolicyAcl(BasePolicyTest):
         ret = self.VM11_fixture.ping_with_certainty(expectation=True,
                                     dst_vm_fixture=self.VM21_fixture)
         if ret == True :
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A3 | grep %s -A3 " % (
                   self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
             cmd = cmd + "| grep \"Action:F\" | wc -l"
             flow_record = self.inputs.run_cmd_on_server(
