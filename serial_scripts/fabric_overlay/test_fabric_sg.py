@@ -21,6 +21,7 @@ from time import sleep
 
 class TestFabricSecurityGroup(BaseFabricTest):
     enterprise_style = True
+    @skip_because(bms=2)
     @preposttest_wrapper
     def test_security_group(self):
         '''
@@ -64,12 +65,17 @@ class TestFabricSecurityGroup(BaseFabricTest):
         bms_nodes = self.get_bms_nodes()
         bms1_vn1=bms_nodes[0]
         bms1_vn2=bms_nodes[1]
-        bms2_vn1=bms_nodes[2]
         bms1 = self.create_bms(bms_name=bms1_vn1, vn_fixture=vn1, vlan_id=10)
         bms2 = self.create_bms(bms_name=bms1_vn2, vn_fixture=vn2, tor_port_vlan_tag=20)
-        bms3 = self.create_bms(bms_name=bms2_vn1, vn_fixture=vn1, tor_port_vlan_tag=10)
+        workloads = [vm1, vm2, bms1, bms2]
+        if len(bms_nodes) > 2:
+            workload3 = self.create_bms(bms_name=bms_nodes[2], vn_fixture=vn1, tor_port_vlan_tag=10)
+        else:
+            workload3 = self.create_vm(vn_fixture=vn1, image_name='cirros-traffic')
+            workload3.wait_till_vm_is_up()
+        workloads.append(workload3)
 
-        self.do_ping_mesh([vm1, vm2, bms1, bms2, bms3])
+        self.do_ping_mesh(workloads)
         # Apply SG to BMS
         bms1.add_security_groups([sg1.uuid, sg2.uuid])
         sleep(60)
@@ -85,7 +91,7 @@ class TestFabricSecurityGroup(BaseFabricTest):
         self.verify_traffic(bms1, vm1, 'tcp',
             sport=1111, dport=8020, expectation=False)
         self.verify_traffic(bms1, vm1, 'udp', sport=1111, dport=8004)
-        self.verify_traffic(bms1, bms3, 'tcp', sport=1111, dport=8006)
+        self.verify_traffic(bms1, workload3, 'tcp', sport=1111, dport=8006)
 
         #delete one SG attached to BMS
         bms1.delete_security_groups([sg1.uuid])
@@ -120,10 +126,10 @@ class TestFabricSecurityGroup(BaseFabricTest):
         sleep(60)
         assert vm1.ping_with_certainty(ip=bms2.bms_ip, expectation=False)
         assert vm1.ping_with_certainty(ip=bms1.bms_ip)
-        self.verify_traffic(bms1, bms3, 'tcp', sport=1111, dport=8006)
-        self.verify_traffic(bms2, bms3, 'tcp',
+        self.verify_traffic(bms1, workload3, 'tcp', sport=1111, dport=8006)
+        self.verify_traffic(bms2, workload3, 'tcp',
             sport=1111, dport=8006, expectation=False)
-        self.verify_traffic(bms1, bms3, 'tcp',
+        self.verify_traffic(bms1, workload3, 'tcp',
             sport=1111, dport=8000, expectation=False)
         self.verify_traffic(bms1, vm1, 'tcp', sport=1111, dport=8006)
         self.verify_traffic(bms2, vm1, 'tcp', sport=1111, dport=8004)
@@ -133,8 +139,8 @@ class TestFabricSecurityGroup(BaseFabricTest):
         sleep(60)
         assert vm1.ping_with_certainty(ip=bms1.bms_ip)
         assert vm1.ping_with_certainty(ip=bms2.bms_ip, expectation=False)
-        self.verify_traffic(bms1, bms3, 'tcp', sport=1111, dport=8006)
-        self.verify_traffic(bms2, bms3, 'tcp',
+        self.verify_traffic(bms1, workload3, 'tcp', sport=1111, dport=8006)
+        self.verify_traffic(bms2, workload3, 'tcp',
             sport=1111, dport=8006, expectation=False)
         self.verify_traffic(bms2, vm1, 'tcp', sport=1111, dport=8004)
 
