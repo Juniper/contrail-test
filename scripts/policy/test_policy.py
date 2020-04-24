@@ -356,11 +356,11 @@ class TestBasicPolicyConfig(BasePolicyTest):
         assert not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip),err_msg_on_pass
         self.logger.debug('Verify packets are dropped by policy')
         vm_node_ip = vm1_fixture.vm_node_ip
-        cmd= " flow -l | grep -A3 %s | grep -A3 %s | grep 'Action:D(Policy)' " %(
+        cmd= ' flow -l | grep -A3 %s | grep -A3 %s | grep \"Action:D(Policy)\" | wc -l ' %(
                                                 vm2_fixture.vm_ip,vm1_fixture.vm_ip)
         output = self.inputs.run_cmd_on_server(vm_node_ip,cmd,username='root',password='c0ntrail123',
                                                container='agent')
-        assert output,'Packets are not dropped by policy rule'
+        assert int(output)>0,'Packets are not dropped by policy rule'
         assert vm1_fixture.ping_to_ip(vm3_fixture.vm_ip),err_msg_on_fail
         self.logger.info('Ping from %s to %s failed,expected to fail.Test passed' %
             (vm1_fixture.vm_name, vm2_fixture.vm_name))
