@@ -23,10 +23,19 @@ from tcutils.contrail_status_check import ContrailStatusChecker
 from k8s.hbs import HbsFixture
 
 class TestHbsFirewall(BaseK8sTest):
-
     @classmethod
     def setUpClass(cls):
         super(TestHbsFirewall, cls).setUpClass()
+        cls.namespace = NamespaceFixture(cls._connections,isolation = True)
+        cls.namespace.setUp()
+        cls.namespace.verify_on_setup()
+        namespace = cls.namespace.name
+        cls.hbs = HbsFixture(cls._connections, name="hbs",namespace = namespace)
+        assert cls._connections.k8s_client.set_label_for_hbf_nodes( \
+            node_selector='computenode'), "Error : could not label the nodes"
+        cls.hbs.setUp()
+        cls.hbs.verify_on_setup()
+
 
     def setUp(self):
         super(TestHbsFirewall, self).setUp()
@@ -34,26 +43,10 @@ class TestHbsFirewall(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestHbsFirewall, cls).tearDownClass()
-
-    def setup_csrx(self, namespace_name="hbsnamespace", delete=False):
-        csrx_cmd = ""
-        if (not delete):
-            cmd1 = "kubectl create secret docker-registry psd --docker-server=hub.juniper.net/security \
-                    --docker-username=JNPR-CSRXFieldUser12 --docker-password=d2VbRJ8xPhSUAwzo7Lym -n \
-               %s" % (namespace_name)
-            cmd2="sed -i 's/namespace: hbsnamespace/namespace: %s/g' /root/ds.yaml"%(namespace_name)
-            cmd3 = "kubectl apply -f /root/ds.yaml"
-            csrx_cmd = cmd1 + ';' + cmd2 + ';' + cmd3
-        else:
-            cmd1="sed -i 's/namespace: hbsnamespace/namespace: %s/g' /root/ds.yaml" %(namespace_name)
-            cmd2 = "kubectl delete -f /root/ds.yaml"
-            csrx_cmd = cmd1 + ';' + cmd2
-        output = self.inputs.run_cmd_on_server(self.inputs.k8s_master_ip, csrx_cmd)
-        time.sleep(60)
-        # restore yaml config
-        restore_name="sed -i 's/namespace: %s/namespace: hbsnamespace/g' ds.yaml" %(namespace_name)
-        output = self.inputs.run_cmd_on_server(self.inputs.k8s_master_ip, restore_name)
-
+        #import pdb;pdb.set_trace()
+        cls.namespace.cleanUp()
+        assert cls._connections.k8s_client.set_label_for_hbf_nodes(labels={"type":None}), \
+              "Error : could not label the nodes"
     def run_test(self,
 		vn1_name,
 		tag_type,
@@ -63,27 +56,16 @@ class TestHbsFirewall(BaseK8sTest):
 		tag2_value=None,
 		inter_compute=False,
                 cleanup=True):
-
-        namespace1_name = get_random_name("hbsnamespace")
-        namespace1_fix = self.useFixture(NamespaceFixture(connections=self.connections,
-                                         name=namespace1_name,isolation = True))
-        namespace1_fix.verify_on_setup()
-        hbs1_name=get_random_name("hbsobj")
-        hbs1_fix = self.useFixture(HbsFixture(connections=self.connections, name=hbs1_name,
-                                   namespace = namespace1_name))
-        hbs1_fix.verify_on_setup()
-        #self.setup_csrx(namespace_name=namespace1_name)
-
-        project_name = "k8s-%s" %(namespace1_name)
+        project_name = "k8s-" + self.namespace.name
         isolated_creds = IsolatedCreds(
             self.inputs,
             project_name,
             input_file=self.input_file,
             logger=self.logger)
         self.remove_from_cleanups(isolated_creds.cleanUp)
+        import pdb;pdb.set_trace()
         proj_fix = self.create_project(project_name=project_name,
                                        cleanup=False, connections=self.connections)
-
         proj_inputs = isolated_creds.get_inputs(proj_fix)
         proj_connection = isolated_creds.get_connections(proj_inputs)
 
@@ -132,7 +114,7 @@ class TestHbsFirewall(BaseK8sTest):
 	    policy1_fixture = None
 
         # Create 2 pods
-	namespace_name = namespace1_name
+	namespace_name = self.namespace.name
         compute_label_list, compute_count = self.connections.k8s_client.get_kubernetes_compute_labels()
         compute_selector_1 = {'computenode': compute_label_list[0]} 
 	if inter_compute and compute_count >= 2:
@@ -282,7 +264,7 @@ class TestHbsFirewall(BaseK8sTest):
 			 tag_type=tag_type, obj=tag_obj)
        		self.addCleanup(self.vnc_h.unset_tag,
 			 tag_type='application', obj=tag_obj)
-        return pod1, pod2, pod3, pod4, namespace1_name
+        return pod1, pod2, pod3, pod4, self.namespace.name
 
     '''
        TEST CASE 30
@@ -311,7 +293,6 @@ class TestHbsFirewall(BaseK8sTest):
         assert pod2.ping_with_certainty(pod1.pod_ip, expectation=True, count='5', hbf_enabled=True)
         assert pod3.ping_with_certainty(pod4.pod_ip, expectation=False, count='5', hbf_enabled=True)
         assert pod4.ping_with_certainty(pod3.pod_ip, expectation=False, count='5', hbf_enabled=True) 
-
         #self.setup_csrx(namespace_name=namespace_name, delete=True)
     # test_hbs_with_contrail_apiserver_restart
 
