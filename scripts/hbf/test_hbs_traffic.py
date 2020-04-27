@@ -32,6 +32,8 @@ class TestHbsTraffic(BaseK8sTest):
         cls.namespace.verify_on_setup()
         namespace = cls.namespace.name
         cls.hbs = HbsFixture(cls._connections, name="hbs",namespace = namespace)
+        assert cls._connections.k8s_client.set_label_for_hbf_nodes( \
+            node_selector='computenode'), "Error : could not label the nodes"
         cls.hbs.setUp()
         cls.hbs.verify_on_setup()
 
@@ -213,6 +215,8 @@ class TestHbsTraffic(BaseK8sTest):
     def tearDownClass(cls):
         print("TEARDOWN CLASS")
         super(TestHbsTraffic, cls).tearDownClass()
+        assert cls._connections.k8s_client.set_label_for_hbf_nodes(labels={"type":None}), \
+              "Error : could not label the nodes"
         cls.namespace.cleanUp()
 
     def verifyTraffic(self, traffic_type, inter_compute=False):
