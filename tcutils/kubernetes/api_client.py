@@ -879,6 +879,37 @@ class Client(object):
 
         return compute_label_list, compute_count
 
+    def set_label_for_hbf_nodes(self,nodes_list_spec=None,
+                                labels=None,
+                                node_selector=None):
+        '''
+           Set the lables on k8s nodes
+            -Takes list f node be labbledd
+            -Label that need to be applied on the k8s/hbf Nodes
+        '''
+        if nodes_list_spec is None:
+            nodes_list_spec = self.v1_h.list_node()
+        if labels is None:
+            labels = {"labels":{ "type": "hbf"}}
+        else:
+            labels = {"labels":labels}
+        body = { "metadata": labels}
+        master_label = 'node-role.kubernetes.io/master'
+
+        for node in nodes_list_spec.items:
+            if not master_label in node.metadata.labels:
+                nodename = node.metadata.labels.get('kubernetes.io/hostname')
+                self.logger.info('compute node name : %s' %(nodename))
+                if node_selector:
+                    body['metadata']['labels'][node_selector] = nodename
+                try:
+                    response = self.v1_h.patch_node(nodename, body)
+                    self.logger.info(response)
+                except ApiException as e:
+                    self.logger.error("Exception in  CoreV1Api->patch_node:%s\n" % e)
+                    return False
+        return True
+
 if __name__ == '__main__':
     c1 = Client()
     pods = c1.get_pods()
