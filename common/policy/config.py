@@ -40,7 +40,8 @@ class AttachPolicyFixture(fixtures.Fixture):
         self.vn_obj.add_network_policy(self.policy_obj, self.policy_type)
         self.vnc_lib.virtual_network_update(self.vn_obj)
         # Required for verification by VNFixture in vn_test.py
-        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
+        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name) if \
+                 self.orch else self.vnc_lib.network_policy_read(self.policy_fixture.policy_fq_name)
         self.vn_fixture.update_vn_object()
         policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
@@ -60,7 +61,9 @@ class AttachPolicyFixture(fixtures.Fixture):
         self.vnc_lib.virtual_network_update(self.vn_obj)
         self.vn_fixture.update_vn_object()
         # Required for verification by VNFixture in vn_test.py
-        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
+        policy = self.orch.get_policy(self.policy_fixture.policy_fq_name) if \
+                 self.orch else self.vnc_lib.network_policy_read(self.policy_fixture.policy_fq_name)
+
         policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
         if isinstance(policy, NetworkPolicy):
