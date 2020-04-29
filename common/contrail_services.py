@@ -169,6 +169,20 @@ _CONTRAIL_SERVICES_RHOSP_CONTAINER_MAP = {
     # WebUI
     'webui' : ['contrail_webui_web'],
     'webui-middleware': ['contrail_webui_job'],
+    #missing-entries
+    'agent-dpdk': ['contrail_vrouter_agent_dpdk'],
+    'nova': ['nova_api'],
+    'nova-compute': ['nova_compute'],
+    'nova-conductor': ['nova_conductor'],
+    'nova-scheduler': ['nova_scheduler'],
+    'glance': ['glance_api'],
+    'haproxy': ['haproxy'],
+    'keystone': ['keystone'],
+    'neutron': ['neutron_api'],
+    'mysql': ['clustercheck'],
+    'redis': ['contrail_redis'],
+    'stunnel': ['contrail_stunnel']
+    'analytics-zookeeper': ['contrail_analytics_zookeeper'],
 }
 
 CONTRAIL_PODS_SERVICES_MAP = {
