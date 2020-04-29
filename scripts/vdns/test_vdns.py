@@ -39,6 +39,7 @@ sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
 from traffic.core.helpers import Host, Sender, Receiver
 from traffic.core.profile import StandardProfile,ContinuousProfile
+from string import Template
 
 class TestvDNS0(BasevDNSTest):
 
@@ -747,26 +748,19 @@ class TestvDNS0(BasevDNSTest):
         filters = '\'(src host %s and dst host %s and port 1234)\'' \
                     % (vm_fixture1.vm_ip,vn_fixt.get_dns_ip(ipam_fq_name = ipam_fixt1.fq_name))
         session, pcap = start_tcpdump_for_vm_intf(self, vm_fixture1, vn_fixt.vn_fq_name, filters = filters)
-        dnsPayload = '\x12\x34\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x04'
-        streamObj = Stream(protocol="ip", sport=1234, dport=53, proto='udp', src=vm_fixture1.vm_ip,
-                dst=vn_fixt.get_dns_ip(ipam_fq_name =ipam_fixt1.fq_name))
-        profile_kwargs = {'stream': streamObj, 'count' : 10, 'payload': dnsPayload}
-        profileObj = StandardProfile(**profile_kwargs)
-        tx_vm_node_ip = vm_fixture1.vm_node_ip
-        send_node = Host(
-                tx_vm_node_ip,
-                self.inputs.host_data[tx_vm_node_ip]['username'],
-                self.inputs.host_data[tx_vm_node_ip]['password'])
-        send_host = Host(vm_fixture1.local_ip,
-                             vm_fixture1.vm_username, vm_fixture1.vm_password)
-        sender = Sender("senddns", profileObj, send_node, send_host, self.inputs.logger)
-        sender.start()
-        sleep(1)
-        sender.poll()
-        if not sender.sent:
-            self.logger.error("Failed to Transmit packet")
-            assert False, "Failed to Transmit packet"
-        sender.stop()
+
+
+        srcip = vm_fixture1.vm_ip
+        dstip = vn_fixt.get_dns_ip(ipam_fq_name =ipam_fixt1.fq_name)
+
+        python_code = Template('''
+from scapy.all import *
+a=IP(dst='$dip',src='$sip')/UDP(dport=53,sport=1234)/str('\\x12\\x34\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\x00\\x04')
+send(a, iface='eth0',inter=1.000000,count=10)
+           ''')
+        python_code = python_code.substitute(dip=dstip,sip=srcip)
+        vm_fixture1.run_python_code(python_code)
+
         sleep(2)
         stop_tcpdump_for_vm_intf(self, session, pcap)
         sleep(2)
