@@ -117,7 +117,7 @@ class BaseIntrospectSsl(GenericTestBase):
         self.check_file_dir_exists(ca_private_key)
         self.ca_private_key = ca_private_key
         result, fqdn, stderr  = SslCert.local_exec('hostname -f')
-        subject = '/CN=contrail-test-ca-' + fqdn
+        subject = '/CN=contrail-test-ca-' + fqdn.decode()
         SslCert.generate_cert(ca_cert, ca_private_key, self_signed=True, subj=subject)
         self.check_file_dir_exists(ca_cert)
         self.ca_cert = ca_cert

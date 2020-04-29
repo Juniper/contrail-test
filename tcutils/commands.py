@@ -78,8 +78,8 @@ def execute_cmd_out(session, cmd, log=LOG):
     stdin, stdout, stderr = session.exec_command(cmd)
     out = None
     err = None
-    out = stdout.read()
-    err = stderr.read()
+    out = stdout.read().decode()
+    err = stderr.read().decode()
     if out:
         log.debug("STDOUT: %s", out)
     if err:
