@@ -108,7 +108,7 @@ class RPBase(test_v1.BaseTestCase_v1):
         rp.set_routing_policy_entries(obj_1)
         if config_dicts['sub_from'] == 'service-chain':
             obj_11 = RoutingPolicyServiceInstanceType()
-            if config_dicts.has_key('si_rp_interface_type') :
+            if config_dicts.get('si_rp_interface_type') :
                if 'left_vn' in config_dicts['si_rp_interface_type']:
                   obj_11.set_left_sequence('1')
                if 'right_vn' in config_dicts['si_rp_interface_type']:
