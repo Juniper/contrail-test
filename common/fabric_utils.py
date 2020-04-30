@@ -156,13 +156,15 @@ class FabricUtils(object):
         return (fabric, devices, interfaces)
 
     def cleanup_fabric(self, fabric, devices=None, interfaces=None,
-                       verify=True, wait_for_finish=True):
+                       verify=True, wait_for_finish=True, retry=True):
         fq_name = ['default-global-system-config', 'fabric_deletion_template']
         payload = {'fabric_fq_name': fabric.fq_name}
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         self.logger.info('Started cleanup of fabric %s'%(fabric.name))
         if wait_for_finish:
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            if retry:
+                self.cleanup_fabric(fabric, verify=False, retry=False)
             assert status, 'job %s to cleanup fabric failed'%execution_id
             if verify:
                 for lif in interfaces['logical']:
@@ -172,6 +174,7 @@ class FabricUtils(object):
                 for device in devices or []:
                     assert device.verify_on_cleanup()
             assert fabric.verify_on_cleanup()
+        time.sleep(90)
         return execution_id
 
     def discover(self, fabric, wait_for_finish=True):
@@ -394,7 +397,7 @@ class FabricUtils(object):
             return execution_id, status
         return execution_id, None
 
-    @retry(delay=30, tries=90)
+    @retry(delay=30, tries=30)
     def wait_for_job_to_finish(self, job_name, execution_id, start_time='now-10m'):
         ops_h = self.connections.ops_inspects[self.inputs.collector_ips[0]]
         table = 'ObjectJobExecutionTable'
