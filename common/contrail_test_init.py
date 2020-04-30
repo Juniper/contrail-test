@@ -810,6 +810,12 @@ class TestInputs(with_metaclass(Singleton, object)):
         containers = [x for x in containers if 'k8s_POD' not in x]
         nodemgr_cntrs = [x for x in containers if 'nodemgr' in x]
         containers = set(containers) - set(nodemgr_cntrs)
+
+        # Observed in Openshift scenario, recent container-name changes causing issue picking wrong container which is down/inactive after fail-over 
+        # and solving this with Sorting the Set and as this is simple sorting only and so should not impact any other scneario like Openstack/K8s etc
+        nodemgr_cntrs = sorted(nodemgr_cntrs, reverse=True)
+        containers = sorted(containers, reverse=True)
+
         for service, names in get_contrail_services_map(self).items():
             if 'nodemgr' in service:
                 continue
