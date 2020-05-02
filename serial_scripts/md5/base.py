@@ -216,7 +216,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                         if individual_bgp_node[0] in bgpnode:
                             cn_bgp_entry.remove(bgpnodes)
         str_bgp_entry = str(cn_bgp_entry)
-        est = re.findall(' \'state\': \'(\w+)\', \'flap_count', str_bgp_entry)
+        est = re.findall(' \'state\': \'(\w+)\', \'closed_at', str_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
