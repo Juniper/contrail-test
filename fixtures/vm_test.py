@@ -268,13 +268,13 @@ class VMFixture(fixtures.Fixture):
     # end setUp
 
     def attach_shc(self, shc_id):
-        vmi_uuid = self.get_vmi_ids().values()[0]
+        vmi_uuid = list(self.get_vmi_ids().values())
         result = self.vnc_h.attach_shc_to_vmi(vmi_uuid, shc_id)
         self.shc_id = shc_id
         return result
 
     def detach_shc(self, shc_id):
-        vmi_uuid = self.get_vmi_ids().values()[0]
+        vmi_uuid = list(self.get_vmi_ids().values())
         result = self.vnc_h.detach_shc_from_vmi(vmi_uuid, shc_id)
         return result
 
