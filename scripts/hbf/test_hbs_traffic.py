@@ -221,6 +221,7 @@ class TestHbsTraffic(BaseK8sTest):
 
     def verifyTraffic(self, traffic_type, inter_compute=False):
         # Send Traffic
+        import pdb;pdb.set_trace()
         if traffic_type is "ICMP":
             assert self.apod1.ping_with_certainty(self.apod2.pod_ip,
                                                   expectation=True, count='5',

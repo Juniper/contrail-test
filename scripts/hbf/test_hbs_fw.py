@@ -27,10 +27,10 @@ class TestNetworkPolicy(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestNetworkPolicy, cls).setUpClass()
-        cls.namespace = NamespaceFixture(cls._connections,isolation = True)
+        cls.namespace = NamespaceFixture(cls._connections,name="svc",isolation = True)
         cls.namespace.setUp()
         cls.namespace.verify_on_setup()
-	namespace = cls.namespace.name
+        namespace = cls.namespace.name
         cls.hbs = HbsFixture(cls._connections, name="hbs",namespace = namespace)
         assert cls._connections.k8s_client.set_label_for_hbf_nodes( \
             node_selector='computenode'), "Error : could not label the nodes"
@@ -74,7 +74,7 @@ class TestNetworkPolicy(BaseK8sTest):
                    "project" : vn1.project_name,
                    "name": vn1.vn_name}
 
-	if vn2_name != None:
+        if vn2_name != None:
              vn2 = self.setup_vn(project_name =project_name,
 			         connections=proj_connection, inputs=proj_inputs, vn_name = vn2_name)
              vn2_dict = {"domain": vn2.domain_name,
@@ -104,18 +104,18 @@ class TestNetworkPolicy(BaseK8sTest):
                         proj_inputs, proj_connection, vn1, policy1_fixture))
              policy_attach_fix1 = self.useFixture(AttachPolicyFixture(
                         proj_inputs, proj_connection, vn2, policy1_fixture))
-	else:
+        else:
             vn2_dict = None
             vn2 = None
-	    policy1_fixture = None
+            policy1_fixture = None
 
         # Create 2 pods
-	namespace_name = self.namespace.name
+        namespace_name = self.namespace.name
         compute_label_list, compute_count = self.connections.k8s_client.get_kubernetes_compute_labels()
         compute_selector_1 = {'computenode': compute_label_list[0]} 
-	if inter_compute and compute_count >= 2:
+        if inter_compute and compute_count >= 2:
         	compute_selector_2 = {'computenode': compute_label_list[1]}
-	else:
+        else:
         	compute_selector_2 = compute_selector_1
 
         pod1 = self.setup_busybox_pod(namespace=namespace_name,
@@ -128,8 +128,9 @@ class TestNetworkPolicy(BaseK8sTest):
 		 compute_node_selector=compute_selector_2)
         assert pod2.verify_on_setup()
         assert pod1.ping_with_certainty(pod2.pod_ip)
-	self.addCleanup(self.perform_cleanup, pod1)
-	self.addCleanup(self.perform_cleanup, pod2)
+
+        self.addCleanup(self.perform_cleanup, pod1)
+        self.addCleanup(self.perform_cleanup, pod2)
 	
 	# Create tags
         fq_name1 = ['default-domain', project_name,
@@ -138,14 +139,14 @@ class TestNetworkPolicy(BaseK8sTest):
 		 tag_type=tag_type, tag_value=tag_value,
 		 parent_type='project')
        	self.addCleanup(self.vnc_h.delete_tag, id=tag1)
-	if tag2_value != None:
+        if tag2_value != None:
         	fq_name2 = ['default-domain', project_name,
 				 '%s=%s'%(tag_type, tag2_value)]
         	tag2 = self.create_tag(fq_name=fq_name1,
 		 	tag_type=tag_type, tag_value=tag2_value,
 			 parent_type='project')
         	self.addCleanup(self.vnc_h.delete_tag, id=tag2)
-	app_tag_name = 'myk8s'
+        app_tag_name = 'myk8s'
         fq_name3 = ['default-domain', project_name,
 			 '%s=%s'%('application', 'myk8s')]
         apptag = self.create_tag(fq_name=fq_name3,
@@ -156,31 +157,31 @@ class TestNetworkPolicy(BaseK8sTest):
 
         # Apply tag
         tag_obj_list = []
-	tag_value_list = []
-	if tag_obj_name == 'project':
-		project_fq_name = ['default-domain', project_name]
-		tag_obj = self.read_project_obj(project_fq_name=project_fq_name)
+        tag_value_list = []
+        if tag_obj_name == 'project':
+                project_fq_name = ['default-domain', project_name]
+                tag_obj = self.read_project_obj(project_fq_name=project_fq_name)
                 tag_obj_list.append(tag_obj)
-		tag_value_list.append(tag_value)
-	elif tag_obj_name == 'vmi':
-		tag_obj1 = self.read_virtual_machine_interface(
-			id=pod1.vmi_objs[0].uuid)
+                tag_value_list.append(tag_value)
+        elif tag_obj_name == 'vmi':
+                tag_obj1 = self.read_virtual_machine_interface(
+                        id=pod1.vmi_objs[0].uuid)
                 tag_obj_list.append(tag_obj1)
-		tag_value_list.append(tag_value)
+                tag_value_list.append(tag_value)
                 tag_obj2 = self.read_virtual_machine_interface(
-			id=pod2.vmi_objs[0].uuid)
+	                id=pod2.vmi_objs[0].uuid)
                 tag_obj_list.append(tag_obj2)
-		tag_value_list.append(tag2_value or tag_value)
-	elif tag_obj_name == 'vn':
-		vn_name = ['default-domain', project_name, '%s'%(vn1_name)]
-		tag_obj = self.read_virtual_network(fq_name=vn_name)
+                tag_value_list.append(tag2_value or tag_value)
+        elif tag_obj_name == 'vn':
+                vn_name = ['default-domain', project_name, '%s'%(vn1_name)]
+                tag_obj = self.read_virtual_network(fq_name=vn_name)
                 tag_obj_list.append(tag_obj)
-		tag_value_list.append(tag_value)
+                tag_value_list.append(tag_value)
                 if vn2_name:
                    vn_name = ['default-domain', project_name, '%s'%(vn2_name)]
                    tag_obj = self.read_virtual_network(fq_name=vn_name)
                    tag_obj_list.append(tag_obj)
-		   tag_value_list.append(tag2_value or tag_value)
+                   tag_value_list.append(tag2_value or tag_value)
         for tag_obj, tagv in zip(tag_obj_list, tag_value_list):
             self.set_tag(tag_type=tag_type, tag_value=tagv,
 		         obj=tag_obj)
@@ -189,30 +190,30 @@ class TestNetworkPolicy(BaseK8sTest):
 
         # Create FW rule
         site_ep1 = {'tags': ['%s=%s'%(tag_type, tag_value)]}
-	if tag2_value != None:
-        	site_ep2 = {'tags': ['%s=%s'%(tag_type, tag2_value)]}
-	else:
-		site_ep2 = None
-	fwr_fqname = ['default-domain', project_name, 'my_fwr']
-	fwr_uuid = self.vnc_h.create_firewall_rule(fq_name=fwr_fqname,
-			 parent_type='project', service_groups=[], protocol='icmp',
-                         source=site_ep1,
-			 destination=(site_ep2 or site_ep1), action='pass',
-			 direction = "<>")
+        if tag2_value != None:
+            site_ep2 = {'tags': ['%s=%s'%(tag_type, tag2_value)]}
+        else:
+            site_ep2 = None
+        fwr_fqname = ['default-domain', project_name, 'my_fwr']
+        fwr_uuid = self.vnc_h.create_firewall_rule(fq_name=fwr_fqname,
+                      parent_type='project', service_groups=[], protocol='icmp',
+                      source=site_ep1,
+                      destination=(site_ep2 or site_ep1), action='pass',
+                      direction = "<>")
 
-	rule_obj = self.vnc_h.firewall_rule_read(id=fwr_uuid)
-	rule_obj.set_action_list(ActionListType(host_based_service=True,simple_action="pass"))
+        rule_obj = self.vnc_h.firewall_rule_read(id=fwr_uuid)
+        rule_obj.set_action_list(ActionListType(host_based_service=True,simple_action="pass"))
         self.vnc_h.firewall_rule_update(rule_obj)
-       	self.addCleanup(self.vnc_h.delete_firewall_rule, id=fwr_uuid)
+        self.addCleanup(self.vnc_h.delete_firewall_rule, id=fwr_uuid)
 
         # Create FW policy and add the rule
         rules = [{'uuid': fwr_uuid, 'seq_no': 20}]
         fwp_policy_fqname = ['default-domain', project_name, 'fw_pol']
-	fwp_uuid = self.vnc_h.create_firewall_policy(
-                                     parent_type='project',
-                                     fq_name=fwp_policy_fqname,
-                                     rules=rules)
-	fwp_obj = self.vnc_h.read_firewall_policy(fq_name=fwp_policy_fqname)
+        fwp_uuid = self.vnc_h.create_firewall_policy(
+                                    parent_type='project',
+                                    fq_name=fwp_policy_fqname,
+                                    rules=rules)
+        fwp_obj = self.vnc_h.read_firewall_policy(fq_name=fwp_policy_fqname)
         self.addCleanup(self.vnc_h.delete_firewall_policy, id=fwp_uuid)
 
         # Create an APS and add the policy
@@ -229,330 +230,275 @@ class TestNetworkPolicy(BaseK8sTest):
         assert pod1.ping_with_certainty(pod2.pod_ip, expectation=True, count='5', hbf_enabled=True)
 
 	# Cleanups
-	for tag_obj in tag_obj_list:
-       		self.addCleanup(self.vnc_h.unset_tag,
-			 tag_type=tag_type, obj=tag_obj)
-   		self.addCleanup(self.vnc_h.unset_tag,
-			 tag_type='application', obj=tag_obj)
-	'''
+        for tag_obj in tag_obj_list:
+             self.addCleanup(self.vnc_h.unset_tag,
+                             tag_type=tag_type, obj=tag_obj)
+             self.addCleanup(self.vnc_h.unset_tag,
+                             tag_type='application', obj=tag_obj)
+        '''
        	self.addCleanup(self.vnc_h.delete_tag, id=tag1)
-	if tag2_value != None:
-        	self.addCleanup(self.vnc_h.delete_tag, id=tag2)
-       	self.addCleanup(self.vnc_h.delete_tag, id=apptag)
-	'''
+        if tag2_value != None:
+            self.addCleanup(self.vnc_h.delete_tag, id=tag2)
+        self.addCleanup(self.vnc_h.delete_tag, id=apptag)
+        '''
 
         return policy1_fixture, pod1, pod2, fwp_obj, project_name
  
     ''' Test 16 '''
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_tier_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='tier',
-		tag_value='myweb',
-		tag_obj_name='vn')
+         self.run_test(vn1_name='vn1',
+                       tag_type='tier',
+                       tag_value='myweb',
+                       tag_obj_name='vn')
     # end intra_vn_intra_compute_tag_tier_tagat_vn
 
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_deployment_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='deployment',
-		tag_value='hr',
-		tag_obj_name='vn')
+         self.run_test(vn1_name='vn1',
+                       tag_type='deployment',
+                       tag_value='hr',
+                       tag_obj_name='vn')
     # end intra_vn_intra_compute_tag_deployment_tagat_vn
 
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_site_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='site',
-		tag_value='BLR',
-		tag_obj_name='vn')
+         self.run_test(vn1_name='vn1',
+                       tag_type='site',
+                       tag_value='BLR',
+                       tag_obj_name='vn')
     # end intra_vn_intra_compute_tag_site_tagat_vn
 
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_label_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='label',
-		tag_value='MYVN',
-		tag_obj_name='vn')
+         self.run_test(vn1_name='vn1',
+                       tag_type='label',
+                       tag_value='MYVN',
+                       tag_obj_name='vn')
     # end intra_vn_intra_compute_tag_label_tagat_vn
     ''' Test 16 End '''
 
     ''' Test 17 '''
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_tier_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='tier',
-		tag_value='myweb',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1',
+                       tag_type='tier',
+                       tag_value='myweb',
+                       tag_obj_name='vn',
+                       inter_compute=True)
     # end intra_vn_inter_compute_tag_tier_tagat_vn
 
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_deployment_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='deployment',
-		tag_value='hr',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1',
+                       tag_type='deployment',
+                       tag_value='hr',
+                       tag_obj_name='vn',
+                       inter_compute=True)
     # end intra_vn_inter_compute_tag_deployment_tagat_vn
 
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_site_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='site',
-		tag_value='BLR',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1',
+                       tag_type='site',
+                       tag_value='BLR',
+                       tag_obj_name='vn',
+                       inter_compute=True)
     # end intra_vn_inter_compute_tag_site_tagat_vn
 
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_label_tagat_vn(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='label',
-		tag_value='MYVN',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1',
+                       tag_type='label',
+                       tag_value='MYVN',
+                       tag_obj_name='vn',
+                       inter_compute=True)
     # end intra_vn_inter_compute_tag_label_tagat_vn
     ''' Test 17 End '''
 
     ''' Test 18 '''
     @preposttest_wrapper
     def test_inter_vn_intra_compute_tag_tier_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='tier',
-		tag_value='myweb',
-		tag2_value='myapp',
-		tag_obj_name='vmi')
+         self.run_test(vn1_name='vn1',
+                       vn2_name="vn2",
+	               tag_type='tier',
+                       tag_value='myweb',
+                       tag2_value='myapp',
+                       tag_obj_name='vmi')
     # end test_inter_vn_intra_compute_tag_tier_tagat_vmi
 
     @preposttest_wrapper
     def test_inter_vn_intra_compute_tag_deployment_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='deployment',
-		tag_value='hr',
-		tag2_value='mkt',
-		tag_obj_name='vmi')
+         self.run_test(vn1_name='vn1',
+                       vn2_name="vn2",
+                       tag_type='deployment',
+                       tag_value='hr',
+                       tag2_value='mkt',
+                       tag_obj_name='vmi')
     # end test_inter_vn_intra_compute_tag_deployment_tagat_vmi
 
     @preposttest_wrapper
     def test_inter_vn_intra_compute_tag_site_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='site',
-		tag_value='BLR',
-		tag2_value='SVL',
-		tag_obj_name='vmi')
+         self.run_test(vn1_name='vn1',
+                       vn2_name="vn2",
+                       tag_type='site',
+                       tag_value='BLR',
+                       tag2_value='SVL',
+                       tag_obj_name='vmi')
     # end test_inter_vn_intra_compute_tag_site_tagat_vmi
 
     @preposttest_wrapper
     def test_inter_vn_intra_compute_tag_label_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='label',
-		tag_value='MYVMI1',
-		tag2_value='MYVMI2',
-		tag_obj_name='vmi')
+         self.run_test(vn1_name='vn1',
+                      vn2_name="vn2",
+                      tag_type='label',
+                      tag_value='MYVMI1',
+                      tag2_value='MYVMI2',
+                      tag_obj_name='vmi')
     # end test_inter_vn_intra_compute_tag_label_tagat_vmi
     ''' Test Case 18 End '''
 
     ''' Test 19 '''
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_tier_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='tier',
-		tag_value='myweb',
-		tag2_value='myapp',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1',
+                       vn2_name="vn2",
+                       tag_type='tier',
+                       tag_value='myweb',
+                       tag2_value='myapp',
+                       tag_obj_name='vmi',
+                       inter_compute=True)
     # end test_inter_vn_inter_compute_tag_tier_tagat_vmi
 
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_deployment_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='deployment',
-		tag_value='hr',
-		tag2_value='mkt',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2", tag_type='deployment',
+                       tag_value='hr', tag2_value='mkt',
+                       tag_obj_name='vmi', inter_compute=True)
     # end test_inter_vn_inter_compute_tag_deployment_tagat_vmi
 
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_site_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='site',
-		tag_value='BLR',
-		tag2_value='SVL',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2",
+                      tag_type='site', tag_value='BLR',
+                      tag2_value='SVL', tag_obj_name='vmi', inter_compute=True)
     # end test_inter_vn_inter_compute_tag_site_tagat_vmi
 
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_label_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='label',
-		tag_value='MYVMI1',
-		tag2_value='MYVMI2',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2", tag_type='label',
+                      tag_value='MYVMI1',tag2_value='MYVMI2',tag_obj_name='vmi',
+                      inter_compute=True)
     # end test_inter_vn_inter_compute_tag_label_tagat_vmi
     ''' Test Case 19 End '''
 
     ''' Test 20 '''
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_tier_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='tier',
-		tag_value='myweb',
-		tag2_value='myapp',
-		tag_obj_name='vmi')
-    # end test_intra_vn_intra_compute_tag_tier_tagat_vmi
+         self.run_test(vn1_name='vn1', tag_type='tier', tag_value='myweb',
+                       tag2_value='myapp', tag_obj_name='vmi') 
+# end test_intra_vn_intra_compute_tag_tier_tagat_vmi
 
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_deployment_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='deployment',
-		tag_value='hr',
-		tag2_value='mkt',
-		tag_obj_name='vmi')
+         self.run_test(vn1_name='vn1', tag_type='deployment',
+                       tag_value='hr', tag2_value='mkt', tag_obj_name='vmi')
     # end test_intra_vn_intra_compute_tag_deployment_tagat_vmi
 
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_site_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='site',
-		tag_value='BLR',
-		tag2_value='SVL',
-		tag_obj_name='vmi')
+         self.run_test(vn1_name='vn1', tag_type='site',
+                       tag_value='BLR', tag2_value='SVL', tag_obj_name='vmi')
     # end test_intra_vn_intra_compute_tag_site_tagat_vmi
 
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_label_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='label',
-		tag_value='MYVMI1',
-		tag2_value='MYVMI2',
-		tag_obj_name='vmi')
+         self.run_test(vn1_name='vn1', tag_type='label',
+                    tag_value='MYVMI1', tag2_value='MYVMI2', tag_obj_name='vmi')
     # end test_intra_vn_intra_compute_tag_label_tagat_vmi
     ''' Test Case 20 End '''
 
     ''' Test 21 '''
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_tier_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='tier',
-		tag_value='myweb',
-		tag2_value='myapp',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', tag_type='tier',
+                       tag_value='myweb', tag2_value='myapp',
+                       tag_obj_name='vmi', inter_compute=True)
     # end test_intra_vn_inter_compute_tag_tier_tagat_vmi
 
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_deployment_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='deployment',
-		tag_value='hr',
-		tag2_value='mkt',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', tag_type='deployment',
+                       tag_value='hr', tag2_value='mkt',
+                       tag_obj_name='vmi', inter_compute=True)
     # end test_intra_vn_inter_compute_tag_deployment_tagat_vmi
 
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_site_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='site',
-		tag_value='BLR',
-		tag2_value='SVL',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', tag_type='site',
+                       tag_value='BLR', tag2_value='SVL',
+                       tag_obj_name='vmi', inter_compute=True)
     # end test_intra_vn_inter_compute_tag_site_tagat_vmi
 
     @preposttest_wrapper
     def test_intra_vn_inter_compute_tag_label_tagat_vmi(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='label',
-		tag_value='MYVMI1',
-		tag2_value='MYVMI2',
-		tag_obj_name='vmi',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', tag_type='label',
+                       tag_value='MYVMI1', tag2_value='MYVMI2',
+                       tag_obj_name='vmi', inter_compute=True)
     # end test_intra_vn_inter_compute_tag_label_tagat_vmi
     ''' Test Case 21 End '''
 
     ''' Test 22 '''
     @preposttest_wrapper
     def test_inter_vn_intra_compute_tag_tier_tagat_project(self):
-	self.run_test(vn1_name='myvn1',
-		vn2_name="myvn2",
-		tag_type='tier',
-		tag_value='myweb',
-		tag_obj_name='project')
+         self.run_test(vn1_name='vn1', vn2_name="vn2",
+                     tag_type='tier', tag_value='myweb', tag_obj_name='project')
     # end test_inter_vn_intra_compute_tag_tier_tagat_project
     ''' Test 22 End '''
 
     ''' Test 23 '''
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_tier_tagat_project(self):
-        self.run_test(vn1_name='myvn1',
-                vn2_name="myvn2",
-                tag_type='tier',
-                tag_value='myweb',
-                tag_obj_name='project',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2", tag_type='tier',
+                  tag_value='myweb', tag_obj_name='project', inter_compute=True)
     # end test_inter_vn_inter_compute_tag_tier_tagat_project
     ''' Test 23 End '''
 
     ''' Test 24 '''
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_tier_tagat_vn(self):
-	self.run_test(vn1_name='myvn1',
-                vn2_name="myvn2",
-		tag_type='tier',
-		tag_value='myweb',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2",
+                       tag_type='tier', tag_value='myweb',
+                       tag_obj_name='vn', inter_compute=True)
     # end test_inter_vn_inter_compute_tag_tier_tagat_vn
 
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_deployment_tagat_vn(self):
-	self.run_test(vn1_name='myvn1',
-                vn2_name="myvn2",
-		tag_type='deployment',
-		tag_value='hr',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2",
+                       tag_type='deployment', tag_value='hr',
+                       tag_obj_name='vn', inter_compute=True)
     # end test_inter_vn_inter_compute_tag_deployment_tagat_vn
 
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_site_tagat_vn(self):
-	self.run_test(vn1_name='myvn1',
-                vn2_name="myvn2",
-		tag_type='site',
-		tag_value='BLR',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2",
+                       tag_type='site', tag_value='BLR',
+                       tag_obj_name='vn', inter_compute=True)
     # end test_inter_vn_inter_compute_tag_site_tagat_vn
 
     @preposttest_wrapper
     def test_inter_vn_inter_compute_tag_label_tagat_vn(self):
-	self.run_test(vn1_name='myvn1',
-                vn2_name="myvn2",
-		tag_type='label',
-		tag_value='MYVN',
-		tag_obj_name='vn',
-		inter_compute=True)
+         self.run_test(vn1_name='vn1', vn2_name="vn2",
+                       tag_type='label', tag_value='MYVN',
+                       tag_obj_name='vn', inter_compute=True)
     # end test_inter_vn_inter_compute_tag_label_tagat_vn
     ''' Test 24 End '''
 
     ''' Test case 28 '''
     @preposttest_wrapper
     def test_policy_at_firewall_and_network_level(self):
-        policy_fix, pod1, pod2, fwp_obj_uuid, project_name = self.run_test(vn1_name='myvn11',
-                vn2_name="myvn22",tag_type='tier', tag_value='myweb11',tag2_value='myweb22',
+        policy_fix, pod1, pod2, fwp_obj_uuid, project_name = self.run_test(vn1_name='vn11',
+                vn2_name="vn22",tag_type='tier', tag_value='myweb11',tag2_value='myweb22',
                 tag_obj_name='vmi', cleanup=False)
         #import pdb;pdb.set_trace()
         fwr_uuid=fwp_obj_uuid.get_firewall_rule_refs()[0]['uuid']
@@ -584,18 +530,14 @@ class TestNetworkPolicy(BaseK8sTest):
 
     @preposttest_wrapper
     def intra_vn_tag_tier_tagat_project(self):
-	self.run_test(vn1_name='myvn',
-		tag_type='tier',
-		tag_value='myweb',
-		tag_obj_name='project')
+         self.run_test(vn1_name='vn1', tag_type='tier',
+                       tag_value='myweb', tag_obj_name='project')
     # end intra_vn_tag_tier_tagat_project
 
     @preposttest_wrapper
     def test_tag_at_vmi_intra_vn(self):
-        self.run_test(vn1_name='myvn1',
-                tag_type='tier',
-                tag_value='myweb',
-                tag_obj_name='vmi')
+        self.run_test(vn1_name='vn1', tag_type='tier',
+                tag_value='myweb', tag_obj_name='vmi')
 
     # end test_tag_at_vmi_intra_vn
 
@@ -604,8 +546,8 @@ class TestNetworkPolicy(BaseK8sTest):
         '''
         Test ping between 2 PODs
         '''
-        self.run_test(vn1_name='myvn1',
-                vn2_name="myvn2",
+        self.run_test(vn1_name='vn1',
+                vn2_name="vn2",
                 tag_type='tier',
                 tag_value='myweb',
                 tag_obj_name='vmi')
@@ -615,8 +557,8 @@ class TestNetworkPolicy(BaseK8sTest):
     ''' Test 29 '''
     @preposttest_wrapper
     def test_fwp_tag_priority_order_vmi_vn(self):
-        policy_fix, pod1, pod2, fwp_obj, project_name = self.run_test(vn1_name='myvn1',
-                vn2_name="myvn2",
+        policy_fix, pod1, pod2, fwp_obj, project_name = self.run_test(vn1_name='vn1',
+                vn2_name="vn2",
                 tag_type='tier',
                 tag_value='myweb1',
                 tag_obj_name='vn', tag2_value='myweb2', cleanup=False)
@@ -647,24 +589,24 @@ class TestNetworkPolicy(BaseK8sTest):
                          obj=tag_obj2)
         site_ep1 = {'tags': ['%s=%s'%(tag_type, tag_value1)]}
         site_ep2 = {'tags': ['%s=%s'%(tag_type, tag_value2)]}
-	fwr_fqname = ['default-domain', project_name, 'my_fwr_tier']
-	fwr_uuid = self.vnc_h.create_firewall_rule(fq_name=fwr_fqname,
+        fwr_fqname = ['default-domain', project_name, 'my_fwr_tier']
+        fwr_uuid = self.vnc_h.create_firewall_rule(fq_name=fwr_fqname,
 			 parent_type='project', service_groups=[], protocol='icmp',
                          source=site_ep1, destination=site_ep2 ,action='deny',
-			 direction = "<>")
-	rule_obj = self.vnc_h.firewall_rule_read(id=fwr_uuid)
+                         direction = "<>")
+        rule_obj = self.vnc_h.firewall_rule_read(id=fwr_uuid)
 	#rule_obj.set_action_list(ActionListType(host_based_service=True,simple_action="deny"))
         #self.vnc_h.firewall_rule_update(rule_obj)
-	'''
+        '''
         self.addCleanup(self.vnc_h.unset_tag,
-                         tag_type=tag_type, obj=tag_obj1)
+                        tag_type=tag_type, obj=tag_obj1)
         self.addCleanup(self.vnc_h.unset_tag,
-                         tag_type=tag_type, obj=tag_obj2)
+                        tag_type=tag_type, obj=tag_obj2)
         self.addCleanup(self.vnc_h.unset_tag,
                          tag_type='application', obj=tag_obj1)
         self.addCleanup(self.vnc_h.unset_tag,
-                         tag_type='application', obj=tag_obj2)
-	'''
+                        tag_type='application', obj=tag_obj2)
+        '''
         self.addCleanup(self.vnc_h.delete_tag, id=tier_tag_1)
         self.addCleanup(self.vnc_h.delete_tag, id=tier_tag_2)
         self.addCleanup(self.vnc_h.delete_firewall_rule, id=fwr_uuid)
