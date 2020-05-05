@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "818edb8a_ebccd122",
+        "filename": "scripts/hbf/test_hbs_fw.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T05:42:30Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp and testDownClass methods. Log error and maintain a flag to record the status of success or failure of these methods and check for same in test methods.",
+      "revId": "dbd8e77b8c3843b89d7af67856cc43f3ff28f004",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b9ee6df3_8513805c",
+        "filename": "scripts/hbf/test_hbs_traffic.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T05:42:30Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp and testDownClass methods. Log error and maintain a flag to record the status of success or failure of these methods and check for same in test methods.",
+      "revId": "dbd8e77b8c3843b89d7af67856cc43f3ff28f004",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4a4f1263_bcca3e6b",
+        "filename": "serial_scripts/hbf/test_hbs_fw_serial.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T05:42:30Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp and testDownClass methods. Log error and maintain a flag to record the status of success or failure of these methods and check for same in test methods.",
+      "revId": "dbd8e77b8c3843b89d7af67856cc43f3ff28f004",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
