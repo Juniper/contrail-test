@@ -32,6 +32,8 @@ class TestNetworkPolicy(BaseK8sTest):
         cls.namespace.verify_on_setup()
 	namespace = cls.namespace.name
         cls.hbs = HbsFixture(cls._connections, name="hbs",namespace = namespace)
+        assert cls._connections.k8s_client.set_label_for_hbf_nodes( \
+            node_selector='computenode'), "Error : could not label the nodes"
         cls.hbs.setUp()
         cls.hbs.verify_on_setup()
 
@@ -41,9 +43,9 @@ class TestNetworkPolicy(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNetworkPolicy, cls).tearDownClass()
-	cls.hbs.cleanUp()
         cls.namespace.cleanUp()
-
+        assert cls._connections.k8s_client.set_label_for_hbf_nodes(labels={"type":None}), \
+              "Error : could not label the nodes"
     def run_test(self,
 		vn1_name,
 		tag_type,
@@ -250,7 +252,6 @@ class TestNetworkPolicy(BaseK8sTest):
 		tag_obj_name='vn')
     # end intra_vn_intra_compute_tag_tier_tagat_vn
 
-    @test.attr(type=['openshift_1', 'ci_contrail_go_k8s_sanity'])
     @preposttest_wrapper
     def test_intra_vn_intra_compute_tag_deployment_tagat_vn(self):
 	self.run_test(vn1_name='myvn',
