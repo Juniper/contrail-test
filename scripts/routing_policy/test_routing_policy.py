@@ -621,7 +621,7 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         self.config_bgp_on_bird(
             bgpaas_vm=bgpaas_vm1,
             local_ip=bgpaas_vm1.vm_ip,
-            peer_ip=gw_ip,
+            neighbors=neighbors,
             peer_as=self.inputs.bgp_asn,
             local_as=autonomous_system,static_routes=static_routes)
         self.attach_vmi_to_bgpaas(port1['id'], bgpaas_fixture)
