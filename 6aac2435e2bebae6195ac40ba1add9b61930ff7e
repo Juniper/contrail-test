@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8a6c56e8_9136f374",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T12:33:12Z",
+      "side": 1,
+      "message": "Please move this import statement to line:4 (above \"import traffic_tests\"). Reason is to ensure gevent monkey patch is applied before SSH module is imported, otherwise SSH calls might hang when these tests are executed with python3",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e3a443b6_0881f859",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T12:33:12Z",
+      "side": 1,
+      "message": "Rename this class to BaseTestFlow, implementing only the utility methods. Move the test methods into three derived classes, like so\n\nclass BaseTestFlow(BaseVrouterTest):\n...\n\nclass TestFlow1GBHugePage(BaseTestFlow):\n\n   def is_test_applicable(self):\n       if not self.is_1GB_hugepage_configured(self.compute_ips[0]):\n           return (False, \u00271GB Hugepage not configured on \u0027 + self.compute_ips[0])\n       if not self.is_dpdk_compute(self.compute_ips[0]):\n           return (False, \u0027Not a kernel compute\u0027)\n       return (True, None)\n\n   @preposttest_wrapper\n   def test_flow_traffic_1GB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_restart_1GB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_agent_restart_1GB(self):\n   ...\n\nclass TestFlow2MBHugePage(BaseTestFlow):\n\n   def is_test_applicable(self):\n       if not self.is_2MB_hugepage_configured(self.compute_ips[0]):\n           return (False, \u00272MB Hugepage not configured on \u0027 + self.compute_ips[0])\n       if not self.is_dpdk_compute(self.compute_ips[0]):\n           return (False, \u0027Not a kernel compute\u0027)\n       return (True, None)\n\n   @preposttest_wrapper\n   def test_flow_traffic_2MB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_restart_2MB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_agent_restart_2MB(self):\n   ...\n\nclass TestFlowNoHugePage(BaseTestFlow):\n   def is_test_applicable(self):\n       if self.is_1GB_hugepage_configured(self.compute_ips[0]) or \\\n             self.is_2MB_hugepage_configured(self.compute_ips[0]):\n           return (False, \u0027Hugepage configured on \u0027 + self.compute_ips[0])\n       if not self.is_dpdk_compute(self.compute_ips[0]):\n           return (False, \u0027Not a kernel compute\u0027)\n       return (True, None)\n\n   @preposttest_wrapper\n   def test_flow_traffic_sanity_no_hugepages(self):\n   ...",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "34423748_f9f521c0",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T12:33:12Z",
+      "side": 1,
+      "message": "Suggestion: consider using start, stop \u0026 restart service methods from self.inputs (common/contrail_test_init.py). These methods will wait \u0026 verify the service state before returning, hence calls to sleep will not be required. This methods won\u0027t be required",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5e1a11fe_cfd8f6f5",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 187,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T12:33:12Z",
+      "side": 1,
+      "message": "Only methods implementing test cases should start with the prefix \"test_\". Python unit test module identifies methods as tests if method name has the prefix \"test_\"",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6e5d4741_f3591cbd",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T12:33:12Z",
+      "side": 1,
+      "message": "Only methods implementing test cases should start with the prefix \"test_\". Python unit test module identifies methods as tests if method name has the prefix \"test_\"",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4d861b52_40cdef48",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 253,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T12:33:12Z",
+      "side": 1,
+      "message": "Only methods implementing test cases should start with the prefix \"test_\". Python unit test module identifies methods as tests if method name has the prefix \"test_\"",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c53716da_99b66adc",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 275,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T12:33:12Z",
+      "side": 1,
+      "message": "Only methods implementing test cases should start with the prefix \"test_\". Python unit test module identifies methods as tests if method name has the prefix \"test_\"",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
