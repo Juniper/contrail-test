@@ -35,6 +35,7 @@ from tcutils.test_lib.contrail_utils import get_interested_computes
 from interface_route_table_fixture import InterfaceRouteTableFixture
 env.disable_known_hosts = True
 from port_fixture import PortFixture
+from svc_hc_fixture import HealthCheckFixture
 
 try:
     from webui_test import *
@@ -268,14 +269,14 @@ class VMFixture(fixtures.Fixture):
     # end setUp
 
     def attach_shc(self, shc_id):
-        vmi_uuid = list(self.get_vmi_ids().values())[0]
-        result = self.vnc_h.attach_shc_to_vmi(vmi_uuid, shc_id)
+        vmi_uuid = list(self.get_vmi_ids().values())
+        result = self.vnc_lib_fixture.vnc_h.attach_shc_to_vmi(vmi_uuid[0], shc_id)
         self.shc_id = shc_id
         return result
 
     def detach_shc(self, shc_id):
-        vmi_uuid = list(self.get_vmi_ids().values())[0]
-        result = self.vnc_h.detach_shc_from_vmi(vmi_uuid, shc_id)
+        vmi_uuid = list(self.get_vmi_ids().values())
+        result = self.vnc_lib_fixture.vnc_h.detach_shc_from_vmi(vmi_uuid[0], shc_id)
         return result
 
     @retry(delay=2, tries=10)
@@ -293,11 +294,11 @@ class VMFixture(fixtures.Fixture):
         if not self.hc_fix:
             return False
         inspect_h = self.connections.agent_inspect[self.vm_node_ip]
-        vmi_id = self.get_vmi_ids().values()[0]
+        vmi_id = list(self.get_vmi_ids().values())
         hc_obj = inspect_h.get_health_check(self.hc_fix.uuid)
-        if not hc_obj or not vmi_id:
+        if not hc_obj or not vmi_id[0]:
             return False
-        if not hc_obj.is_hc_active(vmi_id):
+        if not hc_obj.is_hc_active(vmi_id[0]):
             return False
         return True
 
