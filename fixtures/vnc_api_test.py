@@ -111,6 +111,7 @@ class VncLibFixture(fixtures.Fixture):
             self.vnc_api_h = self.connections.vnc_lib
             self.username = self.connections.username
             self.password = self.connections.password
+            self.domain = self.connections.domain_name
             self.cfgm_ip = self.inputs.cfgm_ip
             self.auth_server_ip = self.inputs.auth_ip
             self.auth_client = self.connections.auth
