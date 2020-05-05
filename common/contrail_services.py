@@ -93,8 +93,8 @@ _CONTRAIL_SERVICES_CONTAINER_MAP = {
 # Separate container names for JuJu deployer
 _CONTRAIL_SERVICES_JUJU_CONTAINER_MAP = {
     # Vrouter
-    'agent' : ['agent'],
-    'vrouter-nodemgr': ['vrouter-nodemgr'],
+    'agent' : ['vrouter_vrouter-agent_1'],
+    'vrouter-nodemgr': ['vrouter_nodemgr_1'],
     # Control
     'control' : ['control_control_1'],
     'named': ['control_named_1'],
