@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "8c2f371f_d9a088cf",
+        "filename": "scripts/hbf/test_hbs_fw.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T15:01:48Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp, tearDownClass",
+      "revId": "df6dbecb151b2610e433d78bed309180a376e299",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6f1c9583_950c4188",
+        "filename": "scripts/hbf/test_hbs_fw.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T15:01:48Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp, tearDownClass",
+      "revId": "df6dbecb151b2610e433d78bed309180a376e299",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5e547367_0155b415",
+        "filename": "scripts/hbf/test_hbs_traffic.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T15:01:48Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp, tearDownClass",
+      "revId": "df6dbecb151b2610e433d78bed309180a376e299",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "092764b3_151eb5a2",
+        "filename": "serial_scripts/hbf/test_hbs_fw_serial.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T15:01:48Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp, tearDownClass",
+      "revId": "df6dbecb151b2610e433d78bed309180a376e299",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c39e53cd_150835bd",
+        "filename": "serial_scripts/hbf/test_hbs_fw_serial.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-05T15:01:48Z",
+      "side": 1,
+      "message": "Don\u0027t use assert in setUpClass, setUp, cleanUp, tearDownClass",
+      "revId": "df6dbecb151b2610e433d78bed309180a376e299",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
