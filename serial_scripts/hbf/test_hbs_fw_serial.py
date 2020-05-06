@@ -75,7 +75,7 @@ class TestHbsFirewall(BaseK8sTest):
                    "project" : vn1.project_name,
                    "name": vn1.vn_name}
 
-	if vn2_name != None:
+        if vn2_name != None:
              vn2 = self.setup_vn(project_name = project_name,
                          connections=proj_connection, inputs=proj_inputs,
 			 vn_name = vn2_name)
@@ -106,19 +106,18 @@ class TestHbsFirewall(BaseK8sTest):
                         proj_inputs, proj_connection, vn1, policy1_fixture))
              policy_attach_fix1 = self.useFixture(AttachPolicyFixture(
                         proj_inputs, proj_connection, vn2, policy1_fixture))
-	else:
+        else:
             vn2_dict = None
             vn2 = None
-	    policy1_fixture = None
-
+            policy1_fixture = None
         # Create 2 pods
-	namespace_name = self.namespace.name
+        namespace_name = self.namespace.name
         compute_label_list, compute_count = self.connections.k8s_client.get_kubernetes_compute_labels()
         compute_selector_1 = {'computenode': compute_label_list[0]} 
-	if inter_compute and compute_count >= 2:
-        	compute_selector_2 = {'computenode': compute_label_list[1]}
-	else:
-        	compute_selector_2 = compute_selector_1
+        if inter_compute and compute_count >= 2:
+             compute_selector_2 = {'computenode': compute_label_list[1]}
+        else:
+             compute_selector_2 = compute_selector_1
 
         pod1 = self.setup_busybox_pod(namespace=namespace_name,
 		 custom_isolation=True, fq_network_name=vn1_dict,
@@ -139,116 +138,114 @@ class TestHbsFirewall(BaseK8sTest):
         assert pod3.verify_on_setup()
         self.addCleanup(self.perform_cleanup, pod3)
         pod4 = self.setup_busybox_pod(namespace=namespace_name,
-                 custom_isolation=True,
-                 fq_network_name = (vn2_dict or vn1_dict),
-                 compute_node_selector=compute_selector_2)
+                custom_isolation=True,
+                fq_network_name = (vn2_dict or vn1_dict),
+                compute_node_selector=compute_selector_2)
         assert pod4.verify_on_setup()
         self.addCleanup(self.perform_cleanup, pod4)
         assert pod3.ping_with_certainty(pod4.pod_ip)
 
 	# Create tags
         fq_name1 = ['default-domain', project_name,
-			 '%s=%s'%(tag_type, tag_value)]
+                    '%s=%s'%(tag_type, tag_value)]
         tag1 = self.create_tag(fq_name=fq_name1,
-		 tag_type=tag_type, tag_value=tag_value,
-		 parent_type='project')
+                               tag_type=tag_type, tag_value=tag_value,
+                               parent_type='project')
         self.addCleanup(self.vnc_h.delete_tag, id=tag1)
-	if tag2_value != None:
-        	fq_name2 = ['default-domain', project_name,
-				 '%s=%s'%(tag_type, tag2_value)]
-        	tag2 = self.create_tag(fq_name=fq_name1,
-		 	tag_type=tag_type, tag_value=tag2_value,
-			 parent_type='project')
-        	self.addCleanup(self.vnc_h.delete_tag, id=tag2)
-	app_tag_name = 'myk8s'
+        if tag2_value != None:
+       	     fq_name2 = ['default-domain', project_name,
+                         '%s=%s'%(tag_type, tag2_value)]
+             tag2 = self.create_tag(fq_name=fq_name1,
+                                    tag_type=tag_type, tag_value=tag2_value,
+                                    parent_type='project')
+             self.addCleanup(self.vnc_h.delete_tag, id=tag2)
+        app_tag_name = 'myk8s'
         fq_name3 = ['default-domain', project_name,
 			 '%s=%s'%('application', 'myk8s')]
         apptag = self.create_tag(fq_name=fq_name3,
-		 tag_type='application',
-		 tag_value=app_tag_name, parent_type='project')
+                                 tag_type='application',
+                                 tag_value=app_tag_name, parent_type='project')
         self.addCleanup(self.vnc_h.delete_tag, id=apptag)
-		
 
         # Apply tag
         tag_obj_list = []
-	tag_value_list = []
-	if tag_obj_name == 'project':
-		project_name_fq = ['default-domain', project_name]
-		tag_obj = self.read_project_obj(project_fq_name=project_name_fq)
+        tag_value_list = []
+        if tag_obj_name == 'project':
+            project_name_fq = ['default-domain', project_name]
+            tag_obj = self.read_project_obj(project_fq_name=project_name_fq)
+            tag_obj_list.append(tag_obj)
+            tag_value_list.append(tag_value)
+        elif tag_obj_name == 'vmi':
+            tag_obj1 = self.read_virtual_machine_interface(
+                       id=pod1.vmi_objs[0].uuid)
+            tag_obj_list.append(tag_obj1)
+            tag_value_list.append(tag_value)
+            tag_obj2 = self.read_virtual_machine_interface(
+                       id=pod2.vmi_objs[0].uuid)
+            tag_obj_list.append(tag_obj2)
+            tag_value_list.append(tag2_value or tag_value)
+        elif tag_obj_name == 'vn':
+            vn_name = ['default-domain', project_name, '%s'%(vn1_name)]
+            tag_obj = self.read_virtual_network(fq_name=vn_name)
+            tag_obj_list.append(tag_obj)
+            tag_value_list.append(tag_value)
+            if vn2_name:
+                vn_name = ['default-domain', project_name, '%s'%(vn2_name)]
+                tag_obj = self.read_virtual_network(fq_name=vn_name)
                 tag_obj_list.append(tag_obj)
-		tag_value_list.append(tag_value)
-	elif tag_obj_name == 'vmi':
-		tag_obj1 = self.read_virtual_machine_interface(
-			id=pod1.vmi_objs[0].uuid)
-                tag_obj_list.append(tag_obj1)
-		tag_value_list.append(tag_value)
-                tag_obj2 = self.read_virtual_machine_interface(
-			id=pod2.vmi_objs[0].uuid)
-                tag_obj_list.append(tag_obj2)
-		tag_value_list.append(tag2_value or tag_value)
-	elif tag_obj_name == 'vn':
-		vn_name = ['default-domain', project_name, '%s'%(vn1_name)]
-		tag_obj = self.read_virtual_network(fq_name=vn_name)
-                tag_obj_list.append(tag_obj)
-		tag_value_list.append(tag_value)
-                if vn2_name:
-                   vn_name = ['default-domain', project_name, '%s'%(vn2_name)]
-                   tag_obj = self.read_virtual_network(fq_name=vn_name)
-                   tag_obj_list.append(tag_obj)
-		   tag_value_list.append(tag2_value or tag_value)
+                tag_value_list.append(tag2_value or tag_value)
         for tag_obj, tagv in zip(tag_obj_list, tag_value_list):
-            self.set_tag(tag_type=tag_type, tag_value=tagv,
-		         obj=tag_obj)
-            self.set_tag(tag_type='application', tag_value=app_tag_name,
-		         obj=tag_obj)
+            self.set_tag(tag_type=tag_type, tag_value=tagv, obj=tag_obj)
+            self.set_tag(tag_type='application', tag_value=app_tag_name, obj=tag_obj)
 
         # Only add application tag to pod3 and pod4 vmi, used for checking negative case
         pod3_vmi = self.read_virtual_machine_interface(
-                        id=pod3.vmi_objs[0].uuid)
+                   id=pod3.vmi_objs[0].uuid)
         pod4_vmi = self.read_virtual_machine_interface(
-                        id=pod4.vmi_objs[0].uuid)
+                   id=pod4.vmi_objs[0].uuid)
         self.set_tag(tag_type='application', tag_value=app_tag_name,
-                         obj=pod3_vmi)
+                     obj=pod3_vmi)
         self.set_tag(tag_type='application', tag_value=app_tag_name,
-                         obj=pod4_vmi)
+                     obj=pod4_vmi)
         self.addCleanup(self.vnc_h.unset_tag,
                         tag_type='application', obj=pod3_vmi)
         self.addCleanup(self.vnc_h.unset_tag,
                         tag_type='application', obj=pod4_vmi)
         # Create FW rule
         site_ep1 = {'tags': ['%s=%s'%(tag_type, tag_value)]}
-	if tag2_value != None:
-        	site_ep2 = {'tags': ['%s=%s'%(tag_type, tag2_value)]}
-	else:
-		site_ep2 = None
-	fwr_fqname = ['default-domain', project_name, 'my_fwr']
-	fwr_uuid = self.vnc_h.create_firewall_rule(fq_name=fwr_fqname,
-			 parent_type='project', service_groups=[], protocol='icmp',
-                         source=site_ep1,
-			 destination=(site_ep2 or site_ep1), action='pass',
-			 direction = "<>")
+        if tag2_value != None:
+            site_ep2 = {'tags': ['%s=%s'%(tag_type, tag2_value)]}
+        else:
+            site_ep2 = None
+        fwr_fqname = ['default-domain', project_name, 'my_fwr']
+        fwr_uuid = self.vnc_h.create_firewall_rule(fq_name=fwr_fqname,
+                                                   parent_type='project', 
+                                                   service_groups=[], protocol='icmp',
+                                                   source=site_ep1,
+                                                   destination=(site_ep2 or site_ep1), action='pass',
+                                                   direction = "<>")
 
-	rule_obj = self.vnc_h.firewall_rule_read(id=fwr_uuid)
-	rule_obj.set_action_list(ActionListType(host_based_service=True,simple_action="pass"))
+        rule_obj = self.vnc_h.firewall_rule_read(id=fwr_uuid)
+        rule_obj.set_action_list(ActionListType(host_based_service=True,simple_action="pass"))
         self.vnc_h.firewall_rule_update(rule_obj)
         self.addCleanup(self.vnc_h.delete_firewall_rule, id=fwr_uuid)
 
         # Create FW policy and add the rule
         rules = [{'uuid': fwr_uuid, 'seq_no': 20}]
         fwp_policy_fqname = ['default-domain', project_name, 'fw_pol']
-	fwp_uuid = self.vnc_h.create_firewall_policy(
-                                     parent_type='project',
-                                     fq_name=fwp_policy_fqname,
-                                     rules=rules)
-	fwp_obj = self.vnc_h.read_firewall_policy(fq_name=fwp_policy_fqname)
+        fwp_uuid = self.vnc_h.create_firewall_policy(
+                                    parent_type='project',
+                                    fq_name=fwp_policy_fqname,
+                                    rules=rules)
+        fwp_obj = self.vnc_h.read_firewall_policy(fq_name=fwp_policy_fqname)
         self.addCleanup(self.vnc_h.delete_firewall_policy, id=fwp_uuid)
 
         # Create an APS and add the policy
         aps_fqname = ['default-domain', project_name, 'myaps']
         aps_uuid = self.vnc_h.create_application_policy_set(
-                          fq_name=aps_fqname,
-                          parent_type='project',
-                          policies=[{'uuid': fwp_uuid, 'seq_no': 20}])
+                         fq_name=aps_fqname,
+                         parent_type='project',
+                         policies=[{'uuid': fwp_uuid, 'seq_no': 20}])
         self.addCleanup(self.vnc_h.delete_application_policy_set, id=aps_uuid)
         self.vnc_h.set_tag('application', app_tag_name,
                            False, None, 'application-policy-set', aps_uuid)
@@ -257,11 +254,11 @@ class TestHbsFirewall(BaseK8sTest):
         assert pod3.ping_with_certainty(pod4.pod_ip, expectation=False, count='5', hbf_enabled=True)
 
 	# Cleanups
-	for tag_obj in tag_obj_list:
-        	self.addCleanup(self.vnc_h.unset_tag,
-			 tag_type=tag_type, obj=tag_obj)
-       		self.addCleanup(self.vnc_h.unset_tag,
-			 tag_type='application', obj=tag_obj)
+        for tag_obj in tag_obj_list:
+            self.addCleanup(self.vnc_h.unset_tag,
+                            tag_type=tag_type, obj=tag_obj)
+            self.addCleanup(self.vnc_h.unset_tag,
+                            tag_type='application', obj=tag_obj)
         return pod1, pod2, pod3, pod4, self.namespace.name
 
     '''
@@ -269,18 +266,12 @@ class TestHbsFirewall(BaseK8sTest):
     '''
     @preposttest_wrapper
     def test_hbs_with_contrail_apiserver_restart(self):
-	pod1, pod2, pod3, pod4 , namespace_name = self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-		tag_type='tier',
-		tag_value='web_api',
-		tag2_value='db_api',
-		tag_obj_name='vmi',
-		inter_compute=True)
-
+        pod1, pod2, pod3, pod4 , namespace_name = self.run_test(vn1_name='myvn',
+                                 vn2_name="myvn2", tag_type='tier', tag_value='web_api',
+                                 tag2_value='db_api', tag_obj_name='vmi', inter_compute=True)
         self.inputs.restart_service("contrail-api",
                                     self.inputs.cfgm_ips,
                                     container = "api-server")
-
         time.sleep(200)
         cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
         # some services go to initializing , seems like setup so removing assert for now
@@ -300,12 +291,8 @@ class TestHbsFirewall(BaseK8sTest):
     @preposttest_wrapper
     def test_hbs_with_vrouter_agent_restart(self):
         pod1, pod2, pod3, pod4, namespace_name = self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-                tag_type='tier',
-                tag_value='web_agent',
-                tag2_value='db_agent',
-                tag_obj_name='vmi',
-                inter_compute=True)
+                               vn2_name="myvn2", tag_type='tier', tag_value='web_agent',
+                               tag2_value='db_agent', tag_obj_name='vmi', inter_compute=True)
         self.restart_vrouter_agent()
         time.sleep(200)
         cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
@@ -316,7 +303,6 @@ class TestHbsFirewall(BaseK8sTest):
         assert pod2.ping_with_certainty(pod1.pod_ip, expectation=True, count='5', hbf_enabled=True)
         assert pod3.ping_with_certainty(pod4.pod_ip, expectation=False, count='5', hbf_enabled=True)
         assert pod4.ping_with_certainty(pod3.pod_ip, expectation=False, count='5', hbf_enabled=True)
-
         #self.setup_csrx(namespace_name=namespace_name, delete=True)
 
     # end test_hbs_with_vrouter_agent_restart
@@ -327,12 +313,8 @@ class TestHbsFirewall(BaseK8sTest):
     @preposttest_wrapper
     def test_hbs_with_kube_manager_restart_on_master(self):
         pod1, pod2, pod3, pod4, namespace_name = self.run_test(vn1_name='myvn',
-                vn2_name="myvn2",
-                tag_type='tier',
-                tag_value='web_km',
-                tag2_value='db_km',
-                tag_obj_name='vmi',
-                inter_compute=True)
+                vn2_name="myvn2", tag_type='tier', tag_value='web_km',
+                tag2_value='db_km', tag_obj_name='vmi', inter_compute=True)
         self.restart_kube_manager()
         time.sleep(200)
         cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
