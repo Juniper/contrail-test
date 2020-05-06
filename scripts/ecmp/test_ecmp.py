@@ -368,7 +368,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.verify_traffic_flow(
             self.left_vm_fixture, dst_vm_list, si_fixtures[0], self.left_vn_fixture)
         self.verify_flow_records(
-            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+            self.left_vm_fixture, old_stream_list)
         self.stop_traffic(
             old_sender, old_receiver, dst_vm_list, old_stream_list)
         return True
@@ -423,7 +423,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         time.sleep(10)
 
         self.verify_flow_records(
-            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+            self.left_vm_fixture, streams=stream_list)
 
         self.stop_traffic(
             sender, receiver, dst_vm_list, stream_list)
@@ -485,7 +485,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                                self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         time.sleep(1)
         self.verify_flow_records(
-            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+            self.left_vm_fixture, stream_list)
         self.stop_traffic(
             sender, receiver, dst_vm_list, stream_list)
     # end test_ecmp_svc_in_network_with_3_instance_incr_dip
@@ -593,7 +593,7 @@ class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraf
         self.project_fixture = self.useFixture(ProjectFixture(
             project_name=self.inputs.project_name, connections=self.connections))
         # Read the project obj and set to the floating ip object.
-        fip_obj.set_project(project_fixture.project_obj)
+        fip_obj.set_project(self.project_fixture.project_obj)
 
         vn2_fq_name = self.right_vn_fixture.vn_fq_name
         vn2_vrf_name = self.right_vn_fixture.vrf_name
@@ -667,7 +667,7 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         self.fip_obj.add_virtual_machine_interface(self.vm1_intf)
         self.vnc_lib.floating_ip_update(self.fip_obj)
 
-        self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
+        self.verify_flow_records(self.fvn_vm1, self.stream_list)
         self.stop_traffic(
             self.sender, self.receiver, vm_list, self.stream_list)
 
@@ -700,7 +700,7 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
             self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
         self.logger.info('Sending traffic for 10 seconds')
         time.sleep(10)
-        self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
+        self.verify_flow_records(self.fvn_vm1, stream_list)
         return True
 
     # end test_ecmp_bw_three_vms_same_fip_incr_sport
@@ -731,7 +731,7 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
             self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
         self.logger.info('Sending traffic for 10 seconds')
         time.sleep(10)
-        self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
+        self.verify_flow_records(self.fvn_vm1, stream_list)
         return True
 
 
@@ -807,7 +807,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
                 self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
                 svm_ids, si_fixtures)
             self.verify_flow_records(
-                self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+                self.left_vm_fixture, stream_list)
             self.verify_flow_thru_si(si_fixtures[0], self.left_vn_fixture)
     # end test_ecmp_with_svm_deletion
 
@@ -849,7 +849,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             svms[i].suspend()
             sleep(30)
             self.verify_flow_records(
-                self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+                self.left_vm_fixture, stream_list)
             self.verify_flow_thru_si(si_fixtures[0])
 
         self.logger.info(
@@ -865,7 +865,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             else:
                 self.logger.info('SVM %s is not SUSPENDED' % svm.name)
             self.verify_flow_records(
-                self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+                self.left_vm_fixture, stream_list)
             self.verify_flow_thru_si(si_fixtures[0])
 
     # end test_ecmp_with_svm_suspend_start
@@ -970,7 +970,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
             ('transparent', 2), ('in-network', 2), ('in-network-nat', 2)]
         if self.inputs.get_af() == 'v6':
             si_list = [('transparent', 2), ('in-network', 2)]
-        ret_dict = self.verify_multi_inline_svc(si_list=si_list)
+        ret_dict = self.verify_multi_inline_svc(si_list=si_list, **self.common_args)
         si_fixtures = ret_dict['si_fixture_list'][-1]
         tap_list = []
         svm_ids = si_fixtures[0].svm_ids
