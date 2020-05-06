@@ -29,24 +29,6 @@ class TestHbsEnabledProject(BaseK8sTest):
     def tearDownClass(cls):
         super(TestHbsEnabledProject, cls).tearDownClass()
 
-    def setup_csrx(self, namespace_name="hbsnamespace", delete=False):
-        csrx_cmd = ""
-        if (not delete):
-            cmd1 = "kubectl create secret docker-registry psd --docker-server=hub.juniper.net/security \
-                    --docker-username=JNPR-CSRXFieldUser12 --docker-password=d2VbRJ8xPhSUAwzo7Lym -n \
-               %s" % (namespace_name)
-            cmd2="sed -i 's/namespace: hbsnamespace/namespace: %s/g' /root/ds.yaml"%(namespace_name)
-            cmd3 = "kubectl apply -f /root/ds.yaml"
-            csrx_cmd = cmd1 + ';' + cmd2 + ';' + cmd3
-        else:
-            cmd1="sed -i 's/namespace: hbsnamespace/namespace: %s/g' /root/ds.yaml" %(namespace_name)
-            cmd2 = "kubectl delete -f /root/ds.yaml"
-            csrx_cmd = cmd1 + ';' + cmd2
-        output = self.inputs.run_cmd_on_server(self.inputs.k8s_master_ip, csrx_cmd)
-        time.sleep(60)
-        # restore yaml config
-        restore_name="sed -i 's/namespace: %s/namespace: hbsnamespace/g' ds.yaml" %(namespace_name)
-        output = self.inputs.run_cmd_on_server(self.inputs.k8s_master_ip, restore_name)
 
     def verify_host_based_service(self, namespace_name, hbs_obj_name, enabled=True):
         correct_config = True
@@ -94,33 +76,6 @@ class TestHbsEnabledProject(BaseK8sTest):
                     correct_config =False
         return correct_config
 
-    @preposttest_wrapper
-    def test_verify_hbf_on_single_project(self):
-        '''
-           1. Create hsb object in a namespace
-           2. verify hbs object in config api and computes.
-           3. Disable hbs and verify hbs object, vn and vmi are removed
-        '''
-        namespace1_name = get_random_name("hbsnamespace")
-        namespace1_fix = self.useFixture(NamespaceFixture(connections=self.connections,
-                                         name=namespace1_name,isolation = True))
-        namespace1_fix.verify_on_setup()
-        hbs1_name=get_random_name("hbsobj")
-        hbs1_fix = self.useFixture(HbsFixture(connections=self.connections, name=hbs1_name,
-                                   namespace = namespace1_name))
-        hbs1_fix.verify_on_setup()
-        #self.setup_csrx(namespace_name=namespace1_name)
-        hbs_config = self.verify_host_based_service(namespace_name=namespace1_name,
-                                             hbs_obj_name=hbs1_name)
-        assert hbs_config == True, "Host Based Service verification Passesd"
-        # Delete csrx expilictly so vnleft and vnright have no attached vmi
-        #self.setup_csrx(namespace_name=namespace1_name, delete=True)
-        self.remove_from_cleanups(hbs1_fix.cleanUp)
-        self.vnc_lib.host_based_service_delete(fq_name=["default-domain",
-                   "k8s-%s" %(namespace1_name), "%s" %(hbs1_name)])
-        hbs_config_disabled = self.verify_host_based_service(namespace_name=namespace1_name,
-                   hbs_obj_name=hbs1_name, enabled=False)
-        assert hbs_config_disabled, "Host Base Service verification failed check logs"
 
     @preposttest_wrapper
     def test_verify_hbf_on_multiple_projects(self):
