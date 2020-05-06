@@ -55,7 +55,7 @@ class ContrailStatusChecker(object):
         status_dict = contrail_status(self.inputs, nodes, roles, services,
                 keyfile=keyfile, certfile=certfile, cacert=cacert, refresh=refresh)
         for host in status_dict:
-            if status_dict[host].has_key(svc):
+            if svc in status_dict[host]:
                  if status_dict[host][svc]['status'] == state:
                     svchosts.append(host)
         return svchosts
