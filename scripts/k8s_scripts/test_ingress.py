@@ -5,6 +5,7 @@ from floating_ip import FloatingIPFixture
 from tcutils.wrappers import preposttest_wrapper
 import test
 from tcutils.util import skip_because
+import time
 
 class TestIngressClusterIp(BaseK8sTest):
 
@@ -19,22 +20,22 @@ class TestIngressClusterIp(BaseK8sTest):
     def parallel_cleanup(self):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
-    
+
     @test.attr(type=['ci_k8s_sanity', 'k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_ip_assignment(self):
-        ''' 
+        '''
         Verify that Ingress gets a CLuster IP which is reachable to Pods in same
-        namespace. Also verify that a Floating IP is assigned to the Ingress 
+        namespace. Also verify that a Floating IP is assigned to the Ingress
         from the Public FIP poo.
         Steps:
         1. Create a service with 2 pods running nginx
         2. Create an ingress out of this service
         3. From another Pod do a wget on the ingress Cluster ip
-            
+
         Validate that Ingress get a IP from Public FIP pool which might/might not be accessible.
         Validate that service and its loadbalancing work
-        '''        
+        '''
         app = 'http_test'
         labels = {'app':app}
         namespace = self.setup_namespace(name='default')
@@ -42,9 +43,9 @@ class TestIngressClusterIp(BaseK8sTest):
 
         service = self.setup_http_service(namespace=namespace.name,
                                           labels=labels)
-        pod1 = self.setup_nginx_pod(namespace=namespace.name, 
+        pod1 = self.setup_nginx_pod(namespace=namespace.name,
                                           labels=labels)
-        pod2 = self.setup_nginx_pod(namespace=namespace.name, 
+        pod2 = self.setup_nginx_pod(namespace=namespace.name,
                                           labels=labels)
 
         if not getattr(self.public_vn, 'public_vn_fixture', None):
@@ -59,7 +60,9 @@ class TestIngressClusterIp(BaseK8sTest):
                                             connections=self.connections,
                                             pool_name='__fip_pool_public__',
                                             vn_id=vn_fixture.vn_id))
-        
+            # Wait for setup virtual network for k8s 1.14
+            time.sleep(10)
+
         ingress = self.setup_simple_nginx_ingress(service.name,
                                                   namespace=namespace.name)
         assert ingress.verify_on_setup()
