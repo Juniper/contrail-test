@@ -123,6 +123,8 @@ class Client(object):
 
         spec['tls'] = self._get_ingress_tls(tls)
         spec_obj = client.V1beta1IngressSpec(**spec)
+        self.logger.info("DDDD spec_obj = %s " % spec_obj)
+        self.logger.info("DDDD metadata_obj = %s " % metadata_obj)
         body = client.V1beta1Ingress(
             metadata=metadata_obj,
             spec=spec_obj)

@@ -111,6 +111,12 @@ class IngressFixture(fixtures.Fixture):
         if ingress_exists:
             return ingress_exists
         self.already_exists = False
+        self.logger.info("DDDD self.namespace = %s " % self.namespace)
+        self.logger.info("DDDD self.metadata = %s " % self.metadata)
+        self.logger.info("DDDD default_backend = %s " % self.default_backend)
+        self.logger.info("DDDD self.rules = %s " % self.rules)
+        self.logger.info("DDDD self.spec = %s " % self.spec)
+        self.logger.info("DDDD self.v1_beta_h = %s " % self.v1_beta_h)
         self.obj = self.k8s_client.create_ingress(
             self.namespace,
             name=self.name,
