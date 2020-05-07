@@ -391,7 +391,10 @@ class TestInputs(with_metaclass(Singleton, object)):
                     host_data['name'] = hostname
                 else:
                     #not able to get host_fqname from singleinterface vcenter contrailvm
-                    host_data['name'] = '.'.join([hostname,domainsuffix])
+                    if self.deployer == 'rhosp' and len(hostname.split('.')) > 1:
+                        host_data['name'] = hostname
+                    else:
+                        host_data['name'] = '.'.join([hostname,domainsuffix])
                 #
                 if roles['vrouter'] and roles['vrouter'].get('TSN_EVPN_MODE'):
                     self.contrail_service_nodes.append(hostname)
