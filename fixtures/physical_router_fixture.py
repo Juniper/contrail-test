@@ -123,7 +123,9 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
 
         result = True
         for entry1 in self.inputs.bgp_ips:
-            cn_ispec = ControlNodeInspect(entry1)
+            cn_ispec = ControlNodeInspect(entry1,
+                                          protocol=self.inputs.introspect_protocol,
+                                          args=self.inputs)
             cn_bgp_entry = cn_ispec.get_cn_bgp_neigh_entry(encoding='BGP')
 
             if not cn_bgp_entry:
