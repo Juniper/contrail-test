@@ -106,6 +106,7 @@ class VncLibFixture(fixtures.Fixture):
         if self.connections:
             self.logger = self.connections.logger
             self.project_name = self.connections.project_name
+            self.orch_domain = self.domain = self.connections.domain_name #juju deployment CEM-15443
             self.inputs = self.connections.inputs
             self.neutron_handle = self.connections.quantum_h
             self.vnc_api_h = self.connections.vnc_lib
