@@ -16,6 +16,24 @@
       "revId": "3df40983c6033cf2e9dbab3194cdf429d47f6f9a",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f92f7a53_af4cb412",
+        "filename": "serial_scripts/vm_regression/test_vcenter_drs.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 949
+      },
+      "writtenOn": "2020-05-11T14:03:54Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "853c0d1f_47ebff94",
+      "revId": "3df40983c6033cf2e9dbab3194cdf429d47f6f9a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
