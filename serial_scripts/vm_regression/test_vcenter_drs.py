@@ -40,10 +40,10 @@ class TestVcenterSerial(BaseVnVmTest):
     @preposttest_wrapper
     def test_vcenter_drs(self):
         '''
-        Description: Trigger drs in vcenter 
+        Description: Trigger drs in vcenter
         Test steps:
 
-               1. Create a VN and launch 15 VMs.
+               1. Create a VN and launch 10 VMs.
                2. ping between the vms
                3.Put hosts in maintenance mode
                4.Allow drs to occure
@@ -58,6 +58,7 @@ class TestVcenterSerial(BaseVnVmTest):
         vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
         for _ in range(10):
             vm_name = get_random_name('gutest_vm')
+            self.logger.info("Deploying %s VM %s", _+1, vm_name)
             vm = self.create_vm(vn_fixture=vn1_fixture, vm_name=vm_name,image_name='vcenter_tiny_vm')
             guest_vms.append(vm)
         for vm in guest_vms:
@@ -68,7 +69,19 @@ class TestVcenterSerial(BaseVnVmTest):
                 "Ping from %s to %s failed" % (src_vm.vm_name, vm.vm_name)
         vc_orch = self.connections.orch
         assert if_failed(self.inputs,self.logger)
+        self.logger.info("Triggering MAINTANCE MODE for ESXi Hosts")
         assert verify_trigger(self.inputs,'maintenance_mode',self.logger)
+        ##################################################################
+        # Due to Maintenance Mode on ESXi Contrail VM also put to Shutdown by vCenter.
+        # Due to which, Previous SSH TCP session is also closed abruptly on the server side.
+        # When in next step Client tries to do ssh and execute some commands
+        # Connection reset ERROR occurs on the Socket and Testcase Fails.
+        # Applying the Workaround (FIX) for client to wait for SSH to Active and re-initiate TCP session
+        #################################################################
+        for compute in self.inputs.compute_ips:
+            time.sleep(5)
+            self.logger.info("Waiting for SSH Active on Compute Node %s" %compute)
+            wait_for_ssh_on_node(compute, self.inputs.host_data[compute]['password'])
         src_vm.read(True)
         for vm in guest_vms:
             assert src_vm.ping_with_certainty(dst_vm_fixture=vm),\
