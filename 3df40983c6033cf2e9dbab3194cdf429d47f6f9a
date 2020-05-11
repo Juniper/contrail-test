@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "853c0d1f_47ebff94",
+        "filename": "serial_scripts/vm_regression/test_vcenter_drs.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-05-11T13:29:29Z",
+      "side": 1,
+      "message": "wait_for_ssh_on_node already has retries \nyou can remove sleep from here",
+      "revId": "3df40983c6033cf2e9dbab3194cdf429d47f6f9a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
