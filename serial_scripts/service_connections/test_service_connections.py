@@ -447,7 +447,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
     #end test_rabbitmq_dns_connection_on_rabbitmq_restart
     
     @preposttest_wrapper
-    def test_control_agent_connection_after_active_control_restart_agent_sighup(self):
+    def disabled_test_control_agent_connection_after_active_control_restart_agent_sighup(self):
         '''
         This test case verifies the issue captured in bug 1694793.
         Expectations:
