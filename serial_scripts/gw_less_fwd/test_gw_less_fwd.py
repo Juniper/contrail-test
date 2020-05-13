@@ -5,8 +5,13 @@ from common.svc_firewall.base import BaseSvc_FwTest
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.servicechain.mirror.verify import VerifySvcMirror
 import test
+<<<<<<< HEAD   (127fad pinning setuptools to bypass issue from downloading google-a)
 
+=======
+from tcutils.util import *
+>>>>>>> CHANGE (4c04c5 Adding asubset of test scenarios for RiotGames as mentioned )
 from time import sleep
+from copy import deepcopy
 
 class TestGWLessFWD(GWLessFWDTestBase):
 
@@ -468,7 +473,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
             ping should be successful all the cases.
 
         '''
-
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
@@ -651,6 +655,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
 
     # end test_gw_less_fwd_fip
+
 
     @preposttest_wrapper
     def test_gw_less_fwd_vhost0_policy(self):
@@ -1649,6 +1654,217 @@ class TestGWLessFWD(GWLessFWDTestBase):
             assert vm4_fixture.verify_on_setup()
         return True
     # end test_gw_less_fwd_broadcast_multicast
+
+    @skip_because(min_nodes=2)
+    @preposttest_wrapper
+    def test_gw_less_fwd_fip_4518_with_FIP(self):
+        '''
+            Test Gateway less forwarding functionality with floating-ip to cover Riot Games CEM-4518 with FIP
+            Min Topology  cn1-vm1--+        
+                            VN1    |       +--vm4--cn2 
+                          cn2-vm2--+ --FIP | VN2 
+                            VN1    |       +--------- 
+                          cn1-vm3--+
+
+            Scenario 1:IP Fabric is enabled on vn1 and vn2 with fip from Vn1
+                     1.ping between the vms with in vn1 should go through underlay
+                     2.ping from vm1 to vhost0 should be through underlay
+                     3.ping from local host to fip should be through underlay
+                     4.ping from remote compute to fip should be through underlay
+                     5.ping to fip from vn2 vm should be successful with policy bteween vn1 and vn2
+ 
+            In all above cases, floating ip is created from vn1 and applied it
+            on vn1 VMs . Verify FIP is preesnt on default routing instance
+            only when IP fabric is enabled on VN (vn1). 
+        '''
+        # VN parameters. IP Fabric forwarding is enabled on both VNs Initially
+        vn = {'count':2,
+              'vn1':{'subnet':get_random_cidr(), 'ip_fabric':True},
+              'vn2':{'subnet':get_random_cidr(), 'ip_fabric':True},
+             }
+        # VMI parameters,vmis are distributed among the compute nodes
+        vmi = {'count':4, 'launch_mode':'distribute',
+               'vmi1':{'vn': 'vn1'},
+               'vmi2':{'vn': 'vn1'},
+               'vmi3':{'vn': 'vn1'},
+               'vmi4':{'vn': 'vn2'},
+              }
+        # VM parameters
+        vm = {'count':4, 'launch_mode':'distribute',
+              'vm1':{'vn':['vn1'], 'vmi':['vmi1']},
+              'vm2':{'vn':['vn1'], 'vmi':['vmi2']},
+              'vm3':{'vn':['vn1'], 'vmi':['vmi3']},
+              'vm4':{'vn':['vn2'], 'vmi':['vmi4']},
+             }
+
+        # Setup VNs, VMs as per user configuration
+        obj_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
+
+        vn_fixtures = obj_dict['vn_fixtures']
+        vm_fixtures = obj_dict['vm_fixtures']
+        vmi_fixtures = obj_dict['vmi_fixtures']
+
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        # policy between vn1 and vn2 
+        policy = {'count':2,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'vn1',
+                            'dest_network':'vn2',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    },
+                  'p2': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        obj_dict['policy_fixtures'] = policy_fixtures
+        #IP Fabric is enabled on both the VNs (vn1 and vn2)
+        # Configuring FIP. FIP pool is created from vn1 and applied on vm1
+        # reach from vn2 vm to fip 
+        self.logger.info("IP Fabric is enabled on both the VNs (vn1 and vn2)")
+        vn_id = vn_fixtures['vn1'].vn_id
+        vmi_id = vmi_fixtures['vmi1'].uuid
+        (my_fip, fip_obj) = self.config_fip(obj_dict, vn_id, vmi_id)
+        # Verify FIP route in default routing instance in agent
+        self.verify_route_ip_fabric_vn_in_agent(ret_dict=obj_dict, ip=my_fip)
+
+        # Verify FIP route in default routing instance in control node
+        self.verify_route_ip_fabric_vn_in_control_node(ret_dict=obj_dict,
+                                                       ip=my_fip, test_fixture=obj_dict['vm_fixtures']['vm4'])
+        # Pinging from vm1 to vm4
+        src_vm_fixture = vm_fixtures['vm1']
+        src_vm_ip = src_vm_fixture.vm_ip
+        result = src_vm_fixture.ping_with_certainty(vm_fixtures['vm4'].vm_ip, count=3)
+        if result:
+            self.logger.info('Ping from VM: %s to VM: %s is successful, '\
+                             'as expected' %(src_vm_ip, vm_fixtures['vm4'].vm_ip))
+        else:
+            assert result, "Ping from VM: %s to VM: %s is NOT successful" %(
+                src_vm_ip, vm_fixtures['vm4'].vm_ip)
+        #pinging from vm1 to vm2
+        result = src_vm_fixture.ping_with_certainty(vm_fixtures['vm2'].vm_ip, count=3)
+        if result:
+            self.logger.info('Ping from VM: %s to FIP: %s is successful, '\
+                             'as expected' %(src_vm_ip, vm_fixtures['vm2'].vm_ip))
+        else:
+            assert result, "Ping from VM: %s to FIP: %s is NOT successful" %(
+                src_vm_ip, vm_fixtures['vm2'].vm_ip)
+        #pinging form vm4 to fip
+        src_vm_fixture = vm_fixtures['vm4']
+        src_vm_ip = src_vm_fixture.vm_ip
+        result = src_vm_fixture.ping_with_certainty(my_fip, count=3)
+        if result:
+            self.logger.info('Ping from VM: %s to FIP: %s is successful, '\
+                             'as expected' %(src_vm_ip, my_fip))
+        else:
+            assert result, "Ping from VM: %s to FIP: %s is NOT successful" %(
+                src_vm_ip, my_fip)
+        #pinging from  vm4 to vm1
+        result = src_vm_fixture.ping_with_certainty( vm_fixtures['vm1'].vm_ip, count=3)
+        if result:
+            self.logger.info('Ping from VM: %s to VM: %s is successful, '\
+                             'as expected' %(src_vm_ip, vm_fixtures['vm1'].vm_ip))
+        else:
+            assert result, "Ping from VM: %s to VM: %s is NOT successful" %(
+                src_vm_ip, vm_fixtures['vm1'].vm_ip) 
+
+        #all the vms should should reach the vhost0 of all the computes
+        new_dict = deepcopy(obj_dict)
+        del new_dict['vm_fixtures']['vm4']
+        del new_dict['vmi_fixtures']['vmi4']
+        self.verify_ping_from_vms_to_vhosts(ret_dict = new_dict)
+
+        # IP Fabric is enabled on vn1 and disabled on vn2
+        # Now, remove IP fabric provider network configuration on vn2
+        # FIP pool is from IP fabric forwarding VN (vn1)
+        self.logger.info("IP Fabric is enabled on vn1 and disabled on vn2")
+        vn2_fixture = vn_fixtures['vn2']
+        ip_fab_vn_obj = self.get_ip_fab_vn()
+        vn2_fixture.del_ip_fabric_provider_nw(ip_fab_vn_obj)
+        time.sleep(2)
+        # Verify FIP route in default routing instance in agent
+        self.verify_route_ip_fabric_vn_in_agent(ret_dict=obj_dict, ip=my_fip)
+        # Verify FIP route in default routing instance in control node
+        self.verify_route_ip_fabric_vn_in_control_node(ret_dict=obj_dict,
+                                                       ip=my_fip, test_fixture=obj_dict['vm_fixtures']['vm4'])
+
+        #ping vn2 vm to fip
+        result = src_vm_fixture.ping_with_certainty(my_fip, count=2)
+
+        if result:
+            self.logger.info('Ping from VM: %s to FIP: %s is successful, '\
+                             'as expected' %(src_vm_ip, my_fip))
+        else:
+            assert result, "Ping from VM: %s to FIP: %s is NOT successful" %(
+                src_vm_ip, my_fip)
+
+        #vn2 vm to vn1 vm
+        result = src_vm_fixture.ping_with_certainty(vm_fixtures['vm1'].vm_ip, count=2)
+
+        if result:
+            self.logger.info('Ping from VM: %s to VM: %s is successful, '\
+                             'as expected' %(src_vm_ip, vm_fixtures['vm1'].vm_ip))
+        else:
+            assert result, "Ping from VM: %s to VM: %s is NOT successful" %(
+                src_vm_ip, vm_fixtures['vm1'].vm_ip)
+
+        #vn1 vm to vn2 vm    
+        src_vm_fixture = vm_fixtures['vm1']
+        src_vm_ip = src_vm_fixture.vm_ip
+        result = src_vm_fixture.ping_with_certainty(vm_fixtures['vm4'].vm_ip, count=3)
+
+        if result:
+            self.logger.info('Ping from VM: %s to VM: %s is successful, '\
+                             'as expected' %(src_vm_ip, vm_fixtures['vm4'].vm_ip))
+        else:
+            assert result, "Ping from VM: %s to VM: %s is NOT successful" %(
+                src_vm_ip, vm_fixtures['vm4'].vm_ip)
+
+        #  computes nodes to fip 
+        compute_node_ips = set()
+        for vm_fixture in list(vm_fixtures.values()):
+            compute_node_ips.add(vm_fixture.get_compute_host())
+
+        for compute_ip in compute_node_ips:
+            result = self.ping_vm_from_vhost(compute_ip, my_fip, count=3)
+            if result:
+                self.logger.info('Ping from vHost: %s to FIP: %s is successful,'\
+                                 ' as expected' %(compute_ip, my_fip))
+            else:
+                assert result, "Ping from VM: %s to FIP: %s is NOT successful" %(
+                    compute_ip, my_fip)
+        #computes to vm4 should fail
+        for compute_ip in compute_node_ips:
+            result = self.ping_vm_from_vhost(compute_ip, vm_fixtures['vm4'], count=2)
+            if result:
+                assert result, "Ping from VM: %s to FIP: %s is NOT successful" %(
+                                 ' Not as expected' %(compute_ip,  vm_fixtures['vm4'].vm_ip))
+            else:
+                self.logger.info('Ping from vHost: %s to FIP: %s is NOT successful,'\
+                                 ' as expected' %(compute_ip,  vm_fixtures['vm4'].vm_ip))
+
+        self.verify_ping_from_vms_to_vhosts(ret_dict = obj_dict)
+    #End  of 4518 scenarios test
 
 class TestGWLessFWDSvcChain(GWLessFWDTestBase, BaseSvc_FwTest, VerifySvcFirewall):
 
