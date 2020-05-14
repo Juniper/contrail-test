@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4fd2cc2e_98323412",
+        "filename": "serial_scripts/gw_less_fwd/test_gw_less_fwd.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1676,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-14T07:05:44Z",
+      "side": 1,
+      "message": "use @skip_because(min_nodes\u003d2)",
+      "revId": "abbd391083d7a0056efe45999c482e6c4f2370b1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
