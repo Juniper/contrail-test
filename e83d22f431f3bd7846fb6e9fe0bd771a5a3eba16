@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "61f70b45_10726c6c",
+        "filename": "fixtures/vm_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 85,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-18T15:35:39Z",
+      "side": 1,
+      "message": "Is this required?",
+      "revId": "e83d22f431f3bd7846fb6e9fe0bd771a5a3eba16",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a736ddde_df6e68da",
+        "filename": "scripts/bgpaas/test_bgpaas.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-18T15:35:39Z",
+      "side": 1,
+      "message": "Suggestion: use the prefix \"disabled_\" to make it more readable, also state the reason for invalidating the tests in the comment.",
+      "revId": "e83d22f431f3bd7846fb6e9fe0bd771a5a3eba16",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
