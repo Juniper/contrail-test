@@ -64,14 +64,6 @@ class SecurityGroupMultiProject(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result']:
             topo_objs, config_topo, vm_fip_info = out['data']
 
-        secgrp_fq_name = ':'.join(['default-domain',
-                                   self.inputs.admin_tenant,
-                                   'default'])
-        sg_id = get_secgrp_id_from_name(
-            self.connections,
-            secgrp_fq_name)
-        assert set_default_sg_rules(self.connections, sg_id,
-                                    remote_sg=secgrp_fq_name)
         self.start_traffic_and_verify_multiproject(
             topo_objs,
             config_topo,
