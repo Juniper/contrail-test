@@ -11,7 +11,7 @@ from common import isolated_creds
 class TestBGPaaS(BaseBGPaaS):
 
     @preposttest_wrapper
-    def test_bgpaas_tunnel_encap(self):
+    def atest_bgpaas_tunnel_encap(self):
         """
         Description: Configure tunnel-encap on bgpaas session parameter and verify tunnel-encap is correctly seen in VRF
         Test Steps:
@@ -208,7 +208,7 @@ class TestBGPaaS(BaseBGPaaS):
            self.logger.info("BGP session with Controller is NOT seen as expected in iBGP configuration")
  
     @preposttest_wrapper
-    def test_bgpaas_private_as_action(self):
+    def atest_bgpaas_private_as_action(self):
         """
         Description: Verify private-as action remove,remove-all,replace-all
         Test Steps: 
