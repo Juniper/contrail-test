@@ -89,7 +89,7 @@ class sdn_4vn_xvm_config(object):
         self.vn_policy=  {'vnet1': ['policy0'], 'vnet2': ['policy0'],'vnet3':['policy0'],'vnet4':['policy0']}
 
         self.vn_of_vm= {'vm1': 'vnet1', 'vm2': 'vnet1', 'vm3': 'vnet1', 'vm4': 'vnet2', 'vm5': 'vnet2',
-                        'vm6': 'vnet3', 'vm7': 'vnet3', 'vm8': 'vnet3', 'vm9': 'vnet4', 'vm10': 'vnet4'}
+                        'vm6': 'vnet3', 'vm7': 'vnet3', 'vm8': 'vnet3', 'vm9': 'vnet4', 'vmX': 'vnet4'}
 
         #Define the vm to compute node mapping to pin a vm to a particular
         #compute node or else leave empty.
@@ -97,10 +97,10 @@ class sdn_4vn_xvm_config(object):
         if compute_node_list is not None:
             if len(compute_node_list) == 2:
                 self.vm_node_map = {'vm1':'CN0', 'vm2':'CN0', 'vm3':'CN1', 'vm4':'CN0', 'vm5':'CN1',
-                                    'vm6':'CN0', 'vm7':'CN0', 'vm8':'CN1', 'vm9':'CN0', 'vm10':'CN1'}
+                                    'vm6':'CN1', 'vm7':'CN1', 'vm8':'CN0', 'vm9':'CN0', 'vmX':'CN1'}
             elif len(compute_node_list) > 2:
-               self.vm_node_map = {'vm1':'CN0', 'vm2':'CN0', 'vm3':'CN2', 'vm4':'CN0', 'vm5':'CN1', 'vm6':'CN0',
-                                   'vm7':'CN0', 'vm8':'CN2', 'vm9':'CN0', 'vm10':'CN1'}
+               self.vm_node_map = {'vm1':'CN0', 'vm2':'CN0', 'vm3':'CN2', 'vm4':'CN0', 'vm5':'CN1', 'vm6':'CN1',
+                                   'vm7':'CN1', 'vm8':'CN2', 'vm9':'CN1', 'vmX':'CN2'}
 
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
@@ -157,7 +157,7 @@ class sdn_4vn_xvm_config(object):
         self.sg_of_vm = {}
         for key in self.vn_of_vm:
            self.sg_of_vm[key] = []
-        self.sg_of_vm['vm6'] = [self.sg_list[4]]; self.sg_of_vm['vm9'] = [self.sg_list[4]]; self.sg_of_vm['vm10'] = [self.sg_list[4]];
+        self.sg_of_vm['vm6'] = [self.sg_list[4]]; self.sg_of_vm['vm9'] = [self.sg_list[4]]; self.sg_of_vm['vmX'] = [self.sg_list[4]];
         ##Define the security group rules
         import uuid
         uuid_1= uuid.uuid1().urn.split(':')[2]
@@ -193,7 +193,7 @@ class sdn_4vn_xvm_config(object):
                                {'src_vm':'vm6', 'dst_vm':'vm8', 'proto':'udp', 'sport':8000, 'dport':9000, 'exp':'fail'},# intra VN, inter compute, diff. SG
                                {'src_vm':'vm6', 'dst_vm':'vm5', 'proto':'udp', 'sport':8000, 'dport':9000, 'exp':'fail'},# inter VN, inter compute, diff. SG
                                {'src_vm':'vm6', 'dst_vm':'vm4', 'proto':'udp', 'sport':8000, 'dport':9000, 'exp':'fail'},# inter VN, intra compute, diff. SG
-                               {'src_vm':'vm9', 'dst_vm':'vm10','proto':'udp','sport':8000,'dport':9000,'exp':'pass'},# intra VN, inter compute, same non-default SG
+                               {'src_vm':'vm9', 'dst_vm':'vmX','proto':'udp','sport':8000,'dport':9000,'exp':'pass'},# intra VN, inter compute, same non-default SG
                                {'src_vm':'vm9', 'dst_vm':'vm6', 'proto':'udp','sport':8000,'dport':9000,'exp':'pass'}]# inter VN, intra compute, same non-default SG
 
         # end __init__
@@ -302,7 +302,7 @@ class sdn_topo_config_multiproject(object):
             username= None, password= None):
         print("building dynamic topo")
         project1 = 'project1'
-        project2 = 'admin'
+        project2 = 'project2'
         user1 = username or 'user1'
         user2 = username or 'user2'
         password1 = password or 'user123'
