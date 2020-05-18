@@ -103,7 +103,7 @@ class ComputeNodeFixture(fixtures.Fixture):
     def read_agent_config(self):
         self.get_file(self.agent_conf_file,
             self.recd_agent_conf_file)
-        self.config = configparser.SafeConfigParser()
+        self.config = configparser.ConfigParser()
         try:
             self.config.read(self.recd_agent_conf_file)
         except configparser.ParsingError as e:

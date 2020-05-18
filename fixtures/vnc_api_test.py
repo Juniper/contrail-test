@@ -13,7 +13,7 @@ from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
 from common import log_orig as contrail_logging
-from configparser import SafeConfigParser, DuplicateSectionError
+from configparser import ConfigParser, DuplicateSectionError
 
 _VNC_API_LIB_INI_ = '/etc/contrail/vnc_api_lib.ini'
 
@@ -125,7 +125,7 @@ class VncLibFixture(fixtures.Fixture):
 
     # Create tmp ini file as workaround for insecure
     def _update_vnc_api_ini(self, insecure=True):
-        config = SafeConfigParser()
+        config = ConfigParser()
         config.read(_VNC_API_LIB_INI_)
         try:
             config.add_section('global')
