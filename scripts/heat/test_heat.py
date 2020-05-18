@@ -301,8 +301,8 @@ try:
                 if type(sport) == type([]):
                     sport = sport[0][0]
                     dport = dport[0][0]
-                sent, recv = self.verify_traffic(vms[0], vms[1], proto, sport, dport)
-                assert sent == recv, "%s Traffic with src port %d, dst port %d failed" % (proto, sport, dport)
+                assert self.verify_traffic(vms[0], vms[1], proto, sport,
+                        dport), "%s Traffic with src port %d, dst port %d failed" % (proto, sport, dport)
             return True
         # end multi_svc_chain
 
