@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "afd77c66_f89d0b3c",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2020-05-19T08:50:16Z",
+      "side": 1,
+      "message": "There are multiple other instances where SafeConfigParser is being called, please look into it if the below list is of any help:-\n\n[ritam@nodem3 contrail-test]$ grep -rn ConfigParse\nserial_scripts/control_node_scaling/test_flap_agent_scale.py:2323:            config \u003d configparser.SafeConfigParser()\nserial_scripts/control_node_scaling/vn_oper.py:200:            config \u003d configparser.SafeConfigParser()\nserial_scripts/control_node_scaling/policy.py:61:            config \u003d ConfigParser.SafeConfigParser()\nserial_scripts/control_node_scaling/flap_agent_scale_test.py.orig:25:import ConfigParser\nserial_scripts/control_node_scaling/flap_agent_scale_test.py.orig:2299:     config \u003d ConfigParser.SafeConfigParser()\nserial_scripts/tor_scale/convertor.py:11:        self.Config \u003d configparser.ConfigParser()\nfixtures/smgr_common.py:546:            config \u003d configparser.SafeConfigParser()\nfixtures/compute_node_test.py:106:        self.config \u003d configparser.SafeConfigParser()\nfixtures/vnc_api_test.py:16:from configparser import SafeConfigParser, DuplicateSectionError\nfixtures/vnc_api_test.py:128:        config \u003d SafeConfigParser()\ncommon/neutron/base.py:102:            config \u003d configparser.ConfigParser()\ncommon/service_connections/base.py:82:        if \"ConfigParser\" in output:\ntcutils/cfgparser.py:1:\u0027\u0027\u0027Parse config files which are ConfigParser complaint\u0027\u0027\u0027\ntcutils/cfgparser.py:5:from configparser import SafeConfigParser\ntcutils/cfgparser.py:31:        parser \u003d SafeConfigParser()\ntcutils/collector/contrail_traces.py:96:            config \u003d configparser.SafeConfigParser()\ntools/upload_to_webserver.py:43:        config \u003d configparser.ConfigParser()\ntools/upload_to_webserver.py:71:    report_config \u003d configparser.ConfigParser()\ntools/stop_on_fail.py:87:            config \u003d configparser.SafeConfigParser()\ntools/report_gen.py:144:        config \u003d configparser.ConfigParser()\ntools/update_testsuite_properties.py:11:    config \u003d configparser.ConfigParser()\ntools/send_mail.py:15:        config \u003d configparser.ConfigParser()\ntools/send_mail.py:35:    report_config \u003d configparser.ConfigParser()\ntools/parse_result.py:69:    config \u003d configparser.ConfigParser()\ntools/tor/setup_tor_agents.py:8:#import ConfigParser\n[ritam@nodem3 contrail-test]$",
+      "range": {
+        "startLine": 9,
+        "startChar": 0,
+        "endLine": 9,
+        "endChar": 71
+      },
+      "revId": "6ca9ebba9b7bd9af75f95c4e8e72385e10048a42",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ed734245_a860bec2",
+        "filename": "fixtures/vnc_api_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2020-05-19T08:50:16Z",
+      "side": 1,
+      "message": "Can we make it work for python 2.7 and python 3.2. Please look if there is a better way to do this:-\n\ntry:\n    from configparser import SafeConfigParser, DuplicateSectionError\nexcept ImportError:\n    from configparser import DuplicateSectionError, ConfigParser as SafeConfigParser",
+      "range": {
+        "startLine": 16,
+        "startChar": 25,
+        "endLine": 16,
+        "endChar": 37
+      },
+      "revId": "6ca9ebba9b7bd9af75f95c4e8e72385e10048a42",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "478d2e9b_5ac08048",
+        "filename": "tcutils/cfgparser.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2020-05-19T08:50:16Z",
+      "side": 1,
+      "message": "Can we make it work for python 2.7 and python 3.2. Please look if there is a better way to do this:-\n\ntry:\n    from configparser import SafeConfigParser\nexcept ImportError:\n    from configparser import ConfigParser as SafeConfigParser",
+      "range": {
+        "startLine": 5,
+        "startChar": 25,
+        "endLine": 5,
+        "endChar": 37
+      },
+      "revId": "6ca9ebba9b7bd9af75f95c4e8e72385e10048a42",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
