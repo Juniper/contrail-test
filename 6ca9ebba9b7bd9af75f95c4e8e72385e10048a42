@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "4ceb66a2_3dee6a41",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-19T09:26:48Z",
+      "side": 1,
+      "message": "Next patch will correct these references.",
+      "parentUuid": "afd77c66_f89d0b3c",
+      "range": {
+        "startLine": 9,
+        "startChar": 0,
+        "endLine": 9,
+        "endChar": 71
+      },
+      "revId": "6ca9ebba9b7bd9af75f95c4e8e72385e10048a42",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "ed734245_a860bec2",
         "filename": "fixtures/vnc_api_test.py",
         "patchSetId": 1
@@ -48,6 +72,30 @@
     },
     {
       "key": {
+        "uuid": "bf6d5f05_0e6ad3a8",
+        "filename": "fixtures/vnc_api_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-19T09:26:48Z",
+      "side": 1,
+      "message": "Verified that the change works as is, in python2, no change required",
+      "parentUuid": "ed734245_a860bec2",
+      "range": {
+        "startLine": 16,
+        "startChar": 25,
+        "endLine": 16,
+        "endChar": 37
+      },
+      "revId": "6ca9ebba9b7bd9af75f95c4e8e72385e10048a42",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "478d2e9b_5ac08048",
         "filename": "tcutils/cfgparser.py",
         "patchSetId": 1
@@ -59,6 +107,30 @@
       "writtenOn": "2020-05-19T08:50:16Z",
       "side": 1,
       "message": "Can we make it work for python 2.7 and python 3.2. Please look if there is a better way to do this:-\n\ntry:\n    from configparser import SafeConfigParser\nexcept ImportError:\n    from configparser import ConfigParser as SafeConfigParser",
+      "range": {
+        "startLine": 5,
+        "startChar": 25,
+        "endLine": 5,
+        "endChar": 37
+      },
+      "revId": "6ca9ebba9b7bd9af75f95c4e8e72385e10048a42",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4eb5c1c5_ca7a21da",
+        "filename": "tcutils/cfgparser.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-19T09:26:48Z",
+      "side": 1,
+      "message": "Verified that the change works as is, in python2, no change required",
+      "parentUuid": "478d2e9b_5ac08048",
       "range": {
         "startLine": 5,
         "startChar": 25,
