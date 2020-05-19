@@ -2,7 +2,7 @@
 
 from future import standard_library
 standard_library.install_aliases()
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 
 
 def string_to_list(tstr, force=False):
@@ -28,7 +28,7 @@ def parse_cfg_file(cfg_files):
     sections = []
     cfg_files = [cfg_files] if type(cfg_files) is str else cfg_files
     for cfg_file in cfg_files:
-        parser = SafeConfigParser()
+        parser = ConfigParser()
         parsed_files = parser.read(cfg_file)
         if cfg_file not in parsed_files:
             raise RuntimeError('Unable to parse (%s), '

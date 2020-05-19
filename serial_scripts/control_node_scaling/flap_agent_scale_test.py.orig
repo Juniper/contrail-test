@@ -2296,7 +2296,7 @@ class FlapAgentScaleInit (object):
         cwd = os.getcwd()
         args.conf_file = '%s/bgp_scale_params.ini'%cwd
         if args.conf_file:
-	    config = ConfigParser.SafeConfigParser()
+	    config = ConfigParser.ConfigParser()
             config.read([args.conf_file])
             defaults.update(dict(config.items("DEFAULTS")))
             if 'BGP_Scale' in config.sections():

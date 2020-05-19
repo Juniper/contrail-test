@@ -543,7 +543,7 @@ class SmgrFixture(fixtures.Fixture):
 
     def read_ini_file(self, config_ini):
         try:
-            config = configparser.SafeConfigParser()
+            config = configparser.ConfigParser()
             config.read([config_ini])
             smgr_config = dict(config.items("SERVER-MANAGER"))
             return smgr_config

@@ -58,7 +58,7 @@ class PolicyCmd(object):
 
         args.conf_file = '/etc/contrail/svc_monitor.conf'
         if args.conf_file:
-            config = ConfigParser.SafeConfigParser()
+            config = ConfigParser.ConfigParser()
             config.read([args.conf_file])
             global_defaults.update(dict(config.items("DEFAULTS")))
 
