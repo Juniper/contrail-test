@@ -1011,7 +1011,19 @@ class VcenterVM(object):
                                                           switchUuid=switch_id,
                                                           portgroupKey=net.key))))
             intfs.append(spec)
-        datastore = host.datastore[0] if vcenter.migration else host.datastore[1]
+        #####################################
+        # Changing the Logic to select Datastore based on NAME, rather than # ID.
+        # selecting Datastore based on ID is not always predictable-
+        # As it can be changed and depends on vCenter Internal Logic.
+        #####################################
+        if host.datastore[0].name == "nfs-ds":
+            nfs_datastore = host.datastore[0]
+            local_datastore = host.datastore[1]
+        else:
+            nfs_datastore = host.datastore[1]
+            local_datastore = host.datastore[0]
+        datastore = nfs_datastore if vcenter.migration else local_datastore
+
         spec = _vim_obj('vm.Clone',
                        location=_vim_obj('vm.Reloc',
                                         datastore=datastore,
