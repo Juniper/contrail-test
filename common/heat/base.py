@@ -4,7 +4,7 @@ standard_library.install_aliases()
 from builtins import zip
 from builtins import str
 import time
-import test_v1
+from common.base import GenericTestBase
 from common.connections import ContrailConnections
 from common import isolated_creds
 from common import create_public_vn
@@ -28,7 +28,7 @@ import copy
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
 
-class BaseHeatTest(test_v1.BaseTestCase_v1):
+class BaseHeatTest(GenericTestBase):
 
     @classmethod
     def setUpClass(cls):
