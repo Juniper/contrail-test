@@ -1311,8 +1311,8 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         return self.policy_test_with_scaled_udp_flows(
             topo,
             num_udp_streams=num_streams,
-            pps=100,
-            wait_time_after_start_traffic=10)
+            pps=50,
+            wait_time_after_start_traffic=100)
 
     def policy_test_with_scaled_udp_flows(
             self,
