@@ -335,12 +335,10 @@ class sdn_2vn_xvm_config(object):
         self.policy_test_order = ['policy0', 'policy1', 'policy0']
         self.rules['policy0'] = [
             {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet1', 'source_network':
-                'vnet0', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet2', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
+                'vnet0', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         self.rules['policy1'] = [
             {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet1', 'source_network':
-                'vnet0', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet2', 'source_network': 'vnet0', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+                'vnet0', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         self.rules['policy100'] = [
             {'direction': '<>', 'protocol': 'udp', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
     # end __init__
