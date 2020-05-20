@@ -2313,7 +2313,7 @@ class VMFixture(fixtures.Fixture):
                  VM from the agent')
     # end get_rsa_to_vm
 
-    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30,
+    def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=120,
                       as_daemon=False, raw=False, warn_only=True, pidfile=None, local_ip=None):
         '''run cmds on VM
 
