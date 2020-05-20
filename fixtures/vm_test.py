@@ -82,6 +82,7 @@ class VMFixture(fixtures.Fixture):
         self.quantum_h = self.connections.quantum_h
         self.vnc_lib_fixture = self.connections.vnc_lib_fixture
         self.vnc_lib_h = self.connections.get_vnc_lib_h()
+        self.vnc_h = ContrailVncApi(self.vnc_lib_h, self.logger)
         self.nova_h = self.connections.nova_h
         self.node_name = node_name
         self.zone = zone

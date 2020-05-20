@@ -11,8 +11,9 @@ from common import isolated_creds
 class TestBGPaaS(BaseBGPaaS):
 
     @preposttest_wrapper
-    def test_bgpaas_tunnel_encap(self):
+    def disable_test_bgpaas_tunnel_encap(self):
         """
+        disabling this as of now this is not supported
         Description: Configure tunnel-encap on bgpaas session parameter and verify tunnel-encap is correctly seen in VRF
         Test Steps:
            1. Create a bgpaas service,ubuntu-bird vm and advertise 0.0.0.0 from the VM
@@ -208,8 +209,9 @@ class TestBGPaaS(BaseBGPaaS):
            self.logger.info("BGP session with Controller is NOT seen as expected in iBGP configuration")
  
     @preposttest_wrapper
-    def test_bgpaas_private_as_action(self):
+    def disabled_test_bgpaas_private_as_action(self):
         """
+        disabling this as of now this is not supported
         Description: Verify private-as action remove,remove-all,replace-all
         Test Steps: 
             1. Configure BGP VM to advertise routes with private-as
