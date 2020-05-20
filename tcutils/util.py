@@ -45,7 +45,7 @@ from .fabfile import *
 import ast
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
-            '14': 'newton', '15': 'ocata', '17': 'queens', '18': 'rocky'}
+            '14': 'newton', '15': 'ocata', '17': 'queens', '18': 'rocky', '20': 'train'}
 
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
