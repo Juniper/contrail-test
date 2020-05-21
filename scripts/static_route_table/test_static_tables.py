@@ -226,8 +226,8 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
 
         self.verify_traffic(
             self.left_vm_fixture, self.right_vm_fixture, 'udp', sport=sport, dport=dport)
-        for prefix in self.right_prefixes:
-            self.check_route_in_agent(expected_next_hops = 1, prefix=prefix)
+        for prefix in self.left_prefixes:
+            self.check_route_in_agent(expected_next_hops = 1, prefix=prefix, vn_fix=self.vn2_fixture, vm_fix=self.vm1_fixture)
 
     @preposttest_wrapper
     def test_attach_interface_route_table_to_si(self):
@@ -247,12 +247,15 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
         right_vn = svc_info['right_vn_fixture']
         left_vm = svc_info['left_vm_fixture']
         right_vm = svc_info['right_vm_fixture']
+        self.vn1_fixture = None
+        self.vn2_fixture = None
+        self.vm1_fixture = None
         sport = 8001
         dport = 9001
         self.add_interface_route_table(left_vn, right_vn,si=True)
         self.attach_interface_route_table_to_si(self.intf_table_to_right_objs[0], si.si_obj, interface='left')
-        self.addCleanup(self.detach_interface_route_table_from_si, self.intf_table_to_right_objs[0] ,si=si.si_obj )
-        self.addCleanup(self.delete_int_route_table, left_vn, right_vn,si=si.si_obj)
+        self.addCleanup(self.delete_int_route_table, left_vn, right_vn, si=True)
+        sleep(5)
         self.check_route_in_agent(expected_next_hops = 1, vn_fix=left_vn, vm_fix=left_vm)
         self.verify_traffic(
             left_vm, right_vm, 'udp', sport=sport, dport=dport)
@@ -299,5 +302,5 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
         self.verify_traffic(
             self.left_vm_fixture, self.right_vm_fixture, 'udp', sport=sport, dport=dport)
         for prefix in self.right_prefixes:
-            self.check_route_in_agent(expected_next_hops = 1, prefix=prefix)
+            self.check_route_in_agent(expected_next_hops = 1, prefix=prefix, vn_fix=self.vn1_fixture, vm_fix=self.vm1_fixture)
         self.unbind_network_table(self.vn1_fixture, self.vn2_fixture)
