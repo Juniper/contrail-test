@@ -20,7 +20,7 @@ from tcutils.traffic_utils.traffic_analyzer import TrafficAnalyzer
 from compute_node_test import ComputeNodeFixture
 
 
-class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
+class TestMaxFlows(VerifyMaxFlows, BaseMaxFlowsTest):
    
     setup_fixtures = {}
 
