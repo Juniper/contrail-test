@@ -53,6 +53,20 @@ class TestVcenterSerial(BaseVnVmTest):
         Maintainer : sandipd@juniper.net
         '''
         self.orch.set_migration(True)
+        ##################################
+        # Sometimes there are some stranded VM left on Local Datastore from the previous testcases
+        # Due to which ESX does not completes entering to Maintance mode,-
+        # As those VMs can't be migrated, and testcase fails.
+        # Added the workaround to check for any STRANDED VM present in Cluster-
+        # Before starting the testcase .. and IF present delete them first.
+        ##################################
+        vm_list = self.orch.get_vm_list("ctest")
+        if len(vm_list) != 0:
+           self.logger.info ("There are some stranded VM on cluster, Deleting them first")
+           for vm in vm_list:
+               self.logger.info("Deleting VM %s" %vm.name)
+               self.orch.delete_vm(vm)
+
         vn1_name = get_random_name('test_vn')
         guest_vms = []
         vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
