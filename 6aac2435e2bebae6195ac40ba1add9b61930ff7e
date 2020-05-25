@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "bae7c475_c789780d",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 631
+      },
+      "writtenOn": "2020-05-25T17:25:13Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "8a6c56e8_9136f374",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "e3a443b6_0881f859",
         "filename": "serial_scripts/huge_pages/test_flow.py",
         "patchSetId": 4
@@ -30,6 +48,24 @@
       "writtenOn": "2020-05-05T12:33:12Z",
       "side": 1,
       "message": "Rename this class to BaseTestFlow, implementing only the utility methods. Move the test methods into three derived classes, like so\n\nclass BaseTestFlow(BaseVrouterTest):\n...\n\nclass TestFlow1GBHugePage(BaseTestFlow):\n\n   def is_test_applicable(self):\n       if not self.is_1GB_hugepage_configured(self.compute_ips[0]):\n           return (False, \u00271GB Hugepage not configured on \u0027 + self.compute_ips[0])\n       if not self.is_dpdk_compute(self.compute_ips[0]):\n           return (False, \u0027Not a kernel compute\u0027)\n       return (True, None)\n\n   @preposttest_wrapper\n   def test_flow_traffic_1GB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_restart_1GB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_agent_restart_1GB(self):\n   ...\n\nclass TestFlow2MBHugePage(BaseTestFlow):\n\n   def is_test_applicable(self):\n       if not self.is_2MB_hugepage_configured(self.compute_ips[0]):\n           return (False, \u00272MB Hugepage not configured on \u0027 + self.compute_ips[0])\n       if not self.is_dpdk_compute(self.compute_ips[0]):\n           return (False, \u0027Not a kernel compute\u0027)\n       return (True, None)\n\n   @preposttest_wrapper\n   def test_flow_traffic_2MB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_restart_2MB(self):\n   ...\n   @preposttest_wrapper\n   def test_flow_traffic_vrouter_agent_restart_2MB(self):\n   ...\n\nclass TestFlowNoHugePage(BaseTestFlow):\n   def is_test_applicable(self):\n       if self.is_1GB_hugepage_configured(self.compute_ips[0]) or \\\n             self.is_2MB_hugepage_configured(self.compute_ips[0]):\n           return (False, \u0027Hugepage configured on \u0027 + self.compute_ips[0])\n       if not self.is_dpdk_compute(self.compute_ips[0]):\n           return (False, \u0027Not a kernel compute\u0027)\n       return (True, None)\n\n   @preposttest_wrapper\n   def test_flow_traffic_sanity_no_hugepages(self):\n   ...",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3040f62d_ec7a950e",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 631
+      },
+      "writtenOn": "2020-05-25T17:25:13Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "e3a443b6_0881f859",
       "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "a234ad3a_da06402c",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 631
+      },
+      "writtenOn": "2020-05-25T17:25:13Z",
+      "side": 1,
+      "message": "The sleep is mainly added for XMPP connections to come up after restart. I had looked at the methods in contrail_test_init.py and chose to go this route. Especially because vrouter restart was not available there. For now will stick to my routines itself.",
+      "parentUuid": "34423748_f9f521c0",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "5e1a11fe_cfd8f6f5",
         "filename": "serial_scripts/huge_pages/test_flow.py",
         "patchSetId": 4
@@ -64,6 +118,24 @@
       "writtenOn": "2020-05-05T12:33:12Z",
       "side": 1,
       "message": "Only methods implementing test cases should start with the prefix \"test_\". Python unit test module identifies methods as tests if method name has the prefix \"test_\"",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f1ce568f_246a9425",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 187,
+      "author": {
+        "id": 631
+      },
+      "writtenOn": "2020-05-25T17:25:13Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "5e1a11fe_cfd8f6f5",
       "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -87,6 +159,24 @@
     },
     {
       "key": {
+        "uuid": "6c643950_60f1a15e",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 631
+      },
+      "writtenOn": "2020-05-25T17:25:13Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6e5d4741_f3591cbd",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "4d861b52_40cdef48",
         "filename": "serial_scripts/huge_pages/test_flow.py",
         "patchSetId": 4
@@ -104,6 +194,24 @@
     },
     {
       "key": {
+        "uuid": "4a640597_6b088da2",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 253,
+      "author": {
+        "id": 631
+      },
+      "writtenOn": "2020-05-25T17:25:13Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "4d861b52_40cdef48",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c53716da_99b66adc",
         "filename": "serial_scripts/huge_pages/test_flow.py",
         "patchSetId": 4
@@ -115,6 +223,24 @@
       "writtenOn": "2020-05-05T12:33:12Z",
       "side": 1,
       "message": "Only methods implementing test cases should start with the prefix \"test_\". Python unit test module identifies methods as tests if method name has the prefix \"test_\"",
+      "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "19f9834d_768f3685",
+        "filename": "serial_scripts/huge_pages/test_flow.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 275,
+      "author": {
+        "id": 631
+      },
+      "writtenOn": "2020-05-25T17:25:13Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "c53716da_99b66adc",
       "revId": "6aac2435e2bebae6195ac40ba1add9b61930ff7e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
