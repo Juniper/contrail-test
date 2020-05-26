@@ -7,7 +7,7 @@ import os
 import re
 from contrailapi import ContrailVncApi
 from tcutils.util import get_random_name
-
+from netaddr import IPNetwork
 
 class StaticRouteTableBase(BaseNeutronTest):
 
@@ -101,11 +101,12 @@ class StaticRouteTableBase(BaseNeutronTest):
             self.intf_table_to_left_objs.append(intf_table_to_left_obj)
 
     # delete the created int route table
-    def delete_int_route_table(self, src_vn=None, dst_vn=None, port_fix=None):
+    def delete_int_route_table(self, src_vn=None, dst_vn=None, port_fix=None, si=False):
         src_vn_fix = src_vn or self.vn1_fixture
         dst_vn_fix = dst_vn or self.vn2_fixture
         port_fix = port_fix or self.vm1_fixture
-        self.unbind_interface_table(src_vn_fix, dst_vn_fix, port_fix)
+        if not si:
+            self.unbind_interface_table(src_vn_fix, dst_vn_fix, port_fix)
         for intf_table in self.intf_table_to_right_objs + self.intf_table_to_left_objs:
             self.static_table_handle.delete_interface_route_table(
                 intf_table.uuid)
@@ -118,7 +119,8 @@ class StaticRouteTableBase(BaseNeutronTest):
         self.left_prefixes = []   
         for i in range(0,multiple_tables):
             if str(self.vm1_fixture.vm_ips[0])[:-1] == str(self.right_vm_fixture.vm_ip)[:-1]:
-                prefix = self.get_prefix(vn1_fix,i)
+                ip = self.get_prefix(vn1_fix,i)
+                prefix = self.get_network_prefix_from_ip_mask(ip)
                 nw_handle_to_left = self.static_table_handle.create_route_table(
                     prefixes=[prefix],
                     name=get_random_name("network_table_left_to_right"),
@@ -132,7 +134,8 @@ class StaticRouteTableBase(BaseNeutronTest):
                     nw_route_table_obj=nw_handle_to_left)
                 self.left_prefixes.append(prefix)
             else:
-                prefix = self.get_prefix(vn2_fix,i)
+                ip = self.get_prefix(vn2_fix,i)
+                prefix = self.get_network_prefix_from_ip_mask(ip)
                 nw_handle_to_right = self.static_table_handle.create_route_table(
                     prefixes=[prefix],
                     name=get_random_name("network_table_left_to_right"),
@@ -147,7 +150,8 @@ class StaticRouteTableBase(BaseNeutronTest):
                     nw_route_table_obj=nw_handle_to_right)
                 self.right_prefixes.append(prefix)
             if str(self.vm1_fixture.vm_ips[1])[:-1] == str(self.right_vm_fixture.vm_ip)[:-1]:
-                prefix = self.get_prefix(vn1_fix,i)
+                ip = self.get_prefix(vn1_fix,i)
+                prefix = self.get_network_prefix_from_ip_mask(ip)
                 nw_handle_to_left = self.static_table_handle.create_route_table(
                     prefixes=[prefix],
                     name=get_random_name("network_table_right_to_left"),
@@ -162,7 +166,8 @@ class StaticRouteTableBase(BaseNeutronTest):
                     nw_route_table_obj=nw_handle_to_left)
                 self.left_prefixes.append(prefix)
             else:
-                prefix = self.get_prefix(vn2_fix,i)
+                ip = self.get_prefix(vn2_fix,i)
+                prefix = self.get_network_prefix_from_ip_mask(ip)
                 nw_handle_to_right = self.static_table_handle.create_route_table(
                     prefixes=[prefix],
                     name=get_random_name("network_table_right_to_left"),
@@ -284,6 +289,9 @@ class StaticRouteTableBase(BaseNeutronTest):
     
     def get_prefix(self,vn_fixture, i):
         return vn_fixture.get_cidrs()[0].split('/')[0] + '/' + str(int(vn_fixture.get_cidrs()[0].split('/')[-1]) - i)
+    
+    def get_network_prefix_from_ip_mask(self,ip):
+        return str(IPNetwork(ip).cidr)
     
     def attach_interface_route_table_to_si(self, intf_table, si, interface='left'):
         intf_table.set_service_instance(si,ServiceInterfaceTag(interface_type='left'))
