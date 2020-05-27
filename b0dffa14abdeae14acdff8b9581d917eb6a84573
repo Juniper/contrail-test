@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f810f094_2f8a3f1c",
+        "filename": "scripts/policy/test_policy_detailed.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 151,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-05-27T10:46:48Z",
+      "side": 0,
+      "message": "Class TestDetailedPolicy3Ipv4v6, derived from TestDetailedPolicy3, probably has to removed",
+      "revId": "b0dffa14abdeae14acdff8b9581d917eb6a84573",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
