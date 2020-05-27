@@ -1070,6 +1070,13 @@ def skip_because(*args, **kwargs):
                     msg = ' '.join(("Skipped as test requires at least",
                             "%d analytics-nodes, but only %d found" % (mins, nodes)))
 
+            if "sku" in kwargs:
+                if kwargs['sku'] == self.inputs.get_build_sku().lower():
+                    skip = True
+                    msg = "Skipped as test not supported with sku  %s" % self.inputs.get_build_sku()
+                    raise testtools.TestCase.skipException(msg)
+
+
             if 'remote_compute_setup' in kwargs:
                 if ((not self.inputs.config['test_configuration'].get(
                     'remote_compute_setup', False))\
