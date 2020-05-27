@@ -80,7 +80,7 @@ class TestLBaaSV2(BaseLBaaSTest):
             "Verify LB Method failed for ROUND ROBIN"
 
     @attr(type=['sanity'])
-    @skip_because(dpdk_cluster=True)
+    @skip_because(dpdk_cluster=True, sku='train')
     @preposttest_wrapper
     def test_lbaas_client_pool_in_same_net(self):
         '''Create Lbaas pool, member and vip
@@ -128,7 +128,7 @@ class TestLBaaSV2(BaseLBaaSTest):
     # end test_lbaas_client_pool_in_same_net
 
     @attr(type=['sanity'])
-    @skip_because(dpdk_cluster=True)
+    @skip_because(dpdk_cluster=True, sku='train')
     @preposttest_wrapper
     def test_lbaas_with_sg_vip(self):
         '''Create LB, LISTENER, POOL and MEMBER
@@ -200,7 +200,7 @@ class TestLBaaSV2(BaseLBaaSTest):
             "Verify LB Method failed for ROUND ROBIN"
 
     @attr(type=['cb_sanity', 'sanity','vcenter'])
-    @skip_because(dpdk_cluster=True)
+    @skip_because(dpdk_cluster=True, sku='train')
     @preposttest_wrapper
     def test_lbaas_with_different_fip(self):
         '''Create LB, LISTENER, POOL and MEMBER
