@@ -803,7 +803,11 @@ class TestInputs(with_metaclass(Singleton, object)):
         host_dict['containers'] = {}
         if  host_dict.get('type', None) == 'esxi':
             return
+<<<<<<< HEAD   (d0ec6d test_scale_policy_with_ping needs to be removed from paralle)
         cmd = 'docker ps -a 2>/dev/null | grep -v "/pause\|/usr/bin/pod\|contrail.*init\|provisioner" | awk \'{print $NF}\''
+=======
+        cmd = 'docker ps -a 2>/dev/null | grep -v "/pause\|/usr/bin/pod\|nova_api_\|contrail.*init\|init.*contrail\|provisioner" | awk \'{print $NF}\''
+>>>>>>> CHANGE (debeeb Ignores nova_api_* containers)
         output = self.run_cmd_on_server(host_dict['host_ip'], cmd, as_sudo=True)
         # If not a docker cluster, return
         if not output:
