@@ -14,6 +14,7 @@ enum34==1.1.10 ; python_version < '3'
 future==0.18.2
 setuptools<47.0.0
 google-auth==1.11.2
+setuptools>=40.3.0,<45
 idna==2.9
 ipaddress==1.0.23 ; python_version == '2.7'
 jinja2==2.11.1
