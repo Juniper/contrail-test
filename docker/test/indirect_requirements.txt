@@ -11,6 +11,7 @@ dpkt==1.8.8
 easyprocess==0.2.10
 enum34==1.1.10 ; python_version < '3'
 future==0.18.2
+setuptools<47.0.0
 google-auth==1.11.2
 idna==2.9
 ipaddress==1.0.23 ; python_version < '3'
