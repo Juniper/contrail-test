@@ -1,0 +1,281 @@
+from tcutils.util import retry, get_random_name
+from tcutils.wrappers import preposttest_wrapper
+from common.contrail_fabric.base import BaseFabricTest
+import random
+from time import sleep
+
+class TestFabricTrans(BaseFabricTest):
+    def is_test_applicable(self):
+        result, msg = super(TestFabricTrans, self).is_test_applicable()
+        if result:
+            msg = 'No device with dc_gw rb_role in the provided fabric topology'
+            for device_dict in list(self.inputs.physical_routers_data.values()):
+                if 'dc_gw' in (device_dict.get('rb_roles') or []):
+                    break
+            else:
+                return False, msg
+            msg = 'No public subnets or public host specified in test inputs yaml'
+            if self.inputs.public_subnets and self.inputs.public_host:
+                return (True, None)
+        return False, msg
+
+    def setUp(self):
+        self.static_ip = True
+        for device, device_dict in list(self.inputs.physical_routers_data.items()):
+            if 'dc_gw' in (device_dict.get('rb_roles') or []):
+                if device_dict['role'] == 'spine':
+                    self.rb_roles[device] = ['DC-Gateway', 'Route-Reflector']
+                    if 'qfx' in device_dict.get('model', 'qfx'):
+                        self.rb_roles[device].append('CRB-Gateway')
+                elif device_dict['role'] == 'leaf':
+                    self.rb_roles[device] = ['DC-Gateway', 'CRB-Access']
+            if 'dci_gw' in (device_dict.get('rb_roles') or []):
+                if device_dict['role'] == 'spine':
+                    self.rb_roles[device] = ['DCI-Gateway', 'DC-Gateway',
+                                             'Route-Reflector']
+        super(TestFabricTrans, self).setUp()
+
+    def _find_obj_log_entry(self, log_entries, obj_type, op_list, obj_name):
+        td_list = []
+        for op in op_list:
+            td_list.append("{} '{}' {}".format(obj_type, obj_name, op))
+        for log_entry in log_entries:
+            if log_entry.get('log_entry.transaction_descr') in td_list:
+                self.logger.info(
+                    "Found log_entry: {}".format(log_entry.get(
+                        'log_entry.transaction_descr')))
+                return True
+        return False
+
+    def _find_job_log_entry(self, log_entries, job_descr):
+        for log_entry in log_entries:
+            if log_entry.get('log_entry.transaction_descr') == job_descr:
+                self.logger.info("Found log_entry: {}".format(job_descr))
+                return True
+        return False
+
+    @retry(delay=1, tries=60)
+    def _verify_log_entry(self, trans_type, op_list=None, obj_name=None):
+        res = self.analytics_obj.ops_inspect[
+            self.inputs.collector_ips[0]].post_query(
+            'StatTable.JobLog.log_entry',
+            start_time='now-10m',
+            end_time='now',
+            select_fields=[
+                'T',
+                'log_entry.message',
+                'log_entry.status',
+                'log_entry.transaction_id',
+                'log_entry.transaction_descr'],
+            where_clause="(log_entry.status=STARTING)",
+            sort=['T']
+        )
+        if op_list:
+            if self._find_obj_log_entry(res, trans_type, op_list, obj_name):
+                return True
+        else:
+            if self._find_job_log_entry(res, trans_type):
+                return True
+
+        return False
+
+    def _get_bms_node(self, devices=None):
+        #return random.choice(self.get_bms_nodes())
+        return self.get_bms_nodes(devices=devices)[1]
+
+    @preposttest_wrapper
+    def test_logical_router(self):
+        self._verify_log_entry("Existing Fabric Onboarding")
+        self._verify_log_entry("Role Assignment")
+        vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1])
+        lr = self.create_logical_router([vn], is_public_lr=True)
+        status = self._verify_log_entry(
+            "Logical Router", op_list=["Create", "Update"], obj_name=lr.name)
+        assert status, "Logical Router '{}' log missing".format(lr.name)
+
+        # Delete LR
+        lr.cleanUp()
+        lr.created = False
+        status = self._verify_log_entry(
+            "Logical Router", op_list=["Delete"], obj_name=lr.name)
+        assert status, "Logical Router '{}' Delete log missing".format(lr.name)
+
+    @preposttest_wrapper
+    def test_virtual_port_group(self):
+        target_node = self.get_bms_node()
+        interfaces = self.inputs.bms_data[target_node]['interfaces'][:1]
+        vn1 = self.create_vn()
+        vn2 = self.create_vn()
+        self.create_logical_router([vn1, vn2])
+        vpg = self.create_vpg(interfaces)
+        bms = self.create_bms(bms_name=target_node, interfaces=interfaces,
+                          port_group_name=vpg.name, vlan_id=10,
+                          vn_fixture=vn1, static_ip=self.static_ip)
+        status = self._verify_log_entry(
+            "Virtual Port Group", op_list=["Create"], obj_name=vpg.name)
+        assert status, "Virtual Port Group '{}' log missing".format(vpg.name)
+
+        # Update VPG
+        vn2_subnet = vn2.get_cidrs()[0]
+        sg_rule_1 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
+            cidr=vn2_subnet, direction='egress')
+        sg_rule_2 = self._get_secgrp_rule(protocol='udp', dst_ports=(8004, 8006),
+            cidr=vn2_subnet, direction='egress')
+        sg1 = self.create_security_group(rules=[sg_rule_1, sg_rule_2])
+        vpg.add_security_groups([sg1.uuid])
+        status = self._verify_log_entry(
+            "Virtual Port Group", op_list=["Update"], obj_name=vpg.name)
+        assert status, "VPG '{}' Update log missing".format(vpg.name)
+
+        vpg.delete_security_groups([sg1.uuid])
+
+        # Skipping VPG delete
+
+    @preposttest_wrapper
+    def test_security_group(self):
+        vn1 = self.create_vn()
+        vn2 = self.create_vn()
+        vm1 = self.create_vm(vn_fixture=vn2, image_name='cirros-traffic')
+        lr = self.create_logical_router([vn1, vn2])
+        vn1_subnet = vn1.get_cidrs()[0]
+        vn2_subnet = vn2.get_cidrs()[0]
+
+        sg_rule_1 = self._get_secgrp_rule(protocol='tcp', dst_ports=(8004, 8006),
+            cidr=vn2_subnet, direction='egress')
+        sg_rule_2 = self._get_secgrp_rule(protocol='udp', dst_ports=(8004, 8006),
+            cidr=vn2_subnet, direction='egress')
+        sg_rule_3 = self._get_secgrp_rule(protocol='icmp', direction='egress')
+        sg_rule_4 = self._get_secgrp_rule(protocol='udp', dst_ports=(0, 65535),
+            cidr=vn1_subnet, direction='egress')
+
+        sg1 = self.create_security_group(rules=[sg_rule_1, sg_rule_2])
+        sg2 = self.create_security_group(rules=[sg_rule_3, sg_rule_4])
+
+        bms = self.get_bms_node()
+        bms1 = self.create_bms(
+            bms_name=bms, vn_fixture=vn1, vlan_id=10, static_ip=self.static_ip)
+        bms2 = self.create_bms(
+            bms_name=bms, vn_fixture=vn2, vlan_id=20, static_ip=self.static_ip,
+            bond_name=bms1.bond_name, port_group_name=bms1.port_group_name)
+        bms1.add_security_groups([sg1.uuid])
+        bms2.add_security_groups([sg2.uuid])
+
+        rules = [
+                {'direction': '<>',
+                 'protocol': 'tcp',
+                 'src_addresses': [{'security_group': 'local'}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        sg1.create_sg_rule(sg1.uuid, rules)
+        status = self._verify_log_entry(
+            "Security Group", op_list=["Update"], obj_name=sg1.secgrp_name)
+        assert status, "Security Group '{}' log missing".format(sg1.secgrp_name)
+
+    @preposttest_wrapper
+    def test_dci(self):
+        self.inputs.set_af('dual')
+        self.addCleanup(self.inputs.set_af, 'v4')
+        vn = self.create_vn()
+        vn1 = self.create_vn()
+        self.bms1 = self.create_bms(bms_name=random.choice(
+            self._get_bms_nodes(devices=self.devices)),
+            vn_fixture=vn, tor_port_vlan_tag=10, fabric_fixture=self.fabric,
+            static_ip=self.static_ip)
+        self.bms2 = self.create_bms(bms_name=random.choice(
+            self._get_bms_nodes(devices=self.devices2)),
+            vn_fixture=vn1, tor_port_vlan_tag=10, fabric_fixture=self.fabric2,
+            static_ip=self.static_ip)
+        devices = list()
+        for device in self.devices:
+            if 'dci_gw' in self.inputs.get_prouter_rb_roles(device.name):
+                 devices.append(device)
+        lr = self.create_logical_router([vn], devices=devices)
+        devices = list()
+        for device in self.devices2:
+            if 'dci_gw' in self.inputs.get_prouter_rb_roles(device.name):
+                 devices.append(device)
+        lr1 = self.create_logical_router([vn1], devices=devices)
+
+        dci_name = get_random_name('dci')
+        dci_uuid = self.vnc_h.create_dci(dci_name, lr.uuid, lr1.uuid)
+
+        status = self._verify_log_entry(
+            "DCI", op_list=["Create"], obj_name=dci_name)
+        assert status, "DCI '{}' Create log missing".format(dci_name)
+
+        # Update DCI
+        dci_obj = self.vnc_h._vnc.data_center_interconnect_read(id=dci_uuid)
+        lr_obj = self.vnc_h._vnc.logical_router_read(id=lr.uuid)
+        dci_obj.del_logical_router(lr_obj)
+        self.vnc_h._vnc.data_center_interconnect_update(dci_obj)
+        status = self._verify_log_entry(
+            "DCI", op_list=["Update"], obj_name=dci_name)
+        assert status, "DCI '{}' Update log missing".format(dci_name)
+
+        dci_obj.add_logical_router(lr_obj)
+        self.vnc_h._vnc.data_center_interconnect_update(dci_obj)
+        sleep(30)
+
+        # Delete DCI
+        self.vnc_h.delete_dci(dci_name)
+        status = self._verify_log_entry(
+            "DCI", op_list=["Delete"], obj_name=dci_name)
+        assert status, "DCI '{}' Delete log missing".format(dci_name)
+
+    @preposttest_wrapper
+    def test_dci_single_fabric(self):
+        self.inputs.set_af('dual')
+        self.addCleanup(self.inputs.set_af, 'v4')
+        vn = self.create_vn()
+        vn1 = self.create_vn()
+        bms = self.get_bms_node()
+        self.bms1 = self.create_bms(bms_name=bms,
+            vn_fixture=vn, tor_port_vlan_tag=10,
+            static_ip=self.static_ip)
+        self.bms2 = self.create_bms(bms_name=bms,
+            vn_fixture=vn1, tor_port_vlan_tag=20,
+            static_ip=self.static_ip)
+        device = self.devices[0]
+        lr = None
+        if 'dci_gw' in self.inputs.get_prouter_rb_roles(device.name):
+            lr = self.create_logical_router([vn], devices=[device])
+        device = self.devices[1]
+        lr1 = None
+        if 'dci_gw' in self.inputs.get_prouter_rb_roles(device.name):
+            lr1 = self.create_logical_router([vn], devices=[device])
+
+        dci_name = get_random_name('dci')
+        dci_uuid = self.vnc_h.create_dci(dci_name, lr.uuid, lr1.uuid)
+
+        status = self._verify_log_entry(
+            "DCI", op_list=["Create"], obj_name=dci_name)
+        assert status, "DCI '{}' Create log missing".format(dci_name)
+
+        # Update DCI
+        dci_obj = self.vnc_h._vnc.data_center_interconnect_read(id=dci_uuid)
+        lr_obj = self.vnc_h._vnc.logical_router_read(id=lr.uuid)
+        dci_obj.del_logical_router(lr_obj)
+        self.vnc_h._vnc.data_center_interconnect_update(dci_obj)
+        status = self._verify_log_entry(
+            "DCI", op_list=["Update"], obj_name=dci_name)
+        assert status, "DCI '{}' Update log missing".format(dci_name)
+
+        dci_obj.add_logical_router(lr_obj)
+        self.vnc_h._vnc.data_center_interconnect_update(dci_obj)
+        sleep(30)
+
+        # Delete DCI
+        self.vnc_h.delete_dci(dci_name)
+        status = self._verify_log_entry(
+            "DCI", op_list=["Delete"], obj_name=dci_name)
+        assert status, "DCI '{}' Delete log missing".format(dci_name)
+
+    @preposttest_wrapper
+    def test_pnf(self):
+        # TODO: Create SA
+        # TODO: Create SI
+        # TODO: Delete SI
+        # TODO: Delete SA
+        return
