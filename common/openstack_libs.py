@@ -65,3 +65,8 @@ try:
     from barbicanclient import client as barbican_client
 except:
     barbican_client = None
+
+try:
+    from swiftclient import client as swift_client
+except:
+    swift_client = None

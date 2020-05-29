@@ -456,3 +456,55 @@ class FabricUtils(object):
     def create_sc_profile(self, **kwargs):
         return self.useFixture(StormControlProfileFixture(
                                connections=self.connections, **kwargs))
+
+    def hitless_upgrade_strategy(self, devices, fabric_uuid=None,
+                                 hitless_upgrade_input=None, wait_for_finish=True):
+        payload = dict()
+        payload['fabric_uuid'] = fabric_uuid
+        payload['upgrade_mode'] = hitless_upgrade_input['upgrade_mode']
+
+        device_name_uuid_map = {str(device.name): str(device.uuid) for device in devices or []}
+        device_list = list()
+        for image_upgrade_item in hitless_upgrade_input['image_upgrade_list']:
+            image_name = image_upgrade_item['image']
+            image_fq_name = ['default-global-system-config', image_name]
+            image_uuid = self.vnc_h.get_device_image(image_fq_name).uuid
+            device_name_list = image_upgrade_item['device_list']
+            device_uuid_list = list()
+            image_devices = list()
+            for device_name in device_name_list:
+                if device_name in device_name_uuid_map.keys():
+                    device_uuid_list.append(device_name_uuid_map[device_name])
+                    device_list.append(device_name_uuid_map[device_name])
+                    image_devices.append(
+                        {'image_uuid': image_uuid, 'device_list': device_uuid_list})
+                else:
+                    self.logger.info("{} missing" % device_name)
+            image_devices.append({'image_uuid': image_uuid, 'device_list': device_uuid_list})
+        payload['image_devices'] = image_devices
+        payload['advanced_parameters'] = hitless_upgrade_input['advanced_params']
+        fq_name = ['default-global-system-config', 'hitless_upgrade_strategy_template']
+        execution_id = self.vnc_h.execute_job(fq_name, payload, device_list)
+        self.logger.info('Started hitless_upgrade_strategy %s' % device_list)
+        if wait_for_finish:
+            status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            assert status, 'job %s to hitless_upgrade_strategy failed' %(execution_id)
+            return execution_id, status
+        return execution_id, None
+
+    def activate_maintenance_mode(self, devices, fabric_uuid=None,
+                                  mode=None, hitless_upgrade_input=None, wait_for_finish=True):
+        payload = dict()
+        payload['fabric_uuid'] = fabric_uuid
+        payload['mode'] = mode
+        payload['device_uuid'] = devices[0].uuid
+        payload['advanced_parameters'] = hitless_upgrade_input['advanced_parameters']
+        fq_name = ['default-global-system-config', 'maintenance_mode_activate_template']
+        device_list = [device.uuid for device in devices]
+        execution_id = self.vnc_h.execute_job(fq_name, payload, device_list)
+        self.logger.info('Started activate_maintenance_mode %s' % devices)
+        if wait_for_finish:
+            status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            assert status, 'job %s to activate_maintenance_mode failed' %(execution_id)
+            return execution_id, status
+        return execution_id, None
