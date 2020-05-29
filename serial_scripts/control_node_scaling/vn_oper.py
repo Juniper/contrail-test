@@ -4,7 +4,6 @@ from builtins import object
 import argparse
 import configparser
 
-import eventlet
 import os
 import sys
 
