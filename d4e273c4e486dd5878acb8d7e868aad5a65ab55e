@@ -22,6 +22,30 @@
       "revId": "d4e273c4e486dd5878acb8d7e868aad5a65ab55e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c8d09846_fe6f761b",
+        "filename": "tcutils/util.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 1076,
+      "author": {
+        "id": 216
+      },
+      "writtenOn": "2020-05-29T07:49:18Z",
+      "side": 1,
+      "message": "if we use sku from kwargs it will be always train and it will be going to skip other skus\nfor queens we should not skip it",
+      "parentUuid": "0da049b4_9bd024f2",
+      "range": {
+        "startLine": 1076,
+        "startChar": 73,
+        "endLine": 1076,
+        "endChar": 98
+      },
+      "revId": "d4e273c4e486dd5878acb8d7e868aad5a65ab55e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
     }
   ]
 }
