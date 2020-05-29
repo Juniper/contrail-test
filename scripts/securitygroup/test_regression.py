@@ -831,6 +831,11 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # start tcpdump on src VM
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
+
+        if sys.version_info > (3,0):
+            self.logger.info("Sleeping for 5 seconds ------------------")
+            sleep(5)
+
         # start traffic
         assert self.send_nc_traffic(
             src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
@@ -849,6 +854,11 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # start tcpdump on src VM
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
+
+        if sys.version_info > (3,0):
+            self.logger.info("Sleeping for 5 seconds ------------------")
+            sleep(5)
+
         # start traffic
         assert self.send_nc_traffic(
             src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
@@ -877,6 +887,11 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
+
+        if sys.version_info > (3,0):
+            self.logger.info("Sleeping for 5 seconds ------------------")
+            sleep(5)
+
         # start traffic
         assert self.send_nc_traffic(
             src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
@@ -956,14 +971,17 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
+
+        if sys.version_info > (3,0):
+            self.logger.info("Sleeping for 5 seconds ------------------")
+            sleep(5)
+
         # start traffic
-        sender, receiver = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
 
         # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
         # Test ICMP error from agent
         if len(self.connections.orch.get_hosts()) < 2:
             self.logger.info("Skipping second case(Test ICMP error from agent), \
@@ -1331,8 +1349,8 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         session1, pcap1 = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
         # start traffic
-        sender1, receiver1 = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
 
         icmp_code = 0
         for icmp_type in range(0, 3):
@@ -1395,8 +1413,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session1, pcap1)
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender1, receiver1, recvr=False)
         return True
         # end test_icmp_error_payload_matching
 
@@ -1559,8 +1575,11 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             assert traffic_obj_tcp
             assert traffic_obj_tcp.start(src_vm_fix, dst_vm_fix,
                 'tcp', port, port)
-            sender_icmp, receiver_icmp = self.start_traffic_scapy(
-                src_vm_fix, dst_vm_fix, 'icmp', port, port, payload="payload")
+            if sys.version_info > (3,0):
+                assert src_vm_fix.ping_with_certainty(dst_vm_fix.vm_ip, expectation=True)
+            else:
+                sender_icmp, receiver_icmp = self.start_traffic_scapy(
+                    src_vm_fix, dst_vm_fix, 'icmp', port, port, payload="payload")
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
@@ -1603,17 +1622,19 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                           self.inputs.project_name,
                           sg_name]))
 
-            assert self.verify_flow_to_sg_rule_mapping(
-                src_vm_fix,
-                dst_vm_fix,
-                src_vn_fix,
-                dst_vn_fix,
-                secgrp_id,
-                'icmp',
-                port)
+            if sys.version_info < (3,0):
+                assert self.verify_flow_to_sg_rule_mapping(
+                    src_vm_fix,
+                    dst_vm_fix,
+                    src_vn_fix,
+                    dst_vn_fix,
+                    secgrp_id,
+                    'icmp',
+                    port)
 
             sent, recv = traffic_obj_tcp.stop()
-            sent, recv = self.stop_traffic_scapy(sender_icmp, receiver_icmp)
+            if sys.version_info < (3,0):
+                sent, recv = self.stop_traffic_scapy(sender_icmp, receiver_icmp)
 
         return True
     # end test_flow_to_sg_rule_mapping_multiple_rules
@@ -1949,6 +1970,14 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_vn_fq_name = ''
+        dst_vn_fq_name = ''
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
 
         sg_name = 'default'
         secgrp_id = get_secgrp_id_from_name(
@@ -1962,31 +1991,77 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         filters2 = '\'(tcp and src host %s and dst host %s)\'' % (
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
-        sender1, receiver1 = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
-        sender2, receiver2 = self.start_traffic_scapy(
-            dst_vm_fix, src_vm_fix, 'tcp', port, port, payload="payload")
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1)
+        self.logger.info("Starting traffic udp and tcp on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port, port, 'tcp')
 
+        self.logger.info("Verify traffic udp and tcp on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2)
+
+        self.logger.info("Remove security group from source vm.")
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        sleep(5)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1,
-                                          src_exp_count=0, dst_exp_count=0)
+        self.logger.info("Starting tcpdump on src and dest vm after removing SG.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
+        self.logger.info("Starting traffic udp and tcp on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp', exp=False)
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port, port, 'tcp', exp=False)
+
+        self.logger.info("Verify traffic udp and tcp on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1, exp_count=0)
+        assert verify_tcpdump_count(self, session2, pcap2, exp_count=0)
+
+        self.logger.info("Add security group back to source vm.")
         src_vm_fix.add_security_group(secgrp=secgrp_id)
+        sleep(5)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1)
+        self.logger.info("Starting tcpdump on src and dest vm after adding SG.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
-        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        self.logger.info("Starting traffic on src and dest vm after adding SG.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        for loop in range(30):
+            resp = self.send_nc_traffic(
+                dst_vm_fix, src_vm_fix, port, port, 'tcp')
+            if resp == True:
+                break;
+            sleep(5)
+
+        self.logger.info("Verify traffic udp and tcp on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2)
 
         return True
         # end test_add_remove_default_sg_active_flow
@@ -2009,6 +2084,14 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_vn_fq_name = ''
+        dst_vn_fq_name = ''
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
@@ -2049,27 +2132,53 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         filters2 = '\'(udp and src host %s and dst host %s)\'' % (
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
-        sender1, receiver1 = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
-        sender2, receiver2 = self.start_traffic_scapy(
-            dst_vm_fix, src_vm_fix, 'udp', port, port, payload="payload")
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port, port, 'udp')
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1)
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2)
 
+        self.logger.info("Remove %s SG from source vm." % (sg_name))
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        self.logger.info("Add %s SG to source vm." % ('sg_allow_all'))
         src_vm_fix.add_security_group(secgrp=sg_allow_all)
+        sleep(5)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1,
-                                          src_exp_count=0, dst_exp_count=0)
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
-        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp', exp=False)
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port, port, 'udp', exp=False)
+
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1, exp_count=0)
+        assert verify_tcpdump_count(self, session2, pcap2, exp_count=0)
+
+        self.logger.info("Remove %s SG from source vm." % ('sg_allow_all'))
         src_vm_fix.remove_security_group(secgrp=sg_allow_all)
 
         return True
@@ -2095,6 +2204,14 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_vn_fq_name = ''
+        dst_vn_fq_name = ''
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
@@ -2113,13 +2230,6 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix.remove_security_group(secgrp=default_sg_id)
         src_vm_fix.add_security_group(secgrp=secgrp_id)
         dst_vm_fix.add_security_group(secgrp=secgrp_id)
-
-        # start the traffic from src VM
-        sender1, receiver1 = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
-        # start the traffic from dst VM
-        sender2, receiver2 = self.start_traffic_scapy(
-            dst_vm_fix, src_vm_fix, 'udp', port2, port2, payload="payload")
 
         # ingress from same sg and egress to all
         rule = [{'direction': '>',
@@ -2143,21 +2253,52 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         filters2 = '\'(udp and src host %s and dst host %s)\'' % (
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1)
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port2, port2, 'udp')
+
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2)
+
+        self.logger.info("Remove %s SG from source vm." % (sg_name))
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        self.logger.info("Add %s SG to source vm." % ('sg_allow_all'))
         src_vm_fix.add_security_group(secgrp=sg_allow_all)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1,
-                                          dst_exp_count=0)
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
-        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp', exp=False)
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port2, port2, 'udp')
+
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1, exp_count=0)
+        assert verify_tcpdump_count(self, session2, pcap2)
+
+        self.logger.info("Remove %s SG from source vm." % ('sg_allow_all'))
         src_vm_fix.remove_security_group(secgrp=sg_allow_all)
 
         return True
@@ -2174,6 +2315,7 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topology_class_name, "build_topo")
 
         sg_allow_all = self.create_sec_group_allow_all()
+
         port = 10000
         port2 = 11000
         src_vm_name = 'vm1'
@@ -2182,6 +2324,14 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
+        src_vn_fq_name = ''
+        dst_vn_fq_name = ''
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
@@ -2200,13 +2350,6 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix.remove_security_group(secgrp=default_sg_id)
         src_vm_fix.add_security_group(secgrp=secgrp_id)
         dst_vm_fix.add_security_group(secgrp=secgrp_id)
-
-        # start the traffic from src VM
-        sender1, receiver1 = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
-        # start the traffic from dst VM
-        sender2, receiver2 = self.start_traffic_scapy(
-            dst_vm_fix, src_vm_fix, 'udp', port2, port2, payload="payload")
 
         # egress to same sg and ingress from all
         rule = [{'direction': '>',
@@ -2230,21 +2373,52 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         filters2 = '\'(udp and src host %s and dst host %s)\'' % (
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1)
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port2, port2, 'udp')
+
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2)
+
+        self.logger.info("Remove %s SG from source vm." % (sg_name))
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        self.logger.info("Add %s SG to source vm." % ('sg_allow_all'))
         src_vm_fix.add_security_group(secgrp=sg_allow_all)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1,
-                                          src_exp_count=0)
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
-        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port2, port2, 'udp', exp=False)
+
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2, exp_count=0)
+
+        self.logger.info("Remove %s SG from source vm." % ('sg_allow_all'))
         src_vm_fix.remove_security_group(secgrp=sg_allow_all)
 
         return True
@@ -2267,8 +2441,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix = config_topo['vm'][dst_vm_name]
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
-        sg_name = topo_obj.sg_list[0]
+        src_vn_fq_name = ''
+        dst_vn_fq_name = ''
+        if self.option == 'openstack':
+            src_vn_fq_name = src_vn_fix.vn_fq_name
+            dst_vn_fq_name = dst_vn_fix.vn_fq_name
+        else:
+            src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
+            dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
 
+        sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
             ':'.join([self.connections.domain_name,
@@ -2285,13 +2467,6 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vm_fix.remove_security_group(secgrp=default_sg_id)
         src_vm_fix.add_security_group(secgrp=secgrp_id)
         dst_vm_fix.add_security_group(secgrp=secgrp_id)
-
-        # start the traffic from src VM
-        sender1, receiver1 = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, payload="payload")
-        # start the traffic from dst VM
-        sender2, receiver2 = self.start_traffic_scapy(
-            dst_vm_fix, src_vm_fix, 'udp', port, port, payload="payload")
 
         # ingress-egress from all
         rule = [{'direction': '>',
@@ -2315,20 +2490,51 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         filters2 = '\'(udp and src host %s and dst host %s)\'' % (
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1)
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port, port, 'udp')
+
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2)
+
+        self.logger.info("Remove %s SG from source vm." % (sg_name))
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
+        self.logger.info("Add %s SG to source vm." % (sg_name))
         src_vm_fix.add_security_group(secgrp=secgrp_id)
+        sleep(5)
 
-        assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                                          dst_vm_fix, dst_vn_fix,
-                                          filters2, filters1)
+        self.logger.info("Starting tcpdump on src and dest vm.")
+        # start tcpdump on dst VM
+        session1, pcap1 = start_tcpdump_for_vm_intf(self,
+                                    dst_vm_fix, dst_vn_fq_name,
+                                    filters = filters1)
+        # start tcpdump on src VM
+        session2, pcap2 = start_tcpdump_for_vm_intf(self,
+                                    src_vm_fix, src_vn_fq_name,
+                                    filters = filters2)
 
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender1, receiver1)
-        sent, recv = self.stop_traffic_scapy(sender2, receiver2)
+        self.logger.info("Starting udp traffic on src and dest vm.")
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        assert self.send_nc_traffic(
+            dst_vm_fix, src_vm_fix, port, port, 'udp')
+
+        self.logger.info("Verify udp traffic on src and dest vm.")
+        assert verify_tcpdump_count(self, session1, pcap1)
+        assert verify_tcpdump_count(self, session2, pcap2)
 
         return True
         # end test_add_remove_sg_active_flow4
