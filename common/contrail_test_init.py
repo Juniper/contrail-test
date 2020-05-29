@@ -639,6 +639,7 @@ class TestInputs(with_metaclass(Singleton, object)):
         self.data_sw_compute_bond_interface = test_configs.get('data_sw_compute_bond_interface')
 
         self.physical_routers_data = test_configs.get('physical_routers',{})
+        self.hitless_upgrade_input = test_configs.get('hitless_upgrade', {})
         self.bms_data = test_configs.get('bms',{})
         self.bms_lcm_config = test_configs.get('bms_lcm_config',{})
 

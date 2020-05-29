@@ -3801,6 +3801,26 @@ class ContrailVncApi(object):
         self._log.debug('Deleting card %s' % kwargs)
         return self._vnc.card_delete(**kwargs)
 
+    def get_device_image(self, image_fqname):
+        return self._vnc.device_image_read(fq_name=image_fqname)
+
+    def create_device_image(self, display_name, image_uri, vendor_name='juniper',
+                            supported_platforms=None, device_family=None,
+                            os_version=None, md5=None, sha1=None):
+        supported_platforms_obj = DevicePlatformListType(supported_platforms)
+        device_image_obj = DeviceImage(name=display_name,
+                        display_name=display_name,
+                        device_image_file_uri=image_uri,
+                        device_image_os_version=os_version,
+                        device_image_supported_platforms=supported_platforms_obj,
+                        device_image_device_family=device_family,
+                        device_image_vendor_name=vendor_name)
+        return self._vnc.device_image_create(device_image_obj)
+
+    def delete_device_image(self, **kwargs):
+        self._log.debug('Deleting device image %s' % kwargs)
+        return self._vnc.device_image_delete(**kwargs)
+
 class LBFeatureHandles(with_metaclass(Singleton, object)):
     def __init__(self, vnc, log):
         self._vnc = vnc
