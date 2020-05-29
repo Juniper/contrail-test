@@ -11,12 +11,13 @@ COPY *.repo Dockerfile /etc/yum.repos.d/
 
 RUN yum install -y yum-plugin-priorities && \
     yum repolist | grep epel || yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    curl --retry 3 --retry-delay 10 https://bootstrap.pypa.io/get-pip.py | python2 - 'pip==20.1' && \
     yum install -y unzip vim tcpdump ant git ipmitool gcc python-devel \
-      patch sshpass bzip2 wget sudo python-pip python-netaddr python-lxml \
+      patch sshpass bzip2 wget sudo python-netaddr python-lxml \
       python-testresources python-testrepository python-junitxml pexpect \
       python-linecache2 python-xmltodict python-eventlet python-ncclient \
       python-Fabric python-tabulate python-netifaces python-scp python-yaml \
-      python-crypto python-urllib3 python-requests python-jinja2 subunit-filters \
+      python-crypto subunit-filters \
       ant-junit libXpm libXrender gtk2 nss GConf2 google-chrome-stable firefox openssl \
       python3 python3-devel && \
     yum clean all -y && \
