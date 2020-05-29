@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c016b694_d139d6e5",
+        "filename": "docker/base/indirect_requirements.txt",
+        "patchSetId": 3
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2020-05-29T15:52:06Z",
+      "side": 1,
+      "message": "Andrey, we use pipenv to get the indirect requirements and update the same here and add the direct requirements to requirements.txt (just for tracking purpose)\nBelieve these are direct requirements, so we would need a container environment where in we would install all the packages from direct requirements.txt and then use the pipenv to get the indirect requirements and update it here.\n\nMore info on pipenv usage followed is at https://contrail-jws.atlassian.net/browse/CEM-13350?focusedCommentId\u003d990198\n\nSunil, correct me if i am wrong.\n\nBTW, if this can wait till next week then i would amend the commit accordingly.",
+      "revId": "259074d7f12318dacfe474ff43ca2626fe375ce9",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
