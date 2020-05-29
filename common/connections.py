@@ -53,6 +53,7 @@ class ContrailConnections(object):
         self.quantum_h = None
         self.vnc_lib_fixture = None
         self.ironic_h = None
+        self.swift_h = None
         self.api_server_inspects = custom_dict(self.get_api_inspect_handle,
                         'api_inspect:'+self.project_name+':'+self.username)
         self.dnsagent_inspect = custom_dict(self.get_dns_agent_inspect_handle,
@@ -91,6 +92,7 @@ class ContrailConnections(object):
                                              )
             self.ironic_h = self.orch.get_ironic_handler()
             self.nova_h = self.orch.get_compute_handler()
+            self.swift_h = self.orch.get_swift_handler()
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()
         elif self.inputs.orchestrator == 'vcenter':

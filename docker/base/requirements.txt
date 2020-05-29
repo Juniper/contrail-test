@@ -9,3 +9,4 @@ jxmlease==1.0.1
 remote_pdb==2.0.0
 future==0.18.2
 configparser==4.0.2
+python-swiftclient==3.6.0
