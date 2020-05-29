@@ -48,7 +48,6 @@ junos-eznc==2.3.0
 jxmlease==1.0.1
 keystoneauth1==3.18.0
 kubernetes==7.0.0
-linecache2==1.0.0
 lxml==4.4.1
 markupsafe==1.1.1
 monotonic==1.5 ; python_version < '3.3'
