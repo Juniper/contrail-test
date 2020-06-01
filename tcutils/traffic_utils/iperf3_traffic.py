@@ -1,5 +1,5 @@
 from builtins import object
-import re
+import re, time
 import string
 import logging
 from collections import OrderedDict
@@ -68,13 +68,25 @@ class Iperf3(object):
         self.logger.info('Starting Iperf3  on %s, args: %s' % (
             self.client_vm_fixture.vm_name, self.args_string))
         self.logger.debug('Iperf3 cmd : %s' %(client_cmd))
+        time_exists = re.search('time *([0-9]+)', self.args_string)
+        if time_exists and int(time_exists.group(1)) > 15:
+            timeout = int(time_exists.group(1))
+        else:
+            timeout = 15
         self.server_vm_fixture.run_cmd_on_vm(cmds=[server_cmd], timeout = 15,
             as_sudo=True, as_daemon=True, pidfile=self.server_pid_file)
         self.client_vm_fixture.run_cmd_on_vm(cmds=[client_cmd], timeout = 15,
             as_sudo=True, as_daemon=True, pidfile=self.client_pid_file)
         if wait:
-            self.wait_till_iperf3_completes()
+            self.wait_till_iperf3_completes(timeout)
     # end start
+
+    def result(self):
+        cmd = 'cat %s | grep -E "[0-9]+\/[0-9]+" | tail -1' %self.log_file
+        time.sleep(10)
+        output = self.server_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        match_obj = re.search('([0-9\.]+)%', output.values()[0])
+        return match_obj.group(1)
 
     def stop(self):
         '''
@@ -112,13 +124,12 @@ class Iperf3(object):
 
     def _check_if_iperf_still_running(self):
         result = self.client_vm_fixture.run_cmd_on_vm(
-            cmds=['kill `cat %s`' %(self.client_pid_file)],
+            cmds=['pidof iperf3'],
             raw=True)
-        status = list(result.values())[0]
-        if status.succeeded:
+        if result.values()[0]:
             self.logger.debug('iperf3 is active on %s, PID: %s' % (
                               self.client_vm_fixture,
-                              status))
+                              result.values()[0]))
             return True
         else:
             self.logger.debug('PID of iperf not found to be running'
@@ -128,9 +139,12 @@ class Iperf3(object):
     # end _check_if_iperf_still_running
 
     @retry(delay=5, tries=50)
-    def wait_till_iperf3_completes(self):
+    def wait_till_iperf3_completes(self, timeout):
         if self._check_if_iperf_still_running():
             self.logger.debug('Waiting for iperf3 to complete...')
+            if timeout > 250:
+                time_to_sleep = (timeout-250)/5
+                time.sleep(time_to_sleep)
             return False
         else:
             self.logger.debug('iperf3 has finished running')
