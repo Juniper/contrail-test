@@ -65,6 +65,27 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                               **self.common_args)
     #test_ecmp_svc_in_network_with_3_instance
 
+##    @preposttest_wrapper
+##    def test_ecmp_svc_in_network_with_fragments(self):
+##        """
+##        Description: Validate ECMP with service chaining in-network mode datapath having
+##                     service instance.
+##        Test steps:
+##                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+##                2.Creating a service instance in in-network mode with 3 instances.
+##                3.Creating a service chain by applying the service instance as a service in a policy
+##                     between the VNs.
+##                4.Checking for ping and traffic between vm1 and vm2.
+##        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2
+##                  from vm1 and vice-versa.
+##        Maintainer : ganeshahv@juniper.net
+##        """
+##        self.verify_svc_chain_with_fragments(max_inst=2,
+##                              service_mode='in-network',
+##                              create_svms=True,
+##                              **self.common_args)
+##    #test_ecmp_svc_in_network_with_3_instance
+
     @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):
@@ -1135,6 +1156,15 @@ class TestECMPSanityIPv6(TestECMPSanity):
     @skip_because(min_nodes=3)
     def test_ecmp_svc_in_network_with_3_instance(self):
         super(TestECMPSanityIPv6,self).test_ecmp_svc_in_network_with_3_instance()
+
+    @preposttest_wrapper
+    @skip_because(min_nodes=3)
+    def test_ecmp_svc_in_network_with_fragments(self):
+        #super(TestECMPSanityIPv6,self).test_ecmp_svc_in_network_with_fragments()
+        self.verify_svc_chain_with_fragments(max_inst=2,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):

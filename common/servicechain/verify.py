@@ -368,6 +368,68 @@ class VerifySvcChain(ConfigSvcChain):
         return ret_dict
     # end verify_svc_chain
 
+    def verify_svc_chain_with_fragments(self, *args, **kwargs):
+        #identify the hosts except left_vm launched
+        kwargs['hosts'] = [self.inputs.host_data[x]['name'] for x in self.inputs.compute_ips \
+            if x != kwargs['left_vm_fixture'].vm_node_ip]
+        left_vm_vmi = kwargs['left_vm_fixture'].vmi_ids.values()[0]
+        self.vnc_h.disable_policy_on_vmi(left_vm_vmi)
+        initial_dropstats = self.get_drop_stats(kwargs['left_vm_fixture'])
+        svc_chain_info = kwargs.get('svc_chain_info')
+        ret_dict = svc_chain_info or self.config_svc_chain(*args, **kwargs)
+        proto = kwargs.get('proto', 'any')
+        left_vn_fq_name = ret_dict.get('left_vn_fixture').vn_fq_name
+        right_vn_fq_name = ret_dict.get('right_vn_fixture').vn_fq_name
+        left_vm_fixture = ret_dict.get('left_vm_fixture')
+        right_vm_fixture = ret_dict.get('right_vm_fixture')
+        st_fixture = ret_dict.get('st_fixture')
+        si_fixture = ret_dict.get('si_fixture')
+        evpn = ret_dict.get('evpn')
+
+        assert st_fixture.verify_on_setup(), 'ST Verification failed'
+        # SVM would have been up in config_svc_chain() itself
+        # So no need to wait for vms to be up
+        assert si_fixture.verify_on_setup(wait_for_vms=False), \
+            ('SI Verification failed')
+
+        if not evpn:
+            result, msg = self.validate_vn(left_vn_fq_name)
+            assert result, msg
+            right_vn = True if st_fixture.service_mode == 'in-network-nat' else False
+            result, msg = self.validate_vn(right_vn_fq_name, right_vn=right_vn)
+            assert result, msg
+        else:
+            left_lr_child_vn_fq_name = ret_dict.get('left_lr_child_vn_fixture').vn_fq_name
+            result, msg = self.validate_vn(left_lr_child_vn_fq_name,
+                                           right_vn=True)
+            assert result, msg
+            right_lr_child_vn_fq_name = ret_dict.get('right_lr_child_vn_fixture').vn_fq_name
+            result, msg = self.validate_vn(right_lr_child_vn_fq_name,
+                                           right_vn=True)
+            assert result, msg
+
+        result, msg = self.validate_svc_action(
+            left_vn_fq_name, si_fixture, right_vm_fixture, src='left')
+        assert result, msg
+        if st_fixture.service_mode != 'in-network-nat':
+            result, msg = self.validate_svc_action(
+                right_vn_fq_name, si_fixture, left_vm_fixture, src='right')
+            assert result, msg
+        pkt_cnt = 800
+        if proto not in ['any', 'icmp']:
+            self.logger.info('Will skip Ping test')
+        else:
+            # Ping from left VM to right VM
+            errmsg = "Ping to Right VM %s from Left VM failed" % right_vm_fixture.vm_ip
+            assert left_vm_fixture.ping_with_certainty(
+                right_vm_fixture.vm_ip, size='8000', count=str(pkt_cnt), other_opt="-f"), errmsg
+        new_dropstats = self.get_drop_stats(kwargs['left_vm_fixture'])
+        invalid_nh_drop = int(new_dropstats['ds_invalid_nh']) - int(initial_dropstats['ds_invalid_nh'])
+        frag_err = int(new_dropstats['ds_frag_err']) - int(initial_dropstats['ds_frag_err'])
+        if invalid_nh_drop > pkt_cnt*0.01 or frag_err > pkt_cnt*0.01:
+            assert False, 'Drops are seen'
+        return ret_dict
+
     def tcpdump_on_all_analyzer(self, si_fixture):
         sessions = {}
         svm_fixtures = si_fixture.svm_list
@@ -390,3 +452,7 @@ class VerifySvcChain(ConfigSvcChain):
             return conn_list
 
         return sessions
+
+    def get_drop_stats(self, vm_fix):
+        vrouter_agent = self.agent_inspect[vm_fix.vm_node_ip]
+        return vrouter_agent.get_agent_vrouter_drop_stats()

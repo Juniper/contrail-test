@@ -1385,10 +1385,11 @@ class VMFixture(fixtures.Fixture):
                 util, str(size), str(count), str(timewait), other_opt, ip
             )
 
+            timeout = int(count) if int(count) > 120 else 120
             output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True, password=self.vm_password,
+                with_sudo=True, password=self.vm_password, timeout = int(timeout),
                 logger=self.logger
             )
             self.logger.debug(output)
