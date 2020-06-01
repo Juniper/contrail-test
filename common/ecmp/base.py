@@ -1,6 +1,7 @@
 from common.base import GenericTestBase
 import os
 from tcutils.util import get_random_name, get_random_cidr
+from contrailapi import ContrailVncApi
 
 class ECMPTestBase(GenericTestBase):
 
@@ -8,6 +9,7 @@ class ECMPTestBase(GenericTestBase):
     def setUpClass(cls):
         super(ECMPTestBase, cls).setUpClass()
         cls.inputs.set_af(cls.get_af())
+        cls.vnc_h = ContrailVncApi(cls.vnc_lib, cls.logger)
 
         try:
             # Mgmt VN
@@ -37,7 +39,7 @@ class ECMPTestBase(GenericTestBase):
             if cls.inputs.is_ci_setup() and cls.inputs.get_af() == 'v4':
                 cls.image_name = cls.inputs.get_ci_image()
             else:
-                cls.image_name = 'cirros-traffic'
+                cls.image_name = 'ubuntu-traffic'
 
             # End Vms
             cls.left_vm_name = get_random_name('left_vm_%s' % (
