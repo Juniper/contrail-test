@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9da404d8_3a8df4eb",
+        "filename": "docker/base/Dockerfile",
+        "patchSetId": 7
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-06-01T07:36:39Z",
+      "side": 0,
+      "message": "lxml, linecache2, jinja2 packages have been removed, because these are not used, right?\n\nIs subunit-filters being installed elsewhere? this tool is used for report generation.",
+      "revId": "269c6ac5fb96cbac3dc36c6ddfafcd26941b3166",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
