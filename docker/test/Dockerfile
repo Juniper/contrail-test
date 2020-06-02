@@ -11,12 +11,7 @@ RUN cp -r /etc/yum.repos.d /etc/yum.repos.d.orig
 COPY *.repo prepare_repos.sh /etc/yum.repos.d/
 
 RUN /etc/yum.repos.d/prepare_repos.sh && \
-    yum install -y \
-      python-ceilometerclient python-cinderclient python-barbicanclient \
-      python-glanceclient python-heatclient python-novaclient \
-      python-ironicclient \
-      python-contrail contrail-test python-setuptools python3-contrail && \
-    yum --setopt=obsoletes=0 install -y python-neutronclient && \
+    yum install -y python-contrail contrail-test python3-contrail && \
     yum clean all -y && rm -rf /var/cache/yum && \
     pip install  -r /indirect_requirements.txt -r /requirements.txt && \
     pip3 install -r /indirect_requirements3.txt -r /requirements.txt -r /requirements3.txt && \
