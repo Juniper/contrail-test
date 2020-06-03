@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "87224ba7_819d5fe2",
+        "filename": "common/servicechain/mirror/verify.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 361,
+      "author": {
+        "id": 78
+      },
+      "writtenOn": "2020-06-03T08:53:06Z",
+      "side": 1,
+      "message": "Looks like it works\n\nPython 3.5.2 (default, Sep 14 2016, 11:28:32) \n[GCC 6.2.1 20160901 (Red Hat 6.2.1-1)] on linux\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\n\u003e\u003e\u003e a \u003d {\u0027a\u0027:1, \u0027b\u0027:2, \u0027c\u0027:3}\n\u003e\u003e\u003e list(a.values())[0]\n2",
+      "parentUuid": "ae2ebdba_7558f7d6",
+      "revId": "9e4a8cebf88078c9fcecfb2f823e59e390cb3dc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "2647bbbb_67b3a7f0",
         "filename": "scripts/intf_mirror/test_intf_mirror6.py",
         "patchSetId": 4
