@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ae2ebdba_7558f7d6",
+        "filename": "common/servicechain/mirror/verify.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 361,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-06-03T06:09:05Z",
+      "side": 1,
+      "message": "in py3, dict.value() probably returns an iterator object instead of list\nsrc_ip \u003d list(src_vm.run_cmd_on_vm(cmds\u003d[cmds]).values())[0]\ndst_ip \u003d list(dst_vm.run_cmd_on_vm(cmds\u003d[cmds]).values())[0]",
+      "revId": "9e4a8cebf88078c9fcecfb2f823e59e390cb3dc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2647bbbb_67b3a7f0",
+        "filename": "scripts/intf_mirror/test_intf_mirror6.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-06-03T06:09:05Z",
+      "side": 1,
+      "message": "better to avoid arguments other \u0027self\u0027 to test function,\ndef test_juniper_header6_ingress(self):\n    return self.verify_juniper_header_testcase(header\u003d2, direction\u003d\u0027ingress\u0027, ipv6\u003dTrue)",
+      "revId": "9e4a8cebf88078c9fcecfb2f823e59e390cb3dc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "917e7dd2_8684788c",
+        "filename": "scripts/intf_mirror/test_intf_mirror6.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-06-03T06:09:05Z",
+      "side": 1,
+      "message": "same as above",
+      "revId": "9e4a8cebf88078c9fcecfb2f823e59e390cb3dc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "39714481_808f5362",
+        "filename": "scripts/intf_mirror/test_intf_mirror6.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-06-03T06:09:05Z",
+      "side": 1,
+      "message": "same as above",
+      "revId": "9e4a8cebf88078c9fcecfb2f823e59e390cb3dc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
