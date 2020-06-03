@@ -496,7 +496,7 @@ print get_config.tostring
         assert src_vm.ping_with_certainty(ip)
         output_cmd = 'cat /tmp/%s_out.log' % vm_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
-        if src_vm.vm_ip.encode() in output:
+        if src_vm.vm_ip in output:
             result = True
             self.logger.info(
                 '%s is seen responding to ICMP Requests' % dst_vm.vm_name)
