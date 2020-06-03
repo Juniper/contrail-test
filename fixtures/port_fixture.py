@@ -204,7 +204,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
                 self.iip_objs.append(iip_obj)
         else:
             iip_id = str(uuid.uuid4())
-            if self.inputs.ns_agilio_vrouter_data:
+            if self.inputs.ns_agilio_vrouter_data or self.af in ['v6', 'dual']:
                 iip_obj = vnc_api_test.InstanceIp(name=iip_id, instance_ip_family='v4')
             else:
                 iip_obj = vnc_api_test.InstanceIp(name=iip_id)

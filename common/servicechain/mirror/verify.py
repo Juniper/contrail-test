@@ -356,8 +356,23 @@ class VerifySvcMirror(ConfigSvcMirror, ECMPVerify):
         if vlan:
             sub_intf = 'eth0.' + str(vlan)
             cmds = "/sbin/ifconfig " + sub_intf + " | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'"
-            src_ip = list(src_vm.run_cmd_on_vm(cmds=[cmds]).values())[0]
-            dst_ip = list(dst_vm.run_cmd_on_vm(cmds=[cmds]).values())[0]
+            if self.inputs.get_af() == 'v6':
+               cmds = "/sbin/ifconfig " + sub_intf + " | grep 'inet6 addr:'"
+            src_ip = src_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
+            dst_ip = dst_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
+            if self.inputs.get_af() == 'v6':
+                src_list = src_ip.split(' ')
+                dst_list = dst_ip.split(' ')
+                for line in src_list:
+                    if line.find('/') != -1 and line.find('fe80') == -1:
+                        src_ip = line
+                        break
+                src_ip = line.split('/')[0].strip()
+                for line in dst_list:
+                    if line.find('/') != -1 and line.find('fe80') == -1:
+                        dst_ip = line
+                        break
+                dst_ip = line.split('/')[0].strip()
         assert src_vm.ping_with_certainty(dst_ip, count=5, size='1200')
         #lets wait 10 sec for tcpdump to capture all the packets
         sleep(10)
