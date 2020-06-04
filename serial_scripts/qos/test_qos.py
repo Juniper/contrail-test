@@ -873,13 +873,16 @@ class TestQosControlDscp(QosTestExtendedBase):
         cmd = "netstat -nap | grep 8086 | grep %s" % pid
         connection_info = self.inputs.run_cmd_on_server(compute_ip, cmd)
         analytics_ip = connection_info.split()[4].split(":")[0]
+        src_ip = connection_info.split()[3].split(":")[0]
         compute_port = int(connection_info.split()[3].split(":")[1])
+        cmd = "ip -o -4 addr show | grep %s | awk '{print $2}'" % src_ip
+        src_intf = self.inputs.run_cmd_on_server(compute_ip, cmd)
         validate_method_args_1 = {
-            'interface': agent_interface,
+            'interface': src_intf,
             'compute_node_fixture' : self.vn1_vm1_compute_fixture,
             'username': username,
             'password': password,
-            'src_ip': compute_ip,
+            'src_ip': src_ip,
             'dest_ip': analytics_ip,
             'dest_port': 8086,
             'src_port': compute_port,
