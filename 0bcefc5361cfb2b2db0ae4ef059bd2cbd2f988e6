@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2050bfee_c106d99f",
+        "filename": "serial_scripts/gw_less_fwd/test_gw_less_fwd.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-06-04T09:48:34Z",
+      "side": 1,
+      "message": "resolve merge conflict",
+      "revId": "0bcefc5361cfb2b2db0ae4ef059bd2cbd2f988e6",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
