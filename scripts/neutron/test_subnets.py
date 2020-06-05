@@ -240,6 +240,7 @@ class TestSubnets(BaseNeutronTest):
                                      image_name='cirros')
         assert vm4_fixture.wait_till_vm_status('ERROR'), 'VM %s should '\
             'have failed since allocation pool is full' % (vm4_fixture.vm_name)
+        vm4_fixture.delete(force=True)
     # end test_allocation_pools
 
     @preposttest_wrapper

@@ -2076,7 +2076,7 @@ class VMFixture(fixtures.Fixture):
         self.delete()
         super(VMFixture, self).cleanUp()
 
-    def delete(self, verify=False):
+    def delete(self, verify=False, force=False):
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -2098,7 +2098,7 @@ class VMFixture(fixtures.Fixture):
                 if self.inputs.is_gui_based_config():
                     self.webui.delete_vm(self)
                 else:
-                    self.orch.delete_vm(vm_obj)
+                    self.orch.delete_vm(vm_obj, force=force)
                     self.vm_objs.remove(vm_obj)
                 if self.inputs.ns_agilio_vrouter_data:
                     #hack for port deletion to wait till vm info cleared from api_server

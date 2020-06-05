@@ -769,8 +769,9 @@ class NovaHelper(object):
         return self._hypervisors
     #end
 
-    def delete_vm(self, vm_obj):
-        compute_host = self.get_nova_host_of_vm(vm_obj)
+    def delete_vm(self, vm_obj, force=False):
+        if not force:
+            compute_host = self.get_nova_host_of_vm(vm_obj)
         vm_obj.delete()
     # end _delete_vm
 

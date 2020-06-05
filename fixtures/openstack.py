@@ -130,7 +130,7 @@ class OpenstackOrchestrator(Orchestrator):
        return self.nova_h.create_vm(vm_name=vm_name, image_name=image_name, vn_ids=vn_ids, **kwargs)
 
    def delete_vm(self, vm_obj, **kwargs):
-       return self.nova_h.delete_vm(vm_obj)
+       return self.nova_h.delete_vm(vm_obj, **kwargs)
 
    def is_vm_deleted(self, vm_obj, **kwargs):
        return self.nova_h.is_vm_deleted_in_nova_db(vm_obj, self.inputs.openstack_ip)
