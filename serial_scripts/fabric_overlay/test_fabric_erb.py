@@ -87,7 +87,8 @@ class TestFabricERB(BaseFabricTest):
             vlan = vlan + 1
             erb_devices.extend(self.get_associated_prouters(bms))
 
-        self.create_logical_router([vn1, vn2] + bms_vns.values(), devices=set(erb_devices))
+        self.create_logical_router([vn1, vn2] + list(bms_vns.values()),
+            devices=set(erb_devices))
         vm1.wait_till_vm_is_up()
         vm2.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures + [vm1, vm2])
@@ -137,7 +138,7 @@ class TestFabricERB(BaseFabricTest):
             erb_devices.extend(self.get_associated_prouters(bms))
             vlan = vlan + 1
 
-        lr = self.create_logical_router([vn1, vn2] + bms_vns.values(),
+        lr = self.create_logical_router([vn1, vn2] + list(bms_vns.values()),
             devices=set(erb_devices))
         vm1.wait_till_vm_is_up()
         vm2.wait_till_vm_is_up()
