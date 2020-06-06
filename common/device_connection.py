@@ -90,6 +90,7 @@ class NetconfConnection(AbstractConnection):
         self.config_handle = None
         self.mode = kwargs.get('mode')
         self.port = kwargs.get('port',None)
+
     def connect(self):
         if self.port:
             self.handle = Device(host=self.host, user=self.username,
@@ -155,6 +156,15 @@ class NetconfConnection(AbstractConnection):
                 self.logger.exception(e)
                 return (False,e)
         return (True, None)
+
+    def configure_interface(self, pi_name, address, mask):
+        stmt = "set interfaces %s unit 0 family inet address %s/%s"%(
+            pi_name, address, mask)
+        self.config([stmt])
+
+    def delete_interface(self, pi_name):
+        stmt = "delete interfaces %s unit 0"%pi_name
+        self.config([stmt])
     
     def restart(self, process_name):
         #TODO Not sure of apis other than cli
