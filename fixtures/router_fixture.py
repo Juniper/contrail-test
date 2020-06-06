@@ -42,6 +42,7 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         self.connected_networks = kwargs.get('connected_networks', None)
         self.api_type = kwargs.get('api_type', 'contrail')
         self.vxlan_enabled = kwargs.get('vxlan_enabled', False)
+        self.dhcp_relay_servers = kwargs.get('dhcp_relay_servers')
         self.created = False
         self.ports = []; self.vns = []; self.subnets = []
         self.deleted_vn_ids = []
@@ -100,6 +101,7 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
                                                parent_fq_name=self.parent_fq_name,
                                                is_public=self.is_public_lr,
                                                vxlan_enabled=self.vxlan_enabled,
+                                               relay_servers=self.dhcp_relay_servers,
                                                vni=self.vni)
                 self.created = True
                 self.uuid = obj.uuid
@@ -115,6 +117,16 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
             raise
         self.logger.info('LR: %s, members: %s, vni: %s'%(self.name,
                          self.get_vn_ids(), self.vni))
+
+    def update(self, dhcp_relay_servers=None, vni=0, is_public_lr=None):
+        if vni != 0:
+            self.vni = vni
+        if is_public_lr is not None:
+            self.is_public_lr = is_public_lr
+        if dhcp_relay_servers is not None:
+            self.dhcp_relay_servers = dhcp_relay_servers
+        self.vnc_h.update_logical_router(uuid=self.uuid, vni=vni,
+           is_public=is_public_lr, relay_servers=dhcp_relay_servers)
 
     def set_vni(self, vni):
         self.logger.debug('Configuring routing VNI %s on Logical Router %s ...'%(vni,self.name))

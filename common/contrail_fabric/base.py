@@ -11,8 +11,9 @@ from common.neutron.base import BaseNeutronTest
 from common.fabric_utils import FabricUtils
 from bms_fixture import BMSFixture
 from vm_test import VMFixture
-from tcutils.util import Singleton, skip_because, get_random_vxlan_id
+from tcutils.util import Singleton, skip_because, get_random_vxlan_id, get_an_ip
 from future.utils import with_metaclass
+from netaddr import *
 
 class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, GenericTestBase), {}))):
     def __init__(self, connections):
@@ -334,3 +335,19 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                     continue
             lr.add_physical_router(spine.uuid)
         return lr
+
+    @staticmethod
+    def start_dhcp_server(dhcp_server, vn_fixtures):
+        subnet_ranges = list()
+        for vn in vn_fixtures:
+            cidr = vn.get_cidrs()[0]
+            subnet_ranges.append(
+                {'start': get_an_ip(cidr, 8),
+                 'end': get_an_ip(cidr, 15),
+                 'mask': str(IPNetwork(cidr).netmask)})
+        dhcp_server.run_dhcp_server(subnet_ranges)
+
+    @staticmethod
+    def stop_dhcp_server(dhcp_server):
+        dhcp_server.stop_dhcp_server()
+

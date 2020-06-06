@@ -163,7 +163,7 @@ class FabricUtils(object):
         self.logger.info('Started cleanup of fabric %s'%(fabric.name))
         if wait_for_finish:
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
-            if retry:
+            if retry and not status:
                 self.cleanup_fabric(fabric, verify=False, retry=False)
             assert status, 'job %s to cleanup fabric failed'%execution_id
             if verify:

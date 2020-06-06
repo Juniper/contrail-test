@@ -5,7 +5,9 @@ import time
 import logging
 import fixtures
 import string
-from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name_from_mac, run_cmd_on_server, get_random_string, get_af_type
+from tcutils.util import retry, search_arp_entry, get_random_name
+from tcutils.util import get_intf_name_from_mac, run_cmd_on_server, get_af_type
+from tcutils.util import get_random_string, run_dhcp_server
 from port_fixture import PortFixture
 from virtual_port_group import VPGFixture
 import tempfile
@@ -44,6 +46,7 @@ class BMSFixture(fixtures.Fixture):
         self.port_fixture = kwargs.get('port_fixture')
         self.fabric_fixture = kwargs.get('fabric_fixture')
         self.security_groups = kwargs.get('security_groups') or list()
+        self.external_dhcp_server = kwargs.get('external_dhcp_server', False)
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id') or 0
@@ -128,6 +131,7 @@ class BMSFixture(fixtures.Fixture):
                                  binding_profile=binding_profile,
                                  port_group_name=self._port_group_name,
                                  tor_port_vlan_tag=self.tor_port_vlan_tag,
+                                 create_iip=not self.external_dhcp_server,
                              )
         self.port_fixture.setUp()
         self.add_port_profiles(self.port_profiles)
@@ -267,6 +271,16 @@ class BMSFixture(fixtures.Fixture):
     def run_namespace(self, cmd, **kwargs):
         cmd = 'ip netns exec %s %s'%(self.namespace, cmd)
         return self.run(cmd, **kwargs)
+
+    def run_dhcp_server(self, subnet_ranges):
+        self.logger.debug('Starting dhcp server for subnet ranges %s'%(
+                          subnet_ranges))
+        run_dhcp_server(subnet_ranges, self.mgmt_ip, self.username,
+                        self.password, namespace=self.namespace)
+
+    def stop_dhcp_server(self):
+        self.logger.debug('Stopping dhcp server')
+        self.run_namespace('pkill -9 dnsmasq')
 
     def get_mvi_interface(self):
         self.logger.info('BMS interface: %s' % self.mvlanintf)
@@ -444,7 +458,8 @@ class BMSFixture(fixtures.Fixture):
         try:
             if not self.port_fixture:
                 self.create_vmi()
-            if not self.bms_ip and not self.bms_ip6:
+            if not self.external_dhcp_server and \
+               not self.bms_ip and not self.bms_ip6:
                 for address in self.port_fixture.get_ip_addresses():
                     if get_af_type(address) == 'v4':
                         self.bms_ip = address
@@ -542,28 +557,31 @@ class BMSFixture(fixtures.Fixture):
         elif 'bound to' in output.lower() and not expectation:
             self.logger.warn('DHCP should have failed')
             return (False, output)
+        if self.external_dhcp_server:
+            info = self.get_interface_info()
+            self.bms_ip = info['inet_addr']
         return (True, output)
 
     @retry(delay=5, tries=10)
     def run_dhclient(self, timeout=60, expectation=True):
-        if self.static_ip:
+        if self.static_ip and not self.external_dhcp_server:
             self.logger.debug("Configuring static ip as requested")
             self.assign_static_ip(v4_ip=self.bms_ip, v4_gw_ip=self.bms_gw_ip,
                                   v6_ip=self.bms_ip6, v6_gw_ip=self.bms_gw_ip6)
             return (True, None)
         self.run('pkill -9 dhclient')
-        if self.bms_ip:
+        if self.bms_ip or self.external_dhcp_server:
             result, output = self._run_dhclient(af='v4',
                 timeout=timeout,
                 expectation=expectation)
             if not result:
                 return (result, output)
         if self.bms_ip6:
-#            result, output = self._run_dhclient(af='v6',
-#                timeout=timeout,
-#                expectation=expectation)
+            result, output = self._run_dhclient(af='v6',
+                timeout=timeout,
+                expectation=expectation)
             # Workaround to assign gw ip manually for v6
-            self.assign_static_ip(v6_ip=self.bms_ip6, v6_gw_ip=self.bms_gw_ip6)
+#            self.assign_static_ip(v6_ip=self.bms_ip6, v6_gw_ip=self.bms_gw_ip6)
         return (result, output)
     # end run_dhclient
 
