@@ -251,6 +251,12 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     def get_config(self):
         return self.netconf.get_config()
 
+    def configure_interface(self, pi_name, address, mask):
+        self.netconf.configure_interface(pi_name, address, mask)
+
+    def delete_interface(self, pi_name):
+        self.netconf.delete_interface(pi_name)
+
     @retry(tries=12, delay=5)
     def validate_interfaces_status(self, interfaces, status):
         found = False

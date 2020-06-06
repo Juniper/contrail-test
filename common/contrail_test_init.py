@@ -929,6 +929,9 @@ class TestInputs(with_metaclass(Singleton, object)):
     def get_csn(self):
         return self.contrail_service_nodes
 
+    def set_csn(self, value):
+        self.contrail_service_nodes = value
+
     def get_host_ip(self, name):
         try:
             ip = self.host_data[name]['host_ip']

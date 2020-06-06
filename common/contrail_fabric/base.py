@@ -11,8 +11,10 @@ from common.neutron.base import BaseNeutronTest
 from common.fabric_utils import FabricUtils
 from bms_fixture import BMSFixture
 from vm_test import VMFixture
-from tcutils.util import Singleton, skip_because, get_random_vxlan_id
+from tcutils.util import Singleton, skip_because, get_random_vxlan_id, get_an_ip
+from tcutils.util import create_netns, delete_netns, get_intf_name_from_mac, run_dhcp_server
 from future.utils import with_metaclass
+from netaddr import *
 
 class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, GenericTestBase), {}))):
     def __init__(self, connections):
@@ -334,3 +336,44 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                     continue
             lr.add_physical_router(spine.uuid)
         return lr
+
+    def start_dhcp_server(self, vn_fixtures, dhcp_server=None,
+                          bms_node=None, namespace=None):
+        subnet_ranges = list()
+        for vn in vn_fixtures:
+            cidr = vn.get_cidrs()[0]
+            subnet_ranges.append(
+                {'start': get_an_ip(cidr, 8),
+                 'end': get_an_ip(cidr, 15),
+                 'mask': str(IPNetwork(cidr).netmask)})
+        if dhcp_server:
+            dhcp_server.run_dhcp_server(subnet_ranges)
+        else:
+            bms_data = self.inputs.bms_data[bms_node]
+            server_ip = bms_data['mgmt_ip']
+            username = bms_data['username']
+            password = bms_data['password']
+            run_dhcp_server(subnet_ranges, server_ip, username,
+                            password, namespace)
+
+    def stop_dhcp_server(self, dhcp_server):
+        dhcp_server.stop_dhcp_server()
+
+    def create_netns(self, bms_node, namespace, cidr):
+        bms_data = self.inputs.bms_data[bms_node]
+        server_ip = bms_data['mgmt_ip']
+        username = bms_data['username']
+        password = bms_data['password']
+        intf = bms_data['interfaces'][0]
+        mac = intf['host_mac']
+        gw_ip = get_an_ip(cidr, offset=1)
+        bms_ip = get_an_ip(cidr, offset=2)
+        mask = cidr.split('/')[1]
+        interface = get_intf_name_from_mac(server_ip, mac,
+            username=username, password=password)
+        create_netns(server_ip, username, password, namespace,
+                     interface, address=bms_ip, gateway=gw_ip, mask=mask)
+        self.addCleanup(delete_netns, server_ip, username, password, namespace)
+        prouter = self.get_associated_prouters(bms_node, [intf])[0]
+        prouter.configure_interface(intf['tor_port'], gw_ip, mask)
+        self.addCleanup(prouter.delete_interface, intf['tor_port'])

@@ -701,6 +701,49 @@ def run_once(f):
     wrapper.has_run = False
     return wrapper
 
+
+def create_netns(server_ip, username, password,
+                 namespace, interface=None, vlan_id=None,
+                 address=None, gateway=None, mask=None):
+    delete_netns(server_ip, username, password, namespace)
+    cmd = 'ip netns add %s;'%namespace
+    if interface:
+        if vlan_id:
+            cmd += 'ip link add link {i} name {i}.{vlan} type vlan id {vlan};'\
+            .format(i=interface, vlan=vlan_id)
+            interface = interface+'.'+vlan_id
+        cmd += 'ip link set netns %s %s;'%(namespace, interface)
+        cmd += 'ip netns exec %s ip link set dev %s up;'%(namespace, interface)
+        addr = address + '/' + mask
+        cmd += 'ip netns exec %s ip addr add %s dev %s;'%(
+                namespace, addr, interface)
+        cmd += 'ip netns exec %s ip route add default via %s;'%(
+                namespace, gateway)
+    return run_cmd_on_server(cmd, server_ip, username, password)
+
+def delete_netns(server_ip, username, password,
+                 namespace, interface=None, vlan_id=None):
+    cmd = 'ip netns delete %s;'%namespace
+    if interface:
+        if vlan_id:
+            interface = interface+'.'+vlan_id
+        cmd += 'ip link delete dev %s'%interface
+    return run_cmd_on_server(cmd, server_ip, username, password)
+
+def run_dhcp_server(subnet_ranges, server_ip, username,
+                    password, namespace=None):
+    dhcp_range = ""
+    for subnet in subnet_ranges:
+        start_addr = subnet['start']
+        end_addr = subnet['end']
+        mask = subnet['mask']
+        dhcp_range += "--dhcp-range=%s,%s,%s,12h "%(
+            start_addr, end_addr, mask)
+    cmd = "dnsmasq --log-dhcp " + dhcp_range
+    if namespace:
+        cmd = 'ip netns exec %s %s'%(namespace, cmd)
+    return run_cmd_on_server(cmd, server_ip, username, password)
+
 def run_cmd_on_server(issue_cmd, server_ip, username,
                       password, pty=True, as_sudo=False,
                       as_daemon=False,

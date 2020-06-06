@@ -3308,20 +3308,44 @@ class ContrailVncApi(object):
         vmi.set_virtual_machine_interface_properties(prop_obj)
         self._vnc.virtual_machine_interface_update(vmi)
 
+    def read_logical_router(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading logical router %s' % kwargs)
+        return self._vnc.logical_router_read(**kwargs)
+
     def create_router(self, name, project_obj=None, vni=None,
                       is_public=False, parent_fq_name=None,
-                      vxlan_enabled=False):
+                      vxlan_enabled=False, relay_servers=None):
         vni = str(vni) if vni else None
         parent_fq_name = project_obj.fq_name if project_obj else parent_fq_name
         fq_name = parent_fq_name + [name]
         lr_type = 'vxlan-routing' if vxlan_enabled else 'snat-routing'
+        relay_servers = IpAddressesType(relay_servers)
         obj = LogicalRouter(name=name, parent_type='project',
                             fq_name=fq_name,
                             logical_router_gateway_external=is_public,
                             logical_router_type=lr_type,
+                            logical_router_dhcp_relay_server=relay_servers,
                             vxlan_network_identifier=vni)
         self._vnc.logical_router_create(obj)
         return obj
+
+    def update_logical_router(self, uuid=None, fq_name=None, vni=0,
+                              is_public=None, relay_servers=None):
+        obj = self.read_logical_router(id=uuid, fq_name=fq_name)
+        if vni != 0:
+            vni = str(vni) if vni else None
+            obj.set_vxlan_network_identifier(vni)
+        if relay_servers is not None:
+            obj.set_logical_router_dhcp_relay_server(
+                IpAddressesType(relay_servers))
+        if is_public is not None:
+            obj.set_logical_router_gateway_external(is_public)
+        self._vnc.logical_router_update(obj)
 
     def delete_router(self, router_obj=None, **kwargs):
         if router_obj:
