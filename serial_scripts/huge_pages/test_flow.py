@@ -90,7 +90,7 @@ class BaseTestFlow(BaseVrouterTest):
         cmd = "cat " + path
         compute_fix = self.compute_fixtures_dict[compute_ip]
         ret = compute_fix.execute_cmd(cmd, None)
-        print "Ret " + ret
+        print("Ret " + ret)
         if (re.search("No such", ret)):
             self.logger.info("1GB hugepages is not configured")
             return False
@@ -106,7 +106,7 @@ class BaseTestFlow(BaseVrouterTest):
         cmd = "cat " + path
         compute_fix = self.compute_fixtures_dict[compute_ip]
         ret = compute_fix.execute_cmd(cmd, None)
-        print "Ret " + ret
+        print("Ret " + ret)
         if (re.search("No such", ret)):
             self.logger.info("2MB hugepages is not configured")
             return False
