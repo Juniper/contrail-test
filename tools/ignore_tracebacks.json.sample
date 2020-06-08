@@ -1,7 +1,0 @@
-[
-    {
-        "exception_name": "vnc_api.exceptions.RefsExistError",
-        "exception_text": "plugin_delete_policy",
-        "file": "contrail-api.log"
-    }
-]

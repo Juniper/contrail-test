@@ -1,2 +1,0 @@
-"""Unittests for cores module.
-"""
