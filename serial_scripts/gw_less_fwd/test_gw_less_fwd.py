@@ -1,11 +1,13 @@
-from tcutils.wrappers import preposttest_wrapper
+from builtins import str
+from builtins import range
 from common.gw_less_fwd.base import *
+from tcutils.wrappers import preposttest_wrapper
 from contrailapi import ContrailVncApi
 from common.svc_firewall.base import BaseSvc_FwTest
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.servicechain.mirror.verify import VerifySvcMirror
 import test
-from tcutils.util import skip_because
+from tcutils.util import *
 from time import sleep
 from copy import copy
 
@@ -439,7 +441,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Pinging AAP from compute nodes, ping should be successful
         compute_node_ips = set()
-        for vm_fixture in vm_fixtures.values():
+        for vm_fixture in list(vm_fixtures.values()):
             compute_node_ips.add(vm_fixture.get_compute_host())
 
         for compute_ip in compute_node_ips:
@@ -1260,7 +1262,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Pinging AAP from compute nodes, ping should be successful
         compute_node_ips = set()
-        for vm_fixture in vm_fixtures.values():
+        for vm_fixture in list(vm_fixtures.values()):
             compute_node_ips.add(vm_fixture.get_compute_host())
 
         for compute_ip in compute_node_ips:
@@ -1784,7 +1786,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
             assert result, "Ping from VM: %s to VM: %s is NOT successful" %(
                 src_vm_ip, vm_fixtures['vm1'].vm_ip) 
 
-        #all the vms should should reach the vhost0 of all the computes
+        #all the vms should should reach the vhost1 of all the computes
         new_dict = {}
         for k, v in obj_dict.items():
             new_dict[k] = copy(v)
