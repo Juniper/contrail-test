@@ -524,6 +524,10 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.bgp_control_ips)>1:
                 factor = 2 # Xmpp client connects to 2 servers at most when more are available
             missing_peers = set(self.inputs.bgp_control_ips) - set(peers)
+            # in Rhosp-TLS setup, the peers are given in hostname and not IP
+            missing_peer_names = set(self.inputs.bgp_names) - set(peers)
+            if len(missing_peers) > len(missing_peer_names):
+                missing_peers = missing_peer_names
             if not len(missing_peers) > len(self.inputs.bgp_control_ips) - factor:
                 self.logger.info(
                     "Vrouter %s connected to %s xmpp peers out of %s" %
@@ -4017,9 +4021,9 @@ class AnalyticsVerification(fixtures.Fixture):
                                     check = check and False
                         else:
                             s_addr_str = ','.join(el['server_addrs'])
-                            if '*:' in server_addrs:
-                                port = server_addrs.split(':')[1]
-                                server_addrs = '.*:%s'%port
+                            #if '*:' in server_addrs:
+                            #    port = server_addrs.split(':')[1]
+                            #    server_addrs = '.*:%s'%port
                             if not re.match(server_addrs, s_addr_str):
                                 check = check and False
                         if ((check or (server_addrs == el['server_addrs']))\
@@ -4150,10 +4154,11 @@ class AnalyticsVerification(fixtures.Fixture):
                 result1 = result1 or self.verify_process_status(ops_inspect,\
                                             k)
             assert result1
-        container_based = False
         cfgm = self.inputs.cfgm_names[0]
         if self.inputs.is_microservices_env:
-            container_based = True
+            cassandra_port = port_dict['cfgm_cassandra']
+        else:
+            cassandra_port = port_dict['cassandra']
         for cfgm in self.inputs.cfgm_names:
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_config(cfgm)
@@ -4164,6 +4169,13 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-api',\
                            server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.collector_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-api',\
+                            server,node = cfgm)
             assert result   
             result = False    
             for ip in self.inputs.cfgm_control_ips:
@@ -4171,14 +4183,25 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-api',\
                             server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['zookeeper'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-api',\
+                            server,node = cfgm)
             assert result   
             result = False
             for ip in self.inputs.cfgm_control_ips:
-                if container_based:
-                    server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
-                else:
-                    server = "%s:%s"%(ip,port_dict['cassandra'])
+                server = "%s:%s"%(ip, cassandra_port)
                 result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-api',\
+                            server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,cassandra_port)
+                    result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-api',\
                             server,node = cfgm)
             assert result
@@ -4186,10 +4209,16 @@ class AnalyticsVerification(fixtures.Fixture):
 
             config_amqp_ips = self.inputs.config_amqp_ips
             if self.inputs.deployer == 'helm':
-                config_amqp_ips = ['*']
+                config_amqp_ips = ['.*']
             for ip in config_amqp_ips:
-               server = "%s:%s"%(ip,port_dict['rmq'])
-               result = result or self.verify_connection_infos(ops_inspect,\
+                server = "%s:%s"%(ip,port_dict['rmq'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-api',\
+                                server,node = cfgm)
+                if not result and ip != '.*':
+                    hostname = self.inputs.host_data[ip]['name'].split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['rmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-api',\
                                 server,node = cfgm)
             assert result 
@@ -4211,7 +4240,14 @@ class AnalyticsVerification(fixtures.Fixture):
                server = "%s:%s"%(ip,port_dict['collector'])
                result = result or self.verify_connection_infos(ops_inspect,\
                         'contrail-device-manager',\
-                       server,node = cfgm)
+                        server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.collector_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-device-manager',\
+                        server,node = cfgm)
             assert result   
             result = False    
             for ip in self.inputs.cfgm_control_ips:
@@ -4219,23 +4255,40 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result or self.verify_connection_infos(ops_inspect,\
                         'contrail-device-manager',\
                         server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['zookeeper'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-device-manager',\
+                            server,node = cfgm)
             assert result   
             for ip in self.inputs.cfgm_control_ips:
-                if container_based:
-                    server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
-                else:
-                    server = "%s:%s"%(ip,port_dict['cassandra'])
+                server = "%s:%s"%(ip, cassandra_port)
                 result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
+                            'contrail-device-manager',\
+                            server,node = cfgm)
+            if not result_cassandra:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,cassandra_port)
+                    result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
                             'contrail-device-manager',\
                             server,node = cfgm)
             result = False    
 
             config_amqp_ips = self.inputs.config_amqp_ips
             if self.inputs.deployer == 'helm':
-                config_amqp_ips = ['*']
+                config_amqp_ips = ['.*']
             for ip in config_amqp_ips:
                 server = "%s:%s"%(ip,port_dict['rmq'])
                 result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-device-manager',\
+                                server,node = cfgm)
+                if not result and ip != '.*':
+                    hostname = self.inputs.host_data[ip]['name'].split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['rmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-device-manager',\
                                 server,node = cfgm)
             assert result 
@@ -4260,6 +4313,13 @@ class AnalyticsVerification(fixtures.Fixture):
                result = result or self.verify_connection_infos(ops_inspect,\
                         'contrail-schema',\
                        server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.collector_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-schema',\
+                        server,node = cfgm)
             assert result   
             result = False    
             for ip in self.inputs.cfgm_control_ips:
@@ -4267,14 +4327,25 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result or self.verify_connection_infos(ops_inspect,\
                         'contrail-schema',\
                         server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['zookeeper'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-schema',\
+                        server,node = cfgm)
             assert result   
             result = False    
             for ip in self.inputs.cfgm_control_ips:
-                if container_based:
-                    server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
-                else:
-                    server = "%s:%s"%(ip,port_dict['cassandra'])
+                server = "%s:%s" % (ip, cassandra_port)
                 result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
+                            'contrail-schema',\
+                            server,node = cfgm)
+            if not result_cassandra:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s" % (hostname, cassandra_port)
+                    result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
                             'contrail-schema',\
                             server,node = cfgm)
         assert result_cassandra,'contrail-schema module connection to cfgm_cassandra server not up'
@@ -4297,6 +4368,13 @@ class AnalyticsVerification(fixtures.Fixture):
                result = result or self.verify_connection_infos(ops_inspect,\
                         'contrail-svc-monitor',\
                        server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.collector_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['collector'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-svc-monitor',\
+                                server,node = cfgm)
             assert result   
             result = False    
             for ip in self.inputs.cfgm_control_ips:
@@ -4304,14 +4382,25 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result or self.verify_connection_infos(ops_inspect,\
                         'contrail-svc-monitor',\
                         server,node = cfgm)
+            if not result:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,port_dict['zookeeper'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                        'contrail-svc-monitor',\
+                        server,node = cfgm)
             assert result   
             result = False    
             for ip in self.inputs.cfgm_control_ips:
-                if container_based:
-                    server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
-                else:
-                    server = "%s:%s"%(ip,port_dict['cassandra'])
+                server = "%s:%s"%(ip, cassandra_port)
                 result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
+                            'contrail-svc-monitor',\
+                            server,node = cfgm)
+            if not result_cassandra:
+                for hostfqn in self.inputs.cfgm_names:
+                    hostname = hostfqn.split('.')[0]
+                    server = "%s.*:%s"%(hostname,cassandra_port)
+                    result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
                             'contrail-svc-monitor',\
                             server,node = cfgm)
         assert result_cassandra,'contrail-svc-monitor module connection to cfgm_cassandra server not up'
@@ -4462,6 +4551,13 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-analytics-api',\
                            [server],node = collector)
+                if not result:
+                    for hostfqn in self.inputs.collector_names:
+                        hostname = hostfqn.split('.')[0]
+                        server = "%s.*:%s"%(hostname,port_dict['collector'])
+                        result = result or self.verify_connection_infos(
+                                    ops_inspect, 'contrail-analytics-api',
+                                    server,node = collector)
                 assert result
             except Exception as e:    
                 for ip in self.inputs.collector_control_ips:
@@ -4487,43 +4583,6 @@ class AnalyticsVerification(fixtures.Fixture):
            #                 'contrail-analytics-api',\
            #                [server],node = collector)
            #     assert result
-               
-        for collector in self.inputs.collector_names:
-            ops_inspect = self.ops_inspect[self.inputs.\
-                   collector_ips[0]].get_ops_collector(collector)
-                        
-            result = False    
-            try:
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%(ip,port_dict['collector'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                           [server],node = collector)
-                assert result 
-            except Exception as e:    
-                for ip in self.inputs.collector_control_ips:
-                    server = "%s:%s"%('127.0.0.1',port_dict['collector'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                           [server],node = collector)
-                assert result 
-              
-            #To do : Verify Redis connection status once https://bugs.launchpad.net/juniperopenstack/+bug/1459973
-            #fixed 
-            #try:
-            #    for ip in self.inputs.collector_control_ips:
-            #        server = "%s:%s"%(ip,port_dict['redis'])
-            #        result = result or self.verify_connection_infos(ops_inspect,\
-            #                'contrail-analytics-api',\
-            #                [server],node = collector)
-            #    assert result   
-            #except Exception as e:    
-            #    for ip in self.inputs.collector_control_ips:
-            #        server = "%s:%s"%('127.0.0.1',port_dict['redis'])
-            #        result = result or self.verify_connection_infos(ops_inspect,\
-            #                'contrail-analytics-api',\
-            #                [server],node = collector)
-            #    assert result   
 
         for collector in self.inputs.collector_names:
             ops_inspect = self.ops_inspect[self.inputs.\
@@ -4536,6 +4595,13 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-analytics-nodemgr',\
                            [server],node = collector)
+                if not result:
+                    for hostfqn in self.inputs.collector_names:
+                        hostname = hostfqn.split('.')[0]
+                        server = "%s.*:%s"%(hostname,port_dict['collector'])
+                        result = result or self.verify_connection_infos(
+                                    ops_inspect, 'contrail-analytics-nodemgr',
+                                    server,node = collector)
                 assert result   
             except Exception as e:    
                 for ip in self.inputs.collector_control_ips:
