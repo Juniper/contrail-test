@@ -135,18 +135,17 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Test steps:
                 1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                 2.Creating a service instance in transparent mode with 3 instances.
-                3.Creating a service chain by applying the service instance as a service in a policy, which allows only TCP traffic between the VNs.
-                4.Ping and UDP traffic should fail, while tcp traffic should be allowed between vm1 and vm2.
-           Pass criteria: Ping and UDP Traffic between the VMs should fail, while TCP traffic should reach vm2 from vm1.
+                3.Creating a service chain by applying the service instance as a service in a policy, which allows only TCP & ICMP traffic between the VNs.
+                4.UDP traffic should fail, while Ping and tcp traffic should be allowed between vm1 and vm2.
+           Pass criteria: UDP Traffic between the VMs should fail, while Ping and TCP traffic should reach vm2 from vm1.
            Maintainer : ganeshahv@juniper.net
         """
         ret = True
         ret_dict = self.verify_svc_chain(max_inst=3,
                               service_mode='transparent',
                               create_svms=True,
-                              proto='tcp',
+                              proto=['tcp', 'icmp'],
                               **self.common_args)
-        self.sleep(5)
         icmp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture, 'icmp')
         udp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
                                         'udp', sport=8000, dport=9000)
@@ -154,8 +153,8 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                                         'tcp', sport=8001, dport=9001)
         self.sleep(10)
         msg = ''
-        if not self.stop_traffic(icmp_traf, expectation=False):
-            msg += ' ICMP traffic expected to fail, but passed.'
+        if not self.stop_traffic(icmp_traf, expectation=True):
+            msg += ' ICMP traffic expected to pass, but failed.'
             ret = False
         if not self.stop_traffic(udp_traf, expectation=False):
             msg += ' UDP traffic expected to fail, but passed.'
@@ -173,20 +172,19 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Test steps:
                 1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                 2.Creating a service instance in transparent mode with 3 instances.
-                3.Creating a service chain by applying the service instance as a service in a policy, which allows only TCP traffic between the VNs.
-                4.Ping and UDP traffic should fail, while tcp traffic should be allowed between vm1 and vm2.
-                5.Dynamically update the policy to allow only UDP Traffic.
-           Pass criteria: Ping and UDP Traffic between the VMs should fail, while TCP traffic should reach vm2 from vm1.
-                          After updating the policy, TCP traffic should be blocked, while UDP should flow thru.
+                3.Creating a service chain by applying the service instance as a service in a policy, which allows only TCP & ICMP traffic between the VNs.
+                4.UDP traffic should fail, while Ping and tcp traffic should be allowed between vm1 and vm2.
+                5.Dynamically update the policy to allow only UDP & ICMP Traffic.
+           Pass criteria: UDP Traffic between the VMs should fail, while Ping and TCP traffic should reach vm2 from vm1.
+                          After updating the policy, TCP traffic should be blocked, while Ping and UDP should flow thru.
            Maintainer : ganeshahv@juniper.net
         """
         ret = True
         ret_dict = self.verify_svc_chain(max_inst=3,
                               service_mode='transparent',
                               create_svms=True,
-                              proto='tcp',
+                              proto=['tcp', 'icmp'],
                               **self.common_args)
-        self.sleep(5)
         icmp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture, 'icmp')
         udp_traf = self.start_traffic(self.left_vm_fixture, self.right_vm_fixture,
                                         'udp', sport=8000, dport=9000)
@@ -194,8 +192,8 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                                         'tcp', sport=8001, dport=9001)
         self.sleep(10)
         msg = ''
-        if not self.stop_traffic(icmp_traf, expectation=False):
-            msg += ' ICMP traffic expected to fail, but passed.'
+        if not self.stop_traffic(icmp_traf, expectation=True):
+            msg += ' ICMP traffic expected to pass, but failed.'
             ret = False
         if not self.stop_traffic(udp_traf, expectation=False):
             msg += ' UDP traffic expected to fail, but passed.'
@@ -204,7 +202,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             msg += ' TCP traffic expected to pass, but failed.'
             ret = False
         assert ret, msg
-        self.logger.info('Will update the policy to allow only udp')
+        self.logger.info('Will update the policy to allow only udp & icmp')
         policy_fixture = ret_dict['policy_fixture']
         policy_id = policy_fixture.get_id()
         policy_entries = policy_fixture.get_entries()
@@ -219,8 +217,8 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                                         'tcp', sport=8003, dport=9003)
         self.sleep(10)
         msg = ''
-        if not self.stop_traffic(icmp_traf, expectation=False):
-            msg += ' ICMP traffic expected to fail, but passed.'
+        if not self.stop_traffic(icmp_traf, expectation=True):
+            msg += ' ICMP traffic expected to pass, but failed.'
             ret = False
         if not self.stop_traffic(udp_traf, expectation=True):
             msg += ' UDP traffic expected to pass, but failed.'
@@ -326,7 +324,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             self.right_vm_fixture, 'udp', sport=8000, dport=9000)
         tcp_stream = self.start_traffic(self.left_vm_fixture,
             self.right_vm_fixture, 'tcp', sport=8000, dport=9000)
-        self.sleep(5)
+        self.sleep(10)
         #Verify flow records for each stream
         #Need to do ICMP flow verification
         for protocol in ['6', '17']:
@@ -375,7 +373,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         stream3 = self.start_traffic(self.left_vm_fixture,
             dest_vm3, 'udp', sport=8002, dport=9000)
         stream_list = [stream1, stream2, stream3]
-        self.sleep(1)
+        self.sleep(10)
         vm_ips = [self.right_vm_fixture.vm_ip, dest_vm2.vm_ip, dest_vm3.vm_ip]
         for dst_ip, stream in zip(vm_ips, stream_list):
             self.verify_flow_records(self.left_vm_fixture,

@@ -358,7 +358,7 @@ class VerifySvcChain(ConfigSvcChain):
             result, msg = self.validate_svc_action(
                 right_vn_fq_name, si_fixture, left_vm_fixture, src='right')
             assert result, msg
-        if proto not in ['any', 'icmp']:
+        if 'any' not in proto and 'icmp' not in proto:
             self.logger.info('Will skip Ping test')
         else:
             # Ping from left VM to right VM

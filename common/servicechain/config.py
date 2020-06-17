@@ -620,17 +620,28 @@ class ConfigSvcChain(object):
             else:
                 action_list = {'simple_action' : 'pass',
                         'apply_service': si_fq_name_list}
-            rules = [
-                {
-                    'direction': '<>',
-                    'protocol': proto,
-                    'source_network': left_vn_fq_name,
-                    'src_ports': src_ports,
-                    'dest_network': right_vn_fq_name,
-                    'dst_ports': dst_ports,
-                    'action_list': action_list,
-                },
-            ]
+            rules = []
+            if isinstance(proto, list):
+                for p in proto:
+                    rules.append({
+                            'direction': '<>',
+                            'protocol': p,
+                            'source_network': left_vn_fq_name,
+                            'src_ports': src_ports,
+                            'dest_network': right_vn_fq_name,
+                            'dst_ports': dst_ports,
+                            'action_list': action_list,
+                        })
+            else:
+                rules.append({
+                        'direction': '<>',
+                        'protocol': proto,
+                        'source_network': left_vn_fq_name,
+                        'src_ports': src_ports,
+                        'dest_network': right_vn_fq_name,
+                        'dst_ports': dst_ports,
+                        'action_list': action_list,
+                    })
             policy_fixture = self.config_policy(policy_name, rules)
 
         # endif policy_fixture
