@@ -1105,7 +1105,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         self.logger.info('Configuring AAP on port %s' % vmi.uuid)
         if contrail_api:
             self.vnc_h.add_allowed_address_pair(
-                vmi.uuid, prefix, prefix_len, mac, aap_mode)
+                prefix, prefix_len=prefix_len, vmi_id=vmi.uuid, mac=mac, mode=aap_mode)
         else:
             port_dict = {'allowed_address_pairs': [
                 {"ip_address": prefix + '/' + str(prefix_len),
