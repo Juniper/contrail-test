@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3e77633c_a61dd5c1",
+        "filename": "common/ecmp/base.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-07-06T07:44:52Z",
+      "side": 1,
+      "message": "Is this required? doesn\u0027t seem to used in this class",
+      "revId": "2eb77067153abf51400c2ed36e7995fff879ff99",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0e7739ab_2e1f934c",
+        "filename": "scripts/ecmp/test_ecmp.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-07-06T07:44:52Z",
+      "side": 1,
+      "message": "If not required, pls remove",
+      "revId": "2eb77067153abf51400c2ed36e7995fff879ff99",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "969377ed_0bcff70c",
+        "filename": "scripts/ecmp/test_ecmp.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 1162,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-07-06T07:44:52Z",
+      "side": 1,
+      "message": "Are these tests only for IPv6?",
+      "revId": "2eb77067153abf51400c2ed36e7995fff879ff99",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
