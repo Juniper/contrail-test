@@ -32,6 +32,7 @@ class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
         start_time=str(OpServerUtils.utc_timestamp_usec())
         vn_fixture= self.useFixture(VNFixture(connections=self.connections,
                                     vn_name=vn_name, subnets=vn_subnets))
+        vn_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture, image_name='cirros')
         assert vm1_fixture.wait_till_vm_is_active()
         vm_uuid=vm1_fixture.vm_id
