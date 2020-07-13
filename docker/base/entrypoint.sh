@@ -75,7 +75,7 @@ if [[ -n $TEST_RUN_CMD ]]; then
     $TEST_RUN_CMD $EXTRA_RUN_TEST_ARGS
     rv_run_test=$?
 elif [[ -n $TEST_TAGS ]]; then
-    if [[ $test =~ "ci_sanity" ]] ; then
+    if [[ $TEST_TAGS =~ "ci_sanity" ]] ; then
         export ci_image=${CI_IMAGE:-'cirros'}
     fi
     $run_tests -T $TEST_TAGS $EXTRA_RUN_TEST_ARGS
