@@ -884,6 +884,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
                                      **self.common_args)
     # end test_svc_fate_sharing_in_2_multi_inline_svc_chains_transparent_in_net_transparent
 
+    @test.attr(type=['upgrade'])
     @preposttest_wrapper
     @skip_because(min_nodes=2, address_family='v6')
     def test_svc_fate_sharing_in_2_multi_inline_svc_chains_transparent_in_net_in_net_nat(self):

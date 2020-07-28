@@ -230,38 +230,96 @@ class VerifySvcFirewall(VerifySvcChain):
                     result, msg = self.validate_svc_action(
                         vn_fq_name, si_fix, right_vm_fixture, src='left', check_si_as_nh=check_si_as_nh, check_rt_in_control=True, left_ri_ecmp=2)
                     assert result, msg
-        # Ping from left VM to right VM
-        errmsg = "Ping to Right VM %s from Left VM failed" % right_vm_fixture.vm_ip
-        assert left_vm_fixture.ping_with_certainty(
-            right_vm_fixture.vm_ip, count='3'), errmsg
-        if si_intf_type == 'left':
-            svm_intf = 'eth1'
-        elif si_intf_type == 'right':
-            svm_intf = 'eth2'
-        svm_cmd_up = 'sudo ifconfig ' + svm_intf + ' up'
-        if self.inputs.get_af() == 'v6':
-            ipv6_addrs = si_fixture.svm_list[0].get_vm_ips()
-            vn_names = si_fixture.svm_list[0].vn_names
-            for vn in vn_names:
-                vn_index = vn_names.index(vn)
-                if 'left' in vn:
-                    ipv6_add_eth1 = ipv6_addrs[vn_index]
-                if 'right' in vn:
-                    ipv6_add_eth2 = ipv6_addrs[vn_index]
-
-            if svm_intf == 'eth1':
-                ipv6_add = ipv6_add_eth1
-            elif svm_intf == 'eth2':
-                ipv6_add = ipv6_add_eth2
-            else:
-                ipv6_add = None
-            svm_cmd_up_ipv6 = 'sudo ifconfig ' + svm_intf +  ' inet6 add ' + ipv6_add + '/64'
-        svm_cmd_down = 'sudo ifconfig ' + svm_intf + ' down'
-        local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=0)
-        si_fixture.svm_list[0].run_cmd_on_vm(cmds=[svm_cmd_down], as_sudo=True, local_ip=local_ip)
-        if len(si_fixture.svm_list) > 1:
-            errmsg1 = "Ping to Right VM %s from Left VM still passing" % right_vm_fixture.vm_ip
-            # routes should still be present
+        def validate():
+            # Ping from left VM to right VM
+            errmsg = "Ping to Right VM %s from Left VM failed" % right_vm_fixture.vm_ip
+            assert left_vm_fixture.ping_with_certainty(
+                right_vm_fixture.vm_ip, count='3'), errmsg
+            if si_intf_type == 'left':
+                svm_intf = 'eth1'
+            elif si_intf_type == 'right':
+                svm_intf = 'eth2'
+            svm_cmd_up = 'sudo ifconfig ' + svm_intf + ' up'
+            if self.inputs.get_af() == 'v6':
+                ipv6_addrs = si_fixture.svm_list[0].get_vm_ips()
+                vn_names = si_fixture.svm_list[0].vn_names
+                for vn in vn_names:
+                    vn_index = vn_names.index(vn)
+                    if 'left' in vn:
+                        ipv6_add_eth1 = ipv6_addrs[vn_index]
+                    if 'right' in vn:
+                        ipv6_add_eth2 = ipv6_addrs[vn_index]
+    
+                if svm_intf == 'eth1':
+                    ipv6_add = ipv6_add_eth1
+                elif svm_intf == 'eth2':
+                    ipv6_add = ipv6_add_eth2
+                else:
+                    ipv6_add = None
+                svm_cmd_up_ipv6 = 'sudo ifconfig ' + svm_intf +  ' inet6 add ' + ipv6_add + '/64'
+            svm_cmd_down = 'sudo ifconfig ' + svm_intf + ' down'
+            local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=0)
+            si_fixture.svm_list[0].run_cmd_on_vm(cmds=[svm_cmd_down], as_sudo=True, local_ip=local_ip)
+            if len(si_fixture.svm_list) > 1:
+                errmsg1 = "Ping to Right VM %s from Left VM still passing" % right_vm_fixture.vm_ip
+                # routes should still be present
+                for si_fix in si_fixtures:
+                    if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
+                        vn_list = [left_vn_fq_name]
+                    else:
+                        vn_list = [left_vn_fq_name, right_vn_fq_name]
+                    for vn_fq_name in vn_list:
+                        check_si_as_nh=False
+                        if si_fixtures.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
+                            check_si_as_nh=True
+                        result, msg = self.validate_svc_action(
+                            vn_fq_name, si_fix, right_vm_fixture, src='left', check_si_as_nh=check_si_as_nh, check_rt_in_control=True)
+                        assert result, msg
+                assert left_vm_fixture.ping_with_certainty(
+                    right_vm_fixture.vm_ip, count='3'), errmsg
+                for index, si_svm in enumerate(si_fixture.svm_list):
+                    if index != 0:
+                        local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=index)
+                        si_fixture.svm_list[index].run_cmd_on_vm(cmds=[svm_cmd_down], as_sudo=True, local_ip=local_ip)
+                assert left_vm_fixture.ping_with_certainty(
+                    right_vm_fixture.vm_ip, count='3', expectation=False), errmsg1
+            delay = ((hc_fixture.delay + hc_fixture.timeout)
+                     * hc_fixture.max_retries) + 1
+            self.logger.info('Will sleep for %ss for HC to kick in' % delay)
+            self.sleep(delay)
+            left_ri_ecmp = False
+            if si_list1:
+                left_ri_ecmp = 2
+            for si_fix in si_fixtures:
+                if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
+                    vn_list = [left_vn_fq_name]
+                else:
+                    vn_list = [left_vn_fq_name, right_vn_fq_name]
+                for vn_fq_name in vn_list:
+                    result, msg = self.validate_route_deletion(
+                        vn_fq_name, si_fix, right_vm_fixture, src='left', intf_type='left', protocol='ServiceChain', left_ri_ecmp=left_ri_ecmp)
+                    assert result, msg
+            nc_options=''
+            errmsg2 = "TCP traffic failed"
+            if si_list1:
+                # Remove routes from svc chain 0, but still present in Svc chain 1
+                # Expect traffic to flow via Svc chain 1 when svc chain 0 is down
+                local_port = randint(10000, 50000)
+                remote_port = local_port + 1;  local_port = remote_port + 1
+                assert left_vm_fixture.nc_file_transfer(right_vm_fixture, nc_options=nc_options, local_port=local_port, remote_port=remote_port), errmsg2
+                # Make sure traffic is not allowd via svc chain 0
+                assert left_vm_fixture.ping_with_certainty(
+                    right_vm_fixture.vm_ip, count='3', expectation=False), errmsg
+    
+            for index, si_svm in enumerate(si_fixture.svm_list):
+                local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=index)
+                si_fixture.svm_list[index].run_cmd_on_vm(cmds=[svm_cmd_up], as_sudo=True, local_ip=local_ip)
+            if self.inputs.get_af() == 'v6':
+                local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=0)
+                si_fixture.svm_list[0].run_cmd_on_vm(cmds=[svm_cmd_up_ipv6], local_ip=local_ip)
+            assert si_fixture.verify_hc_in_agent()
+            assert si_fixture.verify_hc_is_active()
+    
             for si_fix in si_fixtures:
                 if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
                     vn_list = [left_vn_fq_name]
@@ -272,71 +330,16 @@ class VerifySvcFirewall(VerifySvcChain):
                     if si_fixtures.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
                         check_si_as_nh=True
                     result, msg = self.validate_svc_action(
-                        vn_fq_name, si_fix, right_vm_fixture, src='left', check_si_as_nh=check_si_as_nh, check_rt_in_control=True)
+                        vn_fq_name, si_fix, right_vm_fixture, src='left',
+                        check_si_as_nh=check_si_as_nh, check_rt_in_control=True)
                     assert result, msg
             assert left_vm_fixture.ping_with_certainty(
                 right_vm_fixture.vm_ip, count='3'), errmsg
-            for index, si_svm in enumerate(si_fixture.svm_list):
-                if index != 0:
-                    local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=index)
-                    si_fixture.svm_list[index].run_cmd_on_vm(cmds=[svm_cmd_down], as_sudo=True, local_ip=local_ip)
-            assert left_vm_fixture.ping_with_certainty(
-                right_vm_fixture.vm_ip, count='3', expectation=False), errmsg1
-        delay = ((hc_fixture.delay + hc_fixture.timeout)
-                 * hc_fixture.max_retries) + 1
-        self.logger.info('Will sleep for %ss for HC to kick in' % delay)
-        self.sleep(delay)
-        left_ri_ecmp = False
-        if si_list1:
-            left_ri_ecmp = 2
-        for si_fix in si_fixtures:
-            if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
-                vn_list = [left_vn_fq_name]
-            else:
-                vn_list = [left_vn_fq_name, right_vn_fq_name]
-            for vn_fq_name in vn_list:
-                result, msg = self.validate_route_deletion(
-                    vn_fq_name, si_fix, right_vm_fixture, src='left', intf_type='left', protocol='ServiceChain', left_ri_ecmp=left_ri_ecmp)
-                assert result, msg
-        nc_options=''
-        errmsg2 = "TCP traffic failed"
-        if si_list1:
-            # Remove routes from svc chain 0, but still present in Svc chain 1
-            # Expect traffic to flow via Svc chain 1 when svc chain 0 is down
             local_port = randint(10000, 50000)
             remote_port = local_port + 1;  local_port = remote_port + 1
-            assert left_vm_fixture.nc_file_transfer(right_vm_fixture, nc_options=nc_options, local_port=local_port, remote_port=remote_port), errmsg2
-            # Make sure traffic is not allowd via svc chain 0
-            assert left_vm_fixture.ping_with_certainty(
-                right_vm_fixture.vm_ip, count='3', expectation=False), errmsg
-
-        for index, si_svm in enumerate(si_fixture.svm_list):
-            local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=index)
-            si_fixture.svm_list[index].run_cmd_on_vm(cmds=[svm_cmd_up], as_sudo=True, local_ip=local_ip)
-        if self.inputs.get_af() == 'v6':
-            local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=0)
-            si_fixture.svm_list[0].run_cmd_on_vm(cmds=[svm_cmd_up_ipv6], local_ip=local_ip)
-        assert si_fixture.verify_hc_in_agent()
-        assert si_fixture.verify_hc_is_active()
-
-        for si_fix in si_fixtures:
-            if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
-                vn_list = [left_vn_fq_name]
-            else:
-                vn_list = [left_vn_fq_name, right_vn_fq_name]
-            for vn_fq_name in vn_list:
-                check_si_as_nh=False
-                if si_fixtures.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
-                    check_si_as_nh=True
-                result, msg = self.validate_svc_action(
-                    vn_fq_name, si_fix, right_vm_fixture, src='left',
-                    check_si_as_nh=check_si_as_nh, check_rt_in_control=True)
-                assert result, msg
-        assert left_vm_fixture.ping_with_certainty(
-            right_vm_fixture.vm_ip, count='3'), errmsg
-        local_port = randint(10000, 50000)
-        remote_port = local_port + 1;  local_port = remote_port + 1
-        assert left_vm_fixture.nc_file_transfer(right_vm_fixture, nc_options=nc_options, remote_port=remote_port, local_port=local_port), errmsg2
+            assert left_vm_fixture.nc_file_transfer(right_vm_fixture, nc_options=nc_options, remote_port=remote_port, local_port=local_port), errmsg2
+        validate()
+        self.validate_post_upgrade = validate
         return ret_dict
     # verify_multi_inline_svc_with_fate_share
 

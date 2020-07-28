@@ -6,6 +6,7 @@ from tcutils.util import *
 from svc_instance_fixture import SvcInstanceFixture
 from svc_template_fixture import SvcTemplateFixture
 from common.servicechain.config import ConfigSvcChain
+import test
 
 # Use common vlan ids for all tests for now
 VLAN_ID_101 = 101
@@ -170,6 +171,7 @@ class TestSubInterfacesECMP(BaseVrouterTest,ConfigSvcChain):
             self.right_vm_fixture.vm_ip), errmsg
     # end test_svc_subIntf
 
+    @test.attr(type=['upgrade'])
     @preposttest_wrapper
     def test_svc_ecmp_subIntf(self):
         '''
@@ -211,7 +213,11 @@ class TestSubInterfacesECMP(BaseVrouterTest,ConfigSvcChain):
             self.policy_fixture, self.right_vn_fixture)
 
         errmsg = "Ping to right VM ip %s from left VM passed; expected to fail" % self.right_vm_fixture.vm_ip
-        assert self.left_vm_fixture.ping_with_certainty(
-            self.right_vm_fixture.vm_ip), errmsg
+        def validate()
+            assert self.left_vm_fixture.ping_with_certainty(
+                self.right_vm_fixture.vm_ip), errmsg
+        validate()
+        self.validate_post_upgrade = validate
+        return True
     # end test_svc_ecmp_subIntf
 

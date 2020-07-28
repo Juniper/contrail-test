@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 
 declare -a pids
 trap resume_pids 10 1 2 3 6
@@ -15,20 +16,39 @@ if [ ${PYTHON3} -eq 1 ]; then
 fi
 export PYTHON=${PYTHON}
 
-function wait_till_process_state
+function wait_till_child_process_state
 {
     local pid=$1
     local state=$2
     while true;
     do
         if [[ -f /proc/$pid/status ]]; then
-            if [[ $state == *dead* ]]; then
-                sleep 30
-                continue
-            else
-                if [[ $(cat /proc/$pid/status | grep State) != *${state}* ]]; then
+            for cpid in $(cat /proc/$pid/task/$pid/children); do
+                if wait_till_process_state $cpid $state 0 ; then
+                    return 0
+                fi
+            done
+            sleep 30
+        else
+            break
+        fi
+    done
+}
+
+function wait_till_process_state
+{
+    local pid=$1
+    local state=$2
+    local wait=${3:-1}
+    while true;
+    do
+        if [[ -f /proc/$pid/status ]]; then
+            if [[ $(cat /proc/$pid/status | grep State) != *${state}* ]]; then
+                if [ $wait -eq 1 ]; then
                     sleep 30
                     continue
+                else
+                    return 1
                 fi
             fi
         fi
@@ -38,8 +58,12 @@ function wait_till_process_state
 function resume_pids
 {
     for pid in ${pids[@]}; do
-        kill -18 $pid
-        wait_till_process_state $! dead
+        if [[ -f /proc/$pid/status ]]; then
+            for cpid in $(cat /proc/$pid/task/$pid/children); do
+                kill -18 $cpid
+            done
+        fi
+        wait_till_process_state $pid dead
     done
 }
 function die
@@ -215,10 +239,10 @@ function run_tagged_tests_in_debug_mode {
     do
         result_xml='result'$count'.xml'
         ((count++))
-        if [ $upgrade -eq 1]; then
+        if [ $upgrade -eq 1 ]; then
             (exec ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml) &
-            pids[$i]=$!
-            wait_till_process_state $! stop
+            pids[$count]=$!
+            wait_till_child_process_state $! stop
         else
             ${wrapper} ${PYTHON} -m subunit.run $i| ${wrapper} ${SUBUNIT2JUNIT} -f -o $result_xml
         fi
@@ -514,7 +538,9 @@ if [[ ! -z $path ]];then
                 export TAGS="$tags"
             fi
             run_tests $p
-            run_tests_serial $p
+            if [ $upgrade -eq 0 ]; then
+                run_tests_serial $p
+            fi
             ${PYTHON} tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
             parse_results
             generate_html 
@@ -537,12 +563,16 @@ fi
 
 if [[ ! -z $testrargs ]];then
     run_tests
-    run_tests_serial
+    if [ $upgrade -eq 0 ]; then
+        run_tests_serial
+    fi
 fi
 
 if [[ -z $path ]] && [[ -z $testrargs ]];then
     run_tests
-    run_tests_serial
+    if [ $upgrade -eq 0 ]; then
+        run_tests_serial
+    fi
 fi
 sleep 2
 

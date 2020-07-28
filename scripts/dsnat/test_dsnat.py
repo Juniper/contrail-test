@@ -51,6 +51,7 @@ class TestDSNAT(BaseDSNAT):
 
 
     @skip_because(min_nodes=2)
+    @test.attr(type=['upgrade'])
     @preposttest_wrapper
     def test_dsnat_with_different_forwarding_mode(self):
         '''
@@ -76,16 +77,19 @@ class TestDSNAT(BaseDSNAT):
         assert vm1_fixture.verify_fabric_ip_as_floating_ip(vn1_fixture.vn_fq_name)
         assert vm2_fixture.verify_fabric_ip_as_floating_ip(vn1_fixture.vn_fq_name)
 
-        forwarding_modes = ['l3', 'l2_l3']
-        for mode in forwarding_modes:
-            #set VN forwarding mode  and verify
-            self.set_vn_forwarding_mode(vn1_fixture, forwarding_mode=mode)
-
-            assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, size='2000'), (
-                'Ping failed between VNs')
-
-            assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip), (
-                'Ping failed to fabric IP, VM2 node ip')
+        def validate()
+            forwarding_modes = ['l3', 'l2_l3']
+            for mode in forwarding_modes:
+                #set VN forwarding mode  and verify
+                self.set_vn_forwarding_mode(vn1_fixture, forwarding_mode=mode)
+    
+                assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, size='2000'), (
+                    'Ping failed between VNs')
+    
+                assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip), (
+                    'Ping failed to fabric IP, VM2 node ip')
+        validate()
+        self.validate_post_upgrade = validate
 
 
     @skip_because(min_nodes=2)
@@ -438,6 +442,7 @@ class TestDSNAT(BaseDSNAT):
         assert test_vm1.ping_with_certainty(cfgm_ip)
 
     @skip_because(min_nodes=2)
+    @test.attr(type=['upgrade'])
     @preposttest_wrapper
     def test_dsnat_with_secondary_ip(self):
         '''
@@ -471,8 +476,11 @@ class TestDSNAT(BaseDSNAT):
         self.logger.info('Configure AAP on both the VMs')
         vIP = self.configure_aap_for_port_list(vn1_fixture, [vm1_fixture, vm2_fixture])
 
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
-        self.logger.info('Ping fabric IP with source IP as %s' %vIP)
-        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
-        assert vm1_fixture.ping_with_certainty(other_opt='-I '+vIP, ip=cfgm_ip),\
-            ('Ping failed from vIP to fabric IP')
+        def validate()
+            assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
+            self.logger.info('Ping fabric IP with source IP as %s' %vIP)
+            cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+            assert vm1_fixture.ping_with_certainty(other_opt='-I '+vIP, ip=cfgm_ip),\
+                ('Ping failed from vIP to fabric IP')
+        validate()
+        self.validate_post_upgrade = validate

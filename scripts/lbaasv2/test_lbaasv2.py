@@ -259,6 +259,7 @@ class TestLBaaSV2(BaseLBaaSTest):
         assert self.verify_lb_method(client_vm2_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
+    @attr(type=['upgrade'])
     @preposttest_wrapper
     def test_lbaas_with_different_lb(self):
         '''Create LB, LISTENER, POOL and MEMBER
@@ -329,6 +330,23 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, si_listener.fip_ip,
             "LEAST_CONNECTIONS"), "Verify LB Method failed for LEAST_CONNECTIONS"
+        def post_upgrade_validation():
+            self.logger.info("Verify Least Connections LB Method, post upgrade")
+            assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, si_listener.fip_ip,
+              "LEAST_CONNECTIONS"), "Verify LB Method failed for LEAST_CONNECTIONS"
+
+            self.logger.info("Verify Source IP LB Method, by modifying the lb_algorithm")
+            si_listener.network_h.update_lbaas_pool(si_listener.pool_uuid, lb_algorithm='SOURCE_IP')
+            assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, si_listener.fip_ip,
+                "SOURCE_IP"), "Verify LB Method for SOURCE IP failed"
+
+            self.logger.info("Verify Least Connections LB Method, by modifying the lb_algorithm")
+            si_listener.network_h.update_lbaas_pool(si_listener.pool_uuid, lb_algorithm='LEAST_CONNECTIONS')
+
+            assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, si_listener.fip_ip,
+                "LEAST_CONNECTIONS"), "Verify LB Method failed for LEAST_CONNECTIONS"
+
+        self.validate_post_upgrade = post_upgrade_validation
 
     # end test_lbaas_with_different_lb
 
