@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "daa7cf38_bd0febdc",
+        "filename": "common/neutron/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-09-22T09:23:42Z",
+      "side": 1,
+      "message": "consider using get_container_name since docker container name various based on deployment (ex RHOSP)",
+      "revId": "74c164561bbffed68ae3a86476a2634d9b879e0e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "72f91383_db3ab758",
+        "filename": "common/neutron/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 79,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-09-22T09:23:42Z",
+      "side": 1,
+      "message": "you may have to update restore_default_quota_list method to handle dockers",
+      "revId": "74c164561bbffed68ae3a86476a2634d9b879e0e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7dad4239_a87dbc68",
+        "filename": "common/neutron/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-09-22T09:23:42Z",
+      "side": 1,
+      "message": "shouldn\u0027t argument be cfgm_tmp_file_map, since the file name is different for each node",
+      "revId": "74c164561bbffed68ae3a86476a2634d9b879e0e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4d829b63_26263006",
+        "filename": "common/neutron/base.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2020-09-22T09:23:42Z",
+      "side": 1,
+      "message": "consider using get_container_name since docker container name various based on deployment (ex RHOSP)",
+      "revId": "74c164561bbffed68ae3a86476a2634d9b879e0e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
