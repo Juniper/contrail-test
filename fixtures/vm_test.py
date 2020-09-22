@@ -599,11 +599,14 @@ class VMFixture(fixtures.Fixture):
                     # Skip validattion of v6 route on kernel till 1632511 is fixed
                     if get_af_type(prefix) == 'v6':
                         continue
-                    route_table = inspect_h.get_vrouter_route_table(
-                        vrf_id,
-                        prefix=prefix,
-                        prefix_len='32',
-                        get_nh_details=True)
+                    if self.inputs.is_dpdk_cluster:
+                        route_table = self.get_route_nh_from_host(compute_ip, vrf_id, prefix)
+                    else:
+                        route_table = inspect_h.get_vrouter_route_table(
+                            vrf_id,
+                            prefix=prefix,
+                            prefix_len='32',
+                            get_nh_details=True)
                     # Do WA for bug 1614847
                     if len(route_table) == 2 and \
                         route_table[0] == route_table[1]:
@@ -3146,6 +3149,39 @@ class VMFixture(fixtures.Fixture):
     def setup_subintf(self, device=None, vlan=None):
         cmd = 'vconfig add %s %s; dhclient %s.%s'%(device, vlan, device, vlan)
         self.run_cmd_on_vm([cmd], timeout=60, as_sudo=True)
+
+    def get_route_nh_from_host(self, compute_ip, vrf_id, prefix):
+        #cmd = "rt --dump %s | grep %s | awk \'{print $5}\'" %(vrf_id, prefix)
+        rt_dict = {}
+        nh_dict ={}
+        rt_keys = ['prefix','prefix_len','label','label_flags','nh_id']
+        nh_keys = ['oif', 'flags', 'dip','type']
+        cmd = "rt --dump %s | grep %s " %(vrf_id, prefix)
+        output = self.inputs.run_cmd_on_server(compute_ip, cmd, container='agent')
+        if output:
+            rt_values = output.split()[:-1]
+            rt_dict = dict(zip(rt_keys,rt_values))
+            if int(rt_dict['nh_id']) > 0:
+                nh_cmd = 'nh --get %s'%rt_dict['nh_id']
+                output = self.inputs.run_cmd_on_server(compute_ip, nh_cmd, container='agent')
+                if output:
+                    output = output.split()
+                    for out in output:
+                        for key in nh_keys:
+                            if key in out.lower():
+                                nh_dict[key] = out.split(':')[1]
+                    nh_dict['id'] = rt_dict['nh_id']
+                    if nh_dict.get('oif'):
+                        nh_dict['encap_oif_id'] = nh_dict.pop('oif')
+                    if nh_dict.get('dip'):
+                        nh_dict['tun_dip'] = nh_dict.pop('dip')
+                    if nh_dict.get('type'):
+                        if nh_dict['type'] == 'Tunnel':
+                            nh_dict['flags'] = 'TUNNEL'
+                rt_dict['nh'] = nh_dict
+            return [rt_dict]
+
+        return []
 
     def __repr__(self):
         return '<VMFixture: %s>' % (self.vm_name)
