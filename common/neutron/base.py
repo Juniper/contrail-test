@@ -62,39 +62,34 @@ class BaseNeutronTest(GenericTestBase):
 
         # Copy the contrail-api.conf to /tmp/ and restore it later
 
+        cfgm_tmp_file_map = {}
         for cfgm_ip in self.inputs.cfgm_ips:
             api_file_name = get_random_name('contrail-api')
             contrail_api_file_list.append(api_file_name)
-            issue_cmd = "cp " + contrail_api_conf + " /tmp/" + \
+            issue_cmd = "docker cp " + self.inputs.get_container_name(cfgm_ip, 'api-server') + ":" + contrail_api_conf + " /tmp/" + \
                 api_file_name
+            cfgm_tmp_file_map[cfgm_ip] = "/tmp/"+api_file_name
             output = self.inputs.run_cmd_on_server(
                 cfgm_ip,
                 issue_cmd,
                 self.inputs.host_data[cfgm_ip]['username'],
-                self.inputs.host_data[cfgm_ip]['password'],
-                container='api-server')
+                self.inputs.host_data[cfgm_ip]['password'])
 
         self.addCleanup(
             self.restore_default_quota_list,
-            contrail_api_file_list)
+            cfgm_tmp_file_map.values())
 
         # Fetch the contrail-api.conf from all config nodes to active cfgm's
         # /tmp/
 
-        api_file_list = []
-        api_file_list.append(contrail_api_conf)
-        for cfgm_ip in self.inputs.cfgm_ips[1:]:
+        # Edit the contrail-api.conf files adding quota sections
+
+        for cfgm_ip,api_conf in cfgm_tmp_file_map.items():
             with settings(
                     host_string='%s@%s' % (
                         self.inputs.host_data[cfgm_ip]['username'], cfgm_ip)):
-                api_conf_file = get_random_name('contrail-api-remote')
-                api_file_list.append('/tmp/' + api_conf_file)
-                get(contrail_api_conf, '/tmp/' + api_conf_file)
-
-        # Edit the contrail-api.conf files adding quota sections
-
-        for api_conf in api_file_list:
-            api_conf_h = open(api_conf, 'a')
+                get(api_conf, api_conf+"_remote")
+            api_conf_h = open(api_conf+"_remote", 'a')
             config = ConfigParser.ConfigParser()
             config.add_section('QUOTA')
             config.set('QUOTA', 'subnet', subnet)
@@ -109,24 +104,21 @@ class BaseNeutronTest(GenericTestBase):
                 virtual_machine_interface)
             config.write(api_conf_h)
             api_conf_h.close()
+            with settings(
+                    host_string='%s@%s' % (
+                        self.inputs.host_data[cfgm_ip]['username'], cfgm_ip)):
+                put(api_conf+"_remote", api_conf+"_remote")
 
         # Put back updated contrail-api.conf file to respective cfgm's remove
         # temp files
 
-        count = 1
-        for cfgm_ip in self.inputs.cfgm_ips[1:]:
-            with settings(
-                    host_string='%s@%s' % (
-                        self.inputs.host_data[cfgm_ip]['username'], cfgm_ip)):
-                put(api_file_list[count], contrail_api_conf)
-                issue_cmd = "rm -rf " + api_file_list[count]
-                output = self.inputs.run_cmd_on_server(
-                    cfgm_ip,
-                    issue_cmd,
-                    self.inputs.host_data[cfgm_ip]['username'],
-                    self.inputs.host_data[cfgm_ip]['password'],
-                    container='api-server')
-                count = count + 1
+        for cfgm_ip,api_conf in cfgm_tmp_file_map.items():
+            issue_cmd = "docker cp " + api_conf+"_remote  " + self.inputs.get_container_name(cfgm_ip, 'api-server') + ":" + contrail_api_conf
+            output = self.inputs.run_cmd_on_server(
+                cfgm_ip,
+                issue_cmd,
+                self.inputs.host_data[cfgm_ip]['username'],
+                self.inputs.host_data[cfgm_ip]['password'])
 
         # Restart contrail-api service on all cfgm nodes
 
@@ -148,14 +140,13 @@ class BaseNeutronTest(GenericTestBase):
         file_itr = iter(file_list)
         for cfgm_ip in self.inputs.cfgm_ips:
             api_conf_backup = next(file_itr)
-            issue_cmd = "cp /tmp/" + api_conf_backup + \
-                " " + contrail_api_conf + "; rm -rf /tmp/" + api_conf_backup
+            issue_cmd = "docker cp " + " /tmp/" + api_conf_backup + \
+                self.inputs.get_container_name(cfgm_ip, 'api-server') + ":" + contrail_api_conf + "; rm -rf /tmp/" + api_conf_backup
             output = self.inputs.run_cmd_on_server(
                 cfgm_ip,
                 issue_cmd,
                 self.inputs.host_data[cfgm_ip]['username'],
-                self.inputs.host_data[cfgm_ip]['password'],
-                container='api-server')
+                self.inputs.host_data[cfgm_ip]['password'])
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip],
