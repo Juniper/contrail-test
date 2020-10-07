@@ -135,6 +135,6 @@ class TestBasicRR(BaseRRTest):
                 self.logger.error("BGP connections are not proper after restarts")
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
-        assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
+        assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip)
 # end test_process_restart_in_policy_between_vns

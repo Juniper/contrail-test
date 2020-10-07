@@ -80,7 +80,9 @@ class ContrailVncApi(object):
         '''
         project = self._vnc._tenant_name
         # This may fail for non-default domain
-        fq_name = ['default-domain', project]
+        domain = 'default-domain' if self._vnc._domain_name == 'Default' \
+            else self._vnc._domain_name
+        fq_name = [domain, project]
         # WA for vcenter/vcenter-gw
         return self.read_project_obj(project_fq_name=fq_name)
 
