@@ -5,6 +5,7 @@ from tcutils.util import skip_because
 import test
 import time
 import socket
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestPodScale(BaseK8sTest):
 
@@ -134,8 +135,9 @@ class TestPodScale(BaseK8sTest):
         compute_node = pod1.nodename
         # Reboot the node
         self.inputs.reboot(compute_node)
-        time.sleep(70)
+        #time.sleep(70)
         # Verify after reboot
+        status, svcs = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable(compute_node, refresh=True)
         assert pod1.verify_on_setup()
         assert pod2.verify_on_setup()
         assert pod1.ping_with_certainty(pod2.pod_ip, expectation=True)
