@@ -117,7 +117,7 @@ class NamespaceFixture(fixtures.Fixture):
             self.api_s_obj.uuid))
         return True
     # end verify_namespace_in_contrail_api
-    
+
     @retry(delay=2, tries=10)
     def verify_namespace_in_kube_manager(self):
         km_h = self.connections.get_kube_manager_h()
