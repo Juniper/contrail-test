@@ -59,7 +59,7 @@ function usage {
   echo "  -L, --logging-config     Logging config file location.  Default is logging.conf"
   echo "  -m, --send-mail          Send the report at the end"
   echo "  -F, --features           Only run tests from features listed"
-  echo "  -T, --tags               Only run tests taged with tags"
+  echo "  -T, --tags               Only run tests taged with tags (separated with commas)"
   echo "  -c, --concurrency        Number of threads to be spawned"
   echo "  --contrail-fab-path      Contrail fab path, default to /opt/contrail/utils"
   echo "  --test-failure-threshold Contrail test failure threshold"
@@ -126,6 +126,9 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+# separate tags list with spaces
+tags=`echo $tags | sed 's/,/ /g'`
 
 config_file=${config_file:-$TEST_CONFIG_FILE}
 if [[ -n $config_file ]]; then
