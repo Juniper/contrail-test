@@ -46,6 +46,7 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
                     image_name='ubuntu-traffic',
                     *args, **kwargs):
         image_name = self.inputs.get_ci_image() or image_name
+        self.logger.debug('image_name is %s (in serial_scripts.vm_regression.base) AFTER' % image_name)
         return self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
