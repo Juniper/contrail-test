@@ -2841,9 +2841,8 @@ class TestBasicVMVNx(BaseVnVmTest):
         vn_fixture= self.create_vn(vn_name=vn_name,orch=self.orchestrator)
         assert vn_fixture.verify_on_setup()
         vn_fixture.read()
-
         img_name = self.inputs.get_ci_image() or 'ubuntu'
-
+        self.logger.debug('image_name is %s (in serial_scripts.vm_regression.test_vm) AFTER' % image_name)
         flavor='m1.tiny' if self.inputs.is_ci_setup()\
                          else 'contrail_flavor_small'
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
