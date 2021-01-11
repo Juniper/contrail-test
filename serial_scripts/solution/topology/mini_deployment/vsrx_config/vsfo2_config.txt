@@ -1,0 +1,618 @@
+#junos-config - vEPC VSFO User Plane
+
+system {
+    root-authentication {
+        encrypted-password "$6$sg7yK0wP$XKPfVjffdOp6g38R1UXui4Lxx5QZHARNdNfgkpXofFr7hT5R2sjUyFrdo5AitBujdpGvAOy2ziJG4oS8jOoiu1";
+    }
+    login {
+        user admin {
+            uid 2000;
+            class super-user;
+            authentication {
+                encrypted-password "$6$sg7yK0wP$XKPfVjffdOp6g38R1UXui4Lxx5QZHARNdNfgkpXofFr7hT5R2sjUyFrdo5AitBujdpGvAOy2ziJG4oS8jOoiu1";
+            }
+        }
+    }
+    host-name vsfo_up-2 
+    services {
+        ssh {
+            root-login allow;
+        }
+        web-management {
+            http {
+                interface fxp0.0;
+            }
+        }
+    }
+    syslog {
+        file messages {
+            any any;
+        }
+    }
+}
+
+security {
+    forwarding-options {
+        family {
+            inet6 {
+                mode packet-based;
+            }
+            mpls {
+                mode packet-based;
+            }
+            iso {
+                mode packet-based;
+            }
+        }
+    }
+}
+
+interfaces {
+    fxp0 {
+        unit 0 {
+            description "vSRX OOB Management interface";
+            family inet {
+                address 192.168.25.102/24;
+            }
+        }
+    }
+    ge-0/0/0 {
+        unit 0 {
+            description "vEPC VSFO UP BP interface";
+            family inet {
+                address 192.3.1.102/16;
+            }
+        }
+    }
+    ge-0/0/1 {
+        unit 0 {
+            description "vEPC VSFO UP VFAB 1 interface";
+            family inet {
+                address 127.6.21.102/24;
+            }
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            description "vEPC VSFO UP VFAB 2 interface";
+            family inet {
+                address 127.6.22.102/24;
+            }
+        }
+    }
+    ge-0/0/3 {
+        unit 0 {
+            description "vEPC VSFO UP VFAB 3 interface";
+            family inet {
+                address 127.6.23.102/24;
+            }
+        }
+    }
+    ge-0/0/4 {
+        unit 0 {
+            description "vEPC VSFO UP VFAB 4 interface";
+            family inet {
+                address 127.6.24.102/24;
+            }
+        }
+    }
+    ge-0/0/5 {
+        flexible-vlan-tagging;
+        native-vlan-id 1;
+        unit 0 {
+            description "vEPC VSFO UP EXT 1 CN ROOT interface";
+            vlan-id 1;
+            family inet {
+                address 172.22.1.3/24;
+            }
+        }
+        unit 103 {
+            description "vEPC VSFO UP EXT 1 CN RAN + Media UP sub-interface";
+            vlan-id 103;
+            family inet {
+                address 21.1.3.3/29;
+            }
+        }
+        unit 104 {
+            description "vEPC VSFO UP EXT 1 CN RAN + Media UP sub-interface";
+            vlan-id 104;
+            family inet {
+                address 21.1.4.3/29;
+            }
+        }
+    }
+    ge-0/0/6 {
+        flexible-vlan-tagging;
+        native-vlan-id 1;
+        unit 0 {
+            description "vEPC VSFO UP EXT 2 APNs ROOT interface";
+            vlan-id 1;
+            family inet {
+                address 172.22.2.3/24;
+            }
+        }
+        unit 3000 {
+            description "vEPC VSFO UP EXT 2 APN 0 sub-interface";
+            vlan-id 3000;
+            family inet {
+                address 22.30.0.3/29;
+            }
+        }
+        unit 3001 {
+            description "vEPC VSFO UP EXT 2 APN 1 sub-interface";
+            vlan-id 3001;
+            family inet {
+                address 22.30.1.3/29;
+            }
+        }
+        unit 3002 {
+            description "vEPC VSFO UP EXT 2 APN 2 sub-interface";
+            vlan-id 3002;
+            family inet {
+                address 22.30.2.3/29;
+            }
+        }
+        unit 3003 {
+            description "vEPC VSFO UP EXT 2 APN 3 sub-interface";
+            vlan-id 3003;
+            family inet {
+                address 22.30.3.3/29;
+            }
+        }
+        unit 3004 {
+            description "vEPC VSFO UP EXT 2 APN 4 sub-interface";
+            vlan-id 3004;
+            family inet {
+                address 22.30.4.3/29;
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            description "vEPC VSFO UP BP - OSPF LoopBack";
+            family inet {
+                address 172.31.2.2/32;
+            }
+        }
+        unit 103 {
+            description "vEPC VSFO UP CN (RAN + Media) 103 Loopback";
+            family inet {
+                address 2.1.3.255/32;
+            }
+        }
+        unit 104 {
+            description "vEPC VSFO UP CN (RAN + Media) 104 Loopback";
+            family inet {
+                address 2.1.4.255/32;
+            }
+        }
+        unit 3000 {
+            description "vEPC VSFO UP APN 3000 EXT 2 Loopback";
+            family inet {
+                address 201.0.2.2/32;
+            }
+        }
+        unit 3001 {
+            description "vEPC VSFO UP APN 3001 EXT 2 Loopback";
+            family inet {
+                address 201.1.2.2/32;
+            }
+        }
+        unit 3002 {
+            description "vEPC VSFO UP APN 3002 EXT 2 Loopback";
+            family inet {
+                address 201.2.2.2/32;
+            }
+        }
+        unit 3003 {
+            description "vEPC VSFO UP APN 3003 EXT 2 Loopback";
+            family inet {
+                address 201.3.2.2/32;
+            }
+        }
+        unit 3004 {
+            description "vEPC VSFO UP APN 3004 EXT 2 Loopback";
+            family inet {
+                address 201.4.2.2/32;
+            }
+        }
+    }
+}
+
+policy-options {
+    policy-statement REDISTRIBUTE_APN_TO_BGP {
+        term static_to_bgp {
+            from {
+                protocol static;
+                route-filter 200.0.0.0/8 orlonger;
+            }
+            then accept;
+        }
+        term direct_to_bgp {
+            from {
+                protocol direct;
+                route-filter 0.0.0.0/0 prefix-length-range /32-/32;
+            }
+            then accept;
+        }
+    }
+    policy-statement REDISTRIBUTE_CN_TO_BGP {
+        term direct_to_bgp {
+            from {
+                protocol direct;
+                route-filter 0.0.0.0/0 prefix-length-range /32-/32;
+            }
+            then accept;
+        }
+    }
+}
+
+routing-instances {
+    cn_1001_vpn {
+        instance-type virtual-router;
+        description "CN (RAN + Media) VEPC VPN - 103";
+        interface ge-0/0/5.103;
+        interface lo0.103;
+        routing-options {
+            autonomous-system 65001;
+            static {
+                route 1.0.0.1/32 {
+                    next-hop 21.1.3.1;
+                    metric 254;
+                    bfd-liveness-detection {
+                        description "BFD to vrouter primary IP."
+                        minimum-interval 1000;
+                        minimum-receive-interval 1000;
+                        transmit-interval {
+                            minimum-interval 1000;
+                        }
+                        multiplier 3;
+                        session-mode multihop;
+                     }
+                }
+            }
+        }
+        protocols {
+            bgp {
+                group cn_vsfo2ext1vlan103 {
+                    type external;
+                    export REDISTRIBUTE_CN_TO_BGP;
+                    peer-as 64512;
+                    description "CN (RAN + Media) VEPC VPN - 103 - peering session (ext 1)";
+                    family inet {
+                        unicast;
+                    }
+                    local-address 21.1.3.3;
+                    neighbor 21.1.3.1;
+                    neighbor 21.1.3.2;
+                }
+            }
+        }
+    }
+    cn_1002_vpn {
+        instance-type virtual-router;
+        description "CN (RAN + Media) VEPC VPN - 104";
+        interface ge-0/0/5.104;
+        interface lo0.104;
+        routing-options {
+            autonomous-system 65001;
+            static {
+                route 1.0.0.1/32 {
+                    next-hop 21.1.4.1;
+                    metric 254;
+                    bfd-liveness-detection {
+                        description "BFD to vrouter primary IP."
+                        minimum-interval 1000;
+                        minimum-receive-interval 1000;
+                        transmit-interval {
+                            minimum-interval 1000;
+                        }
+                        multiplier 3;
+                        session-mode multihop;
+                     }
+                }
+            }
+        }
+        protocols {
+            bgp {
+                group cn_vsfo2ext1vlan104 {
+                    type external;
+                    export REDISTRIBUTE_CN_TO_BGP;
+                    peer-as 64512;
+                    description "CN (RAN + Media) VEPC VPN - 104 - peering session (ext 1)";
+                    family inet {
+                        unicast;
+                    }
+                    local-address 21.1.4.3;
+                    neighbor 21.1.4.1;
+                    neighbor 21.1.4.2;
+                }
+            }
+        }
+    }
+    apn_3000_ext2_vpn {
+        instance-type virtual-router;
+        description "APN VEPC VPN - 3000 - EXT NIC 2";
+        interface ge-0/0/6.3000;
+        interface lo0.3000;
+        routing-options {
+            autonomous-system 65001;
+            static {
+                route 1.0.0.1/32 {
+                    next-hop 22.30.0.1;
+                    metric 254;
+                    bfd-liveness-detection {
+                        description "BFD to vrouter primary IP."
+                        minimum-interval 1000;
+                        minimum-receive-interval 1000;
+                        transmit-interval {
+                            minimum-interval 1000;
+                        }
+                        multiplier 3;
+                        session-mode multihop;
+                     }
+                }
+                route 200.0.0.0/27 discard;
+                route 200.0.1.0/27 discard;
+                route 200.0.2.0/27 discard;
+                route 200.0.3.0/27 discard;
+                route 200.0.4.0/27 discard;
+                route 200.0.5.0/27 discard;
+                route 200.0.6.0/27 discard;
+                route 200.0.7.0/27 discard;
+                route 200.0.8.0/27 discard;
+                route 200.0.9.0/27 discard;
+            }
+        }
+        protocols {
+            bgp {
+                group apn_vsfo2ext1vlan3000 {
+                    type external;
+                    export REDISTRIBUTE_APN_TO_BGP;
+                    peer-as 64512;
+                    description "APN VEPC VPN - 3000 - peering session (ext 2)";
+                    family inet {
+                        unicast;
+                    }
+                    local-address 22.30.0.3;
+                    neighbor 22.30.0.1;
+                    neighbor 22.30.0.2;
+                }
+            }
+        }
+    }
+    apn_3001_ext2_vpn {
+        instance-type virtual-router;
+        description "APN VEPC VPN - 3001 - EXT NIC 2";
+        interface ge-0/0/6.3001;
+        interface lo0.3001;
+        routing-options {
+            autonomous-system 65001;
+            static {
+                route 1.0.0.1/32 {
+                    next-hop 22.30.1.1;
+                    metric 254;
+                    bfd-liveness-detection {
+                        description "BFD to vrouter primary IP."
+                        minimum-interval 1000;
+                        minimum-receive-interval 1000;
+                        transmit-interval {
+                            minimum-interval 1000;
+                        }
+                        multiplier 3;
+                        session-mode multihop;
+                     }
+                }
+                route 200.0.0.0/27 discard;
+                route 200.0.1.0/27 discard;
+                route 200.0.2.0/27 discard;
+                route 200.0.3.0/27 discard;
+                route 200.0.4.0/27 discard;
+                route 200.0.5.0/27 discard;
+                route 200.0.6.0/27 discard;
+                route 200.0.7.0/27 discard;
+                route 200.0.8.0/27 discard;
+                route 200.0.9.0/27 discard;
+            }
+        }
+        protocols {
+            bgp {
+                group apn_vsfo2ext1vlan3001 {
+                    type external;
+                    export REDISTRIBUTE_APN_TO_BGP;
+                    peer-as 64512;
+                    description "APN VEPC VPN - 3001 - peering session (ext 2)";
+                    family inet {
+                        unicast;
+                    }
+                    local-address 22.30.1.3;
+                    neighbor 22.30.1.1;
+                    neighbor 22.30.1.2;
+                }
+            }
+        }
+    }
+    apn_3002_ext2_vpn {
+        instance-type virtual-router;
+        description "APN VEPC VPN - 3002 - EXT NIC 2";
+        interface ge-0/0/6.3002;
+        interface lo0.3002;
+        routing-options {
+            autonomous-system 65001;
+            static {
+                route 1.0.0.1/32 {
+                    next-hop 22.30.2.1;
+                    metric 254;
+                    bfd-liveness-detection {
+                        description "BFD to vrouter primary IP."
+                        minimum-interval 1000;
+                        minimum-receive-interval 1000;
+                        transmit-interval {
+                            minimum-interval 1000;
+                        }
+                        multiplier 3;
+                        session-mode multihop;
+                     }
+                }
+                route 200.0.0.0/27 discard;
+                route 200.0.1.0/27 discard;
+                route 200.0.2.0/27 discard;
+                route 200.0.3.0/27 discard;
+                route 200.0.4.0/27 discard;
+                route 200.0.5.0/27 discard;
+                route 200.0.6.0/27 discard;
+                route 200.0.7.0/27 discard;
+                route 200.0.8.0/27 discard;
+                route 200.0.9.0/27 discard;
+            }
+        }
+        protocols {
+            bgp {
+                group apn_vsfo2ext1vlan3002 {
+                    type external;
+                    export REDISTRIBUTE_APN_TO_BGP;
+                    peer-as 64512;
+                    description "APN VEPC VPN - 3002 - peering session (ext 2)";
+                    family inet {
+                        unicast;
+                    }
+                    local-address 22.30.2.3;
+                    neighbor 22.30.2.1;
+                    neighbor 22.30.2.2;
+                }
+            }
+        }
+    }
+    apn_3003_ext2_vpn {
+        instance-type virtual-router;
+        description "APN VEPC VPN - 3003 - EXT NIC 2";
+        interface ge-0/0/6.3003;
+        interface lo0.3003;
+        routing-options {
+            autonomous-system 65001;
+            static {
+                route 1.0.0.1/32 {
+                    next-hop 22.30.3.1;
+                    metric 254;
+                    bfd-liveness-detection {
+                        description "BFD to vrouter primary IP."
+                        minimum-interval 1000;
+                        minimum-receive-interval 1000;
+                        transmit-interval {
+                            minimum-interval 1000;
+                        }
+                        multiplier 3;
+                        session-mode multihop;
+                     }
+                }
+                route 200.0.0.0/27 discard;
+                route 200.0.1.0/27 discard;
+                route 200.0.2.0/27 discard;
+                route 200.0.3.0/27 discard;
+                route 200.0.4.0/27 discard;
+                route 200.0.5.0/27 discard;
+                route 200.0.6.0/27 discard;
+                route 200.0.7.0/27 discard;
+                route 200.0.8.0/27 discard;
+                route 200.0.9.0/27 discard;
+            }
+        }
+        protocols {
+            bgp {
+                group apn_vsfo2ext1vlan3003 {
+                    type external;
+                    export REDISTRIBUTE_APN_TO_BGP;
+                    peer-as 64512;
+                    description "APN VEPC VPN - 3003 - peering session (ext 2)";
+                    family inet {
+                        unicast;
+                    }
+                    local-address 22.30.3.3;
+                    neighbor 22.30.3.1;
+                    neighbor 22.30.3.2;
+                }
+            }
+        }
+    }
+    apn_3004_ext2_vpn {
+        instance-type virtual-router;
+        description "APN VEPC VPN - 3004 - EXT NIC 2";
+        interface ge-0/0/6.3004;
+        interface lo0.3004;
+        routing-options {
+            autonomous-system 65001;
+            static {
+                route 1.0.0.1/32 {
+                    next-hop 22.30.4.1;
+                    metric 254;
+                    bfd-liveness-detection {
+                        description "BFD to vrouter primary IP."
+                        minimum-interval 1000;
+                        minimum-receive-interval 1000;
+                        transmit-interval {
+                            minimum-interval 1000;
+                        }
+                        multiplier 3;
+                        session-mode multihop;
+                     }
+                }
+                route 200.0.0.0/27 discard;
+                route 200.0.1.0/27 discard;
+                route 200.0.2.0/27 discard;
+                route 200.0.3.0/27 discard;
+                route 200.0.4.0/27 discard;
+                route 200.0.5.0/27 discard;
+                route 200.0.6.0/27 discard;
+                route 200.0.7.0/27 discard;
+                route 200.0.8.0/27 discard;
+                route 200.0.9.0/27 discard;
+            }
+        }
+        protocols {
+            bgp {
+                group apn_vsfo2ext1vlan3004 {
+                    type external;
+                    export REDISTRIBUTE_APN_TO_BGP;
+                    peer-as 64512;
+                    description "APN VEPC VPN - 3004 - peering session (ext 2)";
+                    family inet {
+                        unicast;
+                    }
+                    local-address 22.30.4.3;
+                    neighbor 22.30.4.1;
+                    neighbor 22.30.4.2;
+                }
+            }
+        }
+    }
+}
+
+protocols {
+    bfd {
+        traceoptions {
+            file bfd-trace;
+            flag all;
+        }
+    }
+    ospf {
+        area 0.0.0.0 {
+            interface ge-0/0/0.0 {
+                priority 0;
+                hello-interval 1;
+                dead-interval 3;
+            }
+            interface lo0.0 {
+                passive;
+            }
+        }
+    }
+}
+
+routing-options {
+    static {
+        route 0.0.0.0/1 next-hop 192.168.25.1;
+        route 128.0.0.0/1 next-hop 192.168.25.1;
+    }
+    router-id 172.31.2.2;
+    autonomous-system 65001;
+}

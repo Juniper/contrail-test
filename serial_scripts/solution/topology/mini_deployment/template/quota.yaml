@@ -1,0 +1,32 @@
+description: Quotas update for vEPG VNF
+heat_template_version: 'queens'
+
+parameters:
+  project:
+    type: string
+    description: "Name of the project to bump quotas"
+    default: "admin"
+  max_file_size:
+    type: number
+    description: "Max Personality file size"
+    default: 8388608
+
+resources:
+  quota:
+    type: OS::Nova::Quota
+    properties:
+      cores: -1
+      fixed_ips: -1
+      floating_ips: -1
+      injected_file_content_bytes: { get_param: max_file_size }
+      injected_file_path_bytes: -1
+      injected_files: -1
+      instances: -1
+      key_pairs: -1
+      metadata_items: -1
+      project: { get_param: project }
+      ram: -1
+      security_group_rules: -1
+      security_groups: -1
+      server_group_members: -1
+      server_groups: -1

@@ -1,0 +1,3 @@
+parameters:
+  project: 'vepg'
+  max_file_size: 16777216

@@ -81,19 +81,21 @@ class HeatStackFixture(fixtures.Fixture):
             connections,
             stack_name,
             template=None,
-            env=None):
+            env=None,
+            timeout_mins=5):
         self.connections = connections
         self.stack_name = stack_name
         self.template = template
         self.logger = self.connections.logger
         self.env = env
+        self.timeout_mins = timeout_mins
         self.already_present = False
 #   end __init__
 
     def setUp(self):
         super(HeatStackFixture, self).setUp()
         fields = {}
-        fields = {'stack_name': self.stack_name, 'timeout_mins': 5,
+        fields = {'stack_name': self.stack_name, 'timeout_mins': self.timeout_mins,
                   'template': self.template, 'environment': self.env}
         self.heat_obj = self.useFixture(HeatFixture(connections=self.connections))
         self.heat_client_obj = self.heat_obj.obj
@@ -113,7 +115,7 @@ class HeatStackFixture(fixtures.Fixture):
         do_cleanup = True
         self.logger.info('Deleting Stack %s' % self.stack_name)
         if self.already_present:
-            do_cleanup = False    
+            do_cleanup = False
         if do_cleanup:
             self.heat_obj = self.useFixture(HeatFixture(connections=self.connections))
             self.heat_client_obj = self.heat_obj.obj
@@ -126,7 +128,7 @@ class HeatStackFixture(fixtures.Fixture):
 
     def update(self, new_parameters):
         fields = {}
-        fields = {'stack_name': self.stack_name, 'timeout_mins': 5,
+        fields = {'stack_name': self.stack_name, 'timeout_mins': self.timeout_mins,
                   'template': self.template, 'environment': {},
                   'parameters': new_parameters}
         self.heat_client_obj = self.heat_obj.obj
@@ -146,7 +148,7 @@ class HeatStackFixture(fixtures.Fixture):
         self.template = template
         self.env = env
         fields = {}
-        fields = {'stack_name': self.stack_name, 'timeout_mins': 5,
+        fields = {'stack_name': self.stack_name, 'timeout_mins': self.timeout_mins,
                   'template': self.template, 'environment': self.env}
         self.heat_client_obj = self.heat_obj.obj
         for i in self.heat_client_obj.stacks.list():
@@ -203,7 +205,7 @@ class HeatStackFixture(fixtures.Fixture):
             time.sleep(6)
     # end wait_till_stack_created
 
-    @retry(delay=5, tries=15)
+    @retry(delay=5, tries=150)
     def wait_till_stack_is_deleted(self):
         result = True
         for stack_obj in self.heat_obj.list_stacks():
