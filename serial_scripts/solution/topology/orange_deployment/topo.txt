@@ -1,0 +1,10 @@
+1.  Number of APNs                               100
+2.  APN's per file                               50
+3.  VSFO cp node number                          2
+4.  VSFO up node number                          2
+5.  Number of VSFO up external NICs              4
+6.  Number of VSFO up CN NICs                    2
+7.  Number of BGP prefixes per APN               384
+8.  USE_FIP                                      True
+9.  KERNEL_AZ                                    kernel-compute    "default"
+10. DPDK_AZ                                      dpdk-compute      "default"

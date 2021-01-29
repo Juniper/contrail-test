@@ -1,0 +1,149 @@
+#junos-config - vEPC VSFO Control Plane
+
+system {
+    root-authentication {
+        encrypted-password "$6$sg7yK0wP$XKPfVjffdOp6g38R1UXui4Lxx5QZHARNdNfgkpXofFr7hT5R2sjUyFrdo5AitBujdpGvAOy2ziJG4oS8jOoiu1";
+    }
+    login {
+        user admin {
+            uid 2000;
+            class super-user;
+            authentication {
+                encrypted-password "$6$sg7yK0wP$XKPfVjffdOp6g38R1UXui4Lxx5QZHARNdNfgkpXofFr7hT5R2sjUyFrdo5AitBujdpGvAOy2ziJG4oS8jOoiu1";
+            }
+        }
+    }
+    host-name vsfo_cp-2 
+    services {
+        ssh {
+            root-login allow;
+        }
+        web-management {
+            http {
+                interface fxp0.0;
+            }
+        }
+    }
+    syslog {
+        file messages {
+            any any;
+        }
+    }
+}
+
+security {
+    forwarding-options {
+        family {
+            inet6 {
+                mode packet-based;
+            }
+            mpls {
+                mode packet-based;
+            }
+            iso {
+                mode packet-based;
+            }
+        }
+    }
+}
+
+interfaces {
+    fxp0 {
+        unit 0 {
+            description "vSRX OOB Management interface";
+            family inet {
+                address 192.168.25.102/24;
+            }
+        }
+    }
+    ge-0/0/0 {
+        unit 0 {
+            description "vEPC VSFO CP BP interface";
+            family inet {
+                address 192.3.1.102/16;
+            }
+        }
+    }
+    ge-0/0/1 {
+        unit 0 {
+            description "vEPC VSFO CP VFAB 1 interface";
+            family inet {
+                address 127.6.21.102/24;
+            }
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            description "vEPC VSFO CP VFAB 2 interface";
+            family inet {
+                address 127.6.22.102/24;
+            }
+        }
+    }
+    ge-0/0/3 {
+        unit 0 {
+            description "vEPC VSFO CP VFAB 3 interface";
+            family inet {
+                address 127.6.23.102/24;
+            }
+        }
+    }
+    ge-0/0/4 {
+        unit 0 {
+            description "vEPC VSFO CP VFAB 4 interface";
+            family inet {
+                address 127.6.24.102/24;
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            description "vEPC VSFO CP BP - OSPF LoopBack";
+            family inet {
+                address 172.31.2.2/32;
+            }
+        }
+    }
+}
+
+policy-options {
+    policy-statement REDISTRIBUTE_TO_BGP {
+        term direct_to_bgp {
+            from {
+                protocol direct;
+                route-filter 0.0.0.0/0 prefix-length-range /32-/32;
+            }
+            then accept;
+        }
+    }
+}
+
+protocols {
+    bfd {
+        traceoptions {
+            file bfd-trace;
+            flag all;
+        }
+    }
+    ospf {
+        area 0.0.0.0 {
+            interface ge-0/0/0.0 {
+                priority 0;
+                hello-interval 1;
+                dead-interval 3;
+            }
+            interface lo0.0 {
+                passive;
+            }
+        }
+    }
+}
+
+routing-options {
+    static {
+        route 0.0.0.0/1 next-hop 192.168.25.1;
+        route 128.0.0.0/1 next-hop 192.168.25.1;
+    }
+    router-id 172.31.2.2;
+    autonomous-system 65001;
+}

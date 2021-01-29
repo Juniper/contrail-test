@@ -1,0 +1,31 @@
+description: vEPG flavors resources creation
+heat_template_version:  queens
+resources:
+
+  vrp_node:
+    type: OS::Nova::Flavor
+    properties:
+      name: VRP-NODE
+      disk: 100 
+      ram: 8192 
+      vcpus: 4 
+      extra_specs: {"hw:cpu_policy": 'dedicated', "hw:mem_page_size": 'any'}
+
+  vsfo_cp_node:
+    type: OS::Nova::Flavor
+    properties:
+      name: VSFO-CP-NODE
+      disk: 100 
+      ram: 8192 
+      vcpus: 4 
+      extra_specs: {"hw:cpu_policy": 'dedicated', "hw:mem_page_size": 'any'}
+
+  vsfo_up_node:
+    type: OS::Nova::Flavor
+    properties:
+      name: VSFO-UP-NODE
+      disk: 100 
+      ram: 16384 
+      vcpus: 10 
+      extra_specs: {"hw:cpu_policy": 'dedicated', "hw:mem_page_size": 'large'}
+

@@ -1,0 +1,10 @@
+1.  Number of APNs                               5
+2.  APN's per file                               5
+3.  VSFO cp node number                          1
+4.  VSFO up node number                          1
+5.  Number of VSFO up external NICs              2
+6.  Number of VSFO up CN NICs                    1
+7.  Number of BGP prefixes per APN               10
+8.  USE_FIP                                      False
+9.  KERNEL_AZ==DPDK_AZ                           nova  "only kernel computes on
+                                                     the nodek8 setup were available"

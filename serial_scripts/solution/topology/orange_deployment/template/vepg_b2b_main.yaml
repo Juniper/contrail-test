@@ -1,0 +1,3432 @@
+description: vEPG-B2B
+heat_template_version: '2015-04-30'
+
+parameters:
+  vrp31_floatip:
+    type: string
+    description: "VRP 31 floating IP UUID."
+
+  vrp32_floatip:
+    type: string
+    description: "VRP 32 floating IP UUID."
+
+  vsfo-1_floatip:
+    type: string
+    description: "VSFO 1 floating IP UUID."
+
+  vsfo-2_floatip:
+    type: string
+    description: "VSFO 2 floating IP UUID."
+
+  vsfo-3_floatip:
+    type: string
+    description: "VSFO 3 floating IP UUID."
+
+  vsfo-4_floatip:
+    type: string
+    description: "VSFO 4 floating IP UUID."
+
+
+outputs:
+  bfd_health_check:
+    description: UUID of BFD service health check definition
+    value:
+      get_attr: [BFD_HEALTH_CHECK, show, uuid]
+
+  vsfo_3_bp:
+    description: UUID of VSFO 3 BP interface
+    value:
+      get_attr: [VSFO-3_BP, show, uuid]
+
+  vsfo_3_vfab_1:
+    description: UUID of VSFO 3 VFAB 1 interface
+    value:
+      get_attr: [VSFO-3_VFAB-1, show, uuid]
+
+  vsfo_3_vfab_2:
+    description: UUID of VSFO 3 VFAB 2 interface
+    value:
+      get_attr: [VSFO-3_VFAB-2, show, uuid]
+
+  vsfo_3_vfab_3:
+    description: UUID of VSFO 3 VFAB 3 interface
+    value:
+      get_attr: [VSFO-3_VFAB-3, show, uuid]
+
+  vsfo_3_vfab_4:
+    description: UUID of VSFO 3 VFAB 4 interface
+    value:
+      get_attr: [VSFO-3_VFAB-4, show, uuid]
+
+  vsfo_3_ext_1:
+    description: UUID of VSFO 3 EXT 1 interface
+    value:
+      get_attr: [VSFO-3_VSFO-3_EXT-1, show, uuid]
+
+  vsfo_3_ext_2:
+    description: UUID of VSFO 3 EXT 2 interface
+    value:
+      get_attr: [VSFO-3_VSFO-3_EXT-2, show, uuid]
+
+  vsfo_3_ext_3:
+    description: UUID of VSFO 3 EXT 3 interface
+    value:
+      get_attr: [VSFO-3_VSFO-3_EXT-3, show, uuid]
+
+  vsfo_3_ext_4:
+    description: UUID of VSFO 3 EXT 4 interface
+    value:
+      get_attr: [VSFO-3_VSFO-3_EXT-4, show, uuid]
+
+  vsfo_4_bp:
+    description: UUID of VSFO 4 BP interface
+    value:
+      get_attr: [VSFO-4_BP, show, uuid]
+
+  vsfo_4_vfab_1:
+    description: UUID of VSFO 4 VFAB 1 interface
+    value:
+      get_attr: [VSFO-4_VFAB-1, show, uuid]
+
+  vsfo_4_vfab_2:
+    description: UUID of VSFO 4 VFAB 2 interface
+    value:
+      get_attr: [VSFO-4_VFAB-2, show, uuid]
+
+  vsfo_4_vfab_3:
+    description: UUID of VSFO 4 VFAB 3 interface
+    value:
+      get_attr: [VSFO-4_VFAB-3, show, uuid]
+
+  vsfo_4_vfab_4:
+    description: UUID of VSFO 4 VFAB 4 interface
+    value:
+      get_attr: [VSFO-4_VFAB-4, show, uuid]
+
+  vsfo_4_ext_1:
+    description: UUID of VSFO 4 EXT 1 interface
+    value:
+      get_attr: [VSFO-4_VSFO-4_EXT-1, show, uuid]
+
+  vsfo_4_ext_2:
+    description: UUID of VSFO 4 EXT 2 interface
+    value:
+      get_attr: [VSFO-4_VSFO-4_EXT-2, show, uuid]
+
+  vsfo_4_ext_3:
+    description: UUID of VSFO 4 EXT 3 interface
+    value:
+      get_attr: [VSFO-4_VSFO-4_EXT-3, show, uuid]
+
+  vsfo_4_ext_4:
+    description: UUID of VSFO 4 EXT 4 interface
+    value:
+      get_attr: [VSFO-4_VSFO-4_EXT-4, show, uuid]
+
+  vsfo_1_id:
+    description: VSFO-CP handle
+    value:
+      get_attr: [VSFO-1, show, id]
+
+  vsfo_2_id:
+    description: VSFO-CP handle
+    value:
+      get_attr: [VSFO-2, show, id]
+
+  vsfo_3_id:
+    description: VSFO-UP handle
+    value:
+      get_attr: [VSFO-3, show, id]
+
+  vsfo_4_id:
+    description: VSFO-UP handle
+    value:
+      get_attr: [VSFO-4, show, id]
+
+  vrp_31_id:
+    description: VRP-31 handle
+    value:
+      get_attr: [VRP-31, show, id]
+
+  vrp_32_id:
+    description: VRP-32 handle
+    value:
+      get_attr: [VRP-32, show, id]
+
+
+
+resources:
+  BFD_HEALTH_CHECK:
+    properties:
+      name: EPG-B2B-BGPaaS_BFD_CHECK
+      service_health_check_properties: {
+        service_health_check_properties_enabled: true, 
+        service_health_check_properties_health_check_type: link-local,
+        service_health_check_properties_monitor_type: BFD,
+        service_health_check_properties_delay: 1,
+        service_health_check_properties_timeout: 1,
+        service_health_check_properties_max_retries: 3,
+        }
+    type: OS::ContrailV2::ServiceHealthCheck
+
+
+  ipam_fxp0:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: fxp0_ipam
+
+  fxp0_net:
+    type: OS::ContrailV2::VirtualNetwork
+    depends_on: [ipam_fxp0]
+    properties:
+      name: oob_net
+      route_target_list:
+        {
+          route_target_list_route_target: [ 'target:65000:999' ]
+        }
+      network_ipam_refs: [{ get_resource: ipam_fxp0 }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 192.168.25.0,
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24,
+                },
+                network_ipam_refs_data_ipam_subnets_addr_from_start: 'true',
+                network_ipam_refs_data_ipam_subnets_enable_dhcp: 'true',
+         }]
+         },
+        ]
+
+  BGP_VSFO-1_EXT-1_TAGGED-1001:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-1001, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.10.1.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-1001
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-1001}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-1_EXT-1_TAGGED-1002:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-1002, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.10.2.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-1002
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-1002}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-1_EXT-1_TAGGED-1003:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-1003, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.10.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-1003
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-1003}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-2_EXT-1_TAGGED-1001:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-1001, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.10.1.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-1001
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-1001}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-2_EXT-1_TAGGED-1002:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-1002, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.10.2.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-1002
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-1002}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-2_EXT-1_TAGGED-1003:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-1003, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.10.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-1003
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-1003}
+    type: OS::ContrailV2::BgpAsAService
+
+
+
+
+  BGP_VSFO-1_EXT-1_TAGGED-2000:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2000, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.20.0.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-2000
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2000}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-1_EXT-1_TAGGED-2001:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2001, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.20.1.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-2001
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2001}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-1_EXT-1_TAGGED-2002:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2002, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.20.2.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-2002
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2002}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-1_EXT-1_TAGGED-2003:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2003, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.20.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-2003
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2003}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-1_EXT-1_TAGGED-2004:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2004, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.20.4.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-2004
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2004}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-1_EXT-1_TAGGED-2005:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2005, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 11.20.5.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-1_EXT-1_TAGGED-2005
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2005}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-2_EXT-1_TAGGED-2000:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2000, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.20.0.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-2000
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2000}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-2_EXT-1_TAGGED-2001:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2001, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.20.1.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-2001
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2001}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-2_EXT-1_TAGGED-2002:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2002, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.20.2.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-2002
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2002}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-2_EXT-1_TAGGED-2003:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2003, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.20.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-2003
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2003}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-2_EXT-1_TAGGED-2004:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2004, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.20.4.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-2004
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2004}
+    type: OS::ContrailV2::BgpAsAService
+
+
+  BGP_VSFO-2_EXT-1_TAGGED-2005:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2005, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 21.20.5.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-2_EXT-1_TAGGED-2005
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2005}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-3_EXT-1_TAGGED-103:
+    depends_on: [VSFO-3_VSFO-3_EXT-1_TAGGED-103, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 31.1.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-3_EXT-1_TAGGED-103
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-1_TAGGED-103}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-3_EXT-1_TAGGED-104:
+    depends_on: [VSFO-3_VSFO-3_EXT-1_TAGGED-104, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 31.1.4.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-3_EXT-1_TAGGED-104
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-1_TAGGED-104}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-3_EXT-2_TAGGED-103:
+    depends_on: [VSFO-3_VSFO-3_EXT-2_TAGGED-103, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 32.1.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-3_EXT-2_TAGGED-103
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-2_TAGGED-103}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-3_EXT-2_TAGGED-104:
+    depends_on: [VSFO-3_VSFO-3_EXT-2_TAGGED-104, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 32.1.4.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-3_EXT-2_TAGGED-104
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-2_TAGGED-104}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-4_EXT-1_TAGGED-103:
+    depends_on: [VSFO-4_VSFO-4_EXT-1_TAGGED-103, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 41.1.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-4_EXT-1_TAGGED-103
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-1_TAGGED-103}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-4_EXT-1_TAGGED-104:
+    depends_on: [VSFO-4_VSFO-4_EXT-1_TAGGED-104, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 41.1.4.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-4_EXT-1_TAGGED-104
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-1_TAGGED-104}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-4_EXT-2_TAGGED-103:
+    depends_on: [VSFO-4_VSFO-4_EXT-2_TAGGED-103, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 42.1.3.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-4_EXT-2_TAGGED-103
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-2_TAGGED-103}
+    type: OS::ContrailV2::BgpAsAService
+
+  BGP_VSFO-4_EXT-2_TAGGED-104:
+    depends_on: [VSFO-4_VSFO-4_EXT-2_TAGGED-104, BFD_HEALTH_CHECK]
+    properties:
+      autonomous_system: 65001
+      bgpaas_ip_address: 42.1.4.3
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGP_VSFO-4_EXT-2_TAGGED-104
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-2_TAGGED-104}
+    type: OS::ContrailV2::BgpAsAService
+
+  BP:
+    depends_on: [BP_ipam]
+    properties:
+      name: EPG-B2B-BP
+      network_ipam_refs:
+      - {get_resource: BP_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_default_gateway: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_dhcp_option_list: {}
+          network_ipam_refs_data_ipam_subnets_dns_server_address: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_enable_dhcp: false
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 192.3.0.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 16}
+      virtual_network_properties: {virtual_network_properties_forwarding_mode: l2,
+        virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  BP_ipam:
+    properties: {name: EPG-B2B-BP_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  MATE:
+    depends_on: [MATE_ipam]
+    properties:
+      name: EPG-B2B-MATE
+      network_ipam_refs:
+      - {get_resource: MATE_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_default_gateway: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_dhcp_option_list: {}
+          network_ipam_refs_data_ipam_subnets_dns_server_address: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_enable_dhcp: false
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 127.4.0.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 16}
+      virtual_network_properties: {virtual_network_properties_forwarding_mode: l2,
+        virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  MATE_ipam:
+    properties: {name: EPG-B2B-MATE_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  MGMT:
+    depends_on: [MGMT_ipam]
+    properties:
+      name: EPG-B2B-MGMT
+      network_ipam_refs:
+      - {get_resource: MGMT_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.20.71.48,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:700']
+      virtual_network_properties: {virtual_network_properties_forwarding_mode: l2_l3,
+        virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  MGMT_ipam:
+    properties: {name: EPG-B2B-MGMT_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VFAB-1:
+    depends_on: [VFAB-1_ipam]
+    properties:
+      name: EPG-B2B-VFAB-1
+      network_ipam_refs:
+      - {get_resource: VFAB-1_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_default_gateway: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_dhcp_option_list: {}
+          network_ipam_refs_data_ipam_subnets_dns_server_address: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_enable_dhcp: false
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 127.6.21.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_forwarding_mode: l2,
+        virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VFAB-1_ipam:
+    properties: {name: EPG-IoT-VFAB-1_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VFAB-2:
+    depends_on: [VFAB-2_ipam]
+    properties:
+      name: EPG-B2B-VFAB-2
+      network_ipam_refs:
+      - {get_resource: VFAB-2_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_default_gateway: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_dhcp_option_list: {}
+          network_ipam_refs_data_ipam_subnets_dns_server_address: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_enable_dhcp: false
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 127.6.22.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_forwarding_mode: l2,
+        virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VFAB-2_ipam:
+    properties: {name: EPG-IoT-VFAB-2_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VFAB-3:
+    depends_on: [VFAB-3_ipam]
+    properties:
+      name: EPG-B2B-VFAB-3
+      network_ipam_refs:
+      - {get_resource: VFAB-3_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_default_gateway: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_dhcp_option_list: {}
+          network_ipam_refs_data_ipam_subnets_dns_server_address: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_enable_dhcp: false
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 127.6.23.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_forwarding_mode: l2,
+        virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VFAB-3_ipam:
+    properties: {name: EPG-IoT-VFAB-3_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VFAB-4:
+    depends_on: [VFAB-4_ipam]
+    properties:
+      name: EPG-B2B-VFAB-4
+      network_ipam_refs:
+      - {get_resource: VFAB-4_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_default_gateway: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_dhcp_option_list: {}
+          network_ipam_refs_data_ipam_subnets_dns_server_address: 0.0.0.0
+          network_ipam_refs_data_ipam_subnets_enable_dhcp: false
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 127.6.24.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_forwarding_mode: l2,
+        virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VFAB-4_ipam:
+    properties: {name: EPG-IoT-VFAB-4_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  vmi_vrp-31_fxp0:
+    depends_on: [fxp0_net]
+    properties:
+      name: vrp-31_fxp0_int
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      port_security_enabled: false
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  vrp-31_fxp0_InstanceIP:
+    depends_on: [vmi_vrp-31_fxp0, fxp0_net]
+    properties:
+      virtual_machine_interface_refs: [{ get_resource: vmi_vrp-31_fxp0 }]
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      instance_ip_address: 192.168.25.31
+    type: OS::ContrailV2::InstanceIp
+
+  vrp-31_association:
+    depends_on: [vmi_vrp-31_fxp0, vrp-31_fxp0_InstanceIP]
+    properties:
+      floatingip_id: { get_param: vrp31_floatip }
+      port_id: {get_resource: vmi_vrp-31_fxp0}
+    type: OS::Neutron::FloatingIPAssociation
+
+  VRP-31:
+    depends_on: [servgroup_rp-b2b, VRP-31_BP_InstanceIP, VRP-31_MATE_InstanceIP, VRP-31_MGMT_InstanceIP, vrp-31_fxp0_InstanceIP]
+    properties:
+      availability_zone: kernel-computes
+      config_drive: 'true'
+      user_data_format: RAW
+      personality: { /config/junos-config/configuration.txt: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vrp31_config.txt } }
+      flavor: VRP-NODE 
+      image: VRP-IMAGE 
+      name: EPG-B2B-VRP-31
+      networks:
+      - port: {get_resource: vmi_vrp-31_fxp0}
+      - port: {get_resource: VRP-31_MGMT}
+      - port: {get_resource: VRP-31_BP}
+      - port: {get_resource: VRP-31_MATE}
+      scheduler_hints:
+        group: {get_resource: servgroup_rp-b2b}
+    type: OS::Nova::Server
+
+  VRP-31_BP:
+    depends_on: [BP]
+    properties:
+      name: VRP-31_BP
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:01:fc:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VRP-31_BP_InstanceIP:
+    depends_on: [VRP-31_BP, BP]
+    properties:
+      name: EPG-B2B-VRP-31_BP_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VRP-31_BP}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VRP-31_MATE:
+    depends_on: [MATE]
+    properties:
+      name: VRP-31_MATE
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:02:fc:fc']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [MATE, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VRP-31_MATE_InstanceIP:
+    depends_on: [VRP-31_MATE, MATE]
+    properties:
+      name: EPG-B2B-MATE
+      virtual_machine_interface_refs:
+      - {get_resource: VRP-31_MATE}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [MATE, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VRP-31_MGMT:
+    depends_on: [MGMT]
+    properties:
+      name: VRP-31_MGMT
+      virtual_machine_interface_allowed_address_pairs:
+        virtual_machine_interface_allowed_address_pairs_allowed_address_pair:
+        - virtual_machine_interface_allowed_address_pairs_allowed_address_pair_address_mode: active-standby
+          virtual_machine_interface_allowed_address_pairs_allowed_address_pair_ip: {
+            virtual_machine_interface_allowed_address_pairs_allowed_address_pair_ip_ip_prefix: 172.20.71.53,
+            virtual_machine_interface_allowed_address_pairs_allowed_address_pair_ip_ip_prefix_len: 32}
+      virtual_machine_interface_disable_policy: true
+      virtual_network_refs:
+      - {get_resource: MGMT}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VRP-31_MGMT_InstanceIP:
+    depends_on: [VRP-31_MGMT, MGMT]
+    properties:
+      name: EPG-B2B-MGMT
+      virtual_machine_interface_refs:
+      - {get_resource: VRP-31_MGMT}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [MGMT, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  vmi_vrp-32_fxp0:
+    depends_on: [fxp0_net]
+    properties:
+      name: vrp-32_fxp0_int
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      port_security_enabled: false
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  vrp-32_fxp0_InstanceIP:
+    depends_on: [vmi_vrp-32_fxp0, fxp0_net]
+    properties:
+      virtual_machine_interface_refs: [{ get_resource: vmi_vrp-32_fxp0 }]
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      instance_ip_address: 192.168.25.32
+    type: OS::ContrailV2::InstanceIp
+
+  vrp-32_association:
+    depends_on: [vmi_vrp-32_fxp0, vrp-32_fxp0_InstanceIP]
+    properties:
+      floatingip_id: { get_param: vrp32_floatip }
+      port_id: {get_resource: vmi_vrp-32_fxp0}
+    type: OS::Neutron::FloatingIPAssociation
+
+  VRP-32:
+    depends_on: [servgroup_rp-b2b, VRP-32_BP_InstanceIP, VRP-32_MATE_InstanceIP, VRP-32_MGMT_InstanceIP, vrp-32_fxp0_InstanceIP]
+    properties:
+      availability_zone: kernel-computes
+      config_drive: 'true'
+      user_data_format: RAW
+      personality: { /config/junos-config/configuration.txt: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vrp32_config.txt } }
+      flavor: VRP-NODE 
+      image: VRP-IMAGE 
+      name: EPG-B2B-VRP-32
+      networks:
+      - port: {get_resource: vmi_vrp-32_fxp0}
+      - port: {get_resource: VRP-32_MGMT}
+      - port: {get_resource: VRP-32_BP}
+      - port: {get_resource: VRP-32_MATE}
+      scheduler_hints:
+        group: {get_resource: servgroup_rp-b2b}
+    type: OS::Nova::Server
+
+  VRP-32_BP:
+    depends_on: [BP]
+    properties:
+      name: VRP-32_BP
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:01:fd:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VRP-32_BP_InstanceIP:
+    depends_on: [VRP-32_BP, BP]
+    properties:
+      name: EPG-B2B-VRP-32_BP_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VRP-32_BP}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VRP-32_MATE:
+    depends_on: [MATE]
+    properties:
+      name: VRP-32_MATE
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:02:fd:fc']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [MATE, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VRP-32_MATE_InstanceIP:
+    depends_on: [VRP-32_MATE, MATE]
+    properties:
+      name: EPG-B2B-MATE
+      virtual_machine_interface_refs:
+      - {get_resource: VRP-32_MATE}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [MATE, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VRP-32_MGMT:
+    depends_on: [MGMT]
+    properties:
+      name: VRP-32_MGMT
+      virtual_machine_interface_allowed_address_pairs:
+        virtual_machine_interface_allowed_address_pairs_allowed_address_pair:
+        - virtual_machine_interface_allowed_address_pairs_allowed_address_pair_address_mode: active-standby
+          virtual_machine_interface_allowed_address_pairs_allowed_address_pair_ip: {
+            virtual_machine_interface_allowed_address_pairs_allowed_address_pair_ip_ip_prefix: 172.20.71.53,
+            virtual_machine_interface_allowed_address_pairs_allowed_address_pair_ip_ip_prefix_len: 32}
+      virtual_machine_interface_disable_policy: true
+      virtual_network_refs:
+      - {get_resource: MGMT}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VRP-32_MGMT_InstanceIP:
+    depends_on: [VRP-32_MGMT, MGMT]
+    properties:
+      name: EPG-B2B-MGMT
+      virtual_machine_interface_refs:
+      - {get_resource: VRP-32_MGMT}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [MGMT, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  vmi_vsfo-1_fxp0:
+    depends_on: [fxp0_net]
+    properties:
+      name: vsfo-1_fxp0_int
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      port_security_enabled: false
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  vsfo-1_fxp0_InstanceIP:
+    depends_on: [vmi_vsfo-1_fxp0, fxp0_net]
+    properties:
+      virtual_machine_interface_refs: [{ get_resource: vmi_vsfo-1_fxp0 }]
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      instance_ip_address: 192.168.25.101
+    type: OS::ContrailV2::InstanceIp
+
+  vsfo-1_association:
+    depends_on: [vmi_vsfo-1_fxp0, vsfo-1_fxp0_InstanceIP]
+    properties:
+      floatingip_id: { get_param: vsfo-1_floatip }
+      port_id: {get_resource: vmi_vsfo-1_fxp0}
+    type: OS::Neutron::FloatingIPAssociation
+
+  VSFO-1:
+    depends_on: [delay_vsfo_cp, servgroup_vsfo-b2b, VSFO-1_BP_InstanceIP, vsfo-1_fxp0_InstanceIP,
+      VSFO-1_VFAB-1_InstanceIP,
+      VSFO-1_VFAB-2_InstanceIP,
+      VSFO-1_VFAB-3_InstanceIP,
+      VSFO-1_VFAB-4_InstanceIP,
+      VSFO-1_VSFO-1_EXT-1_InstanceIP]
+    properties:
+      availability_zone: kernel-computes
+      config_drive: 'true'
+      user_data_format: RAW
+      personality: { /config/junos-config/configuration.txt: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo1_config.txt },
+                     /config/junos-config/commit_config.sh: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo1_commit.sh } }
+      flavor: VSFO-CP-NODE
+      image: VSFO-CP-IMAGE
+      name: EPG-B2B-VSFO-1
+      networks:
+      - port: {get_resource: vmi_vsfo-1_fxp0}
+      - port: {get_resource: VSFO-1_BP}
+      - port: {get_resource: VSFO-1_VFAB-1}
+      - port: {get_resource: VSFO-1_VFAB-2}
+      - port: {get_resource: VSFO-1_VFAB-3}
+      - port: {get_resource: VSFO-1_VFAB-4}
+      - port: {get_resource: VSFO-1_VSFO-1_EXT-1}
+      scheduler_hints:
+        group: {get_resource: servgroup_vsfo-b2b}
+    type: OS::Nova::Server
+
+  VSFO-1_BP:
+    depends_on: [BP]
+    properties:
+      name: EPG-B2B-VSFO-1_BP
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:01:01:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_BP_InstanceIP:
+    depends_on: [VSFO-1_BP, BP]
+    properties:
+      name: EPG-B2B-VSFO-1_BP_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_BP}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-1_EXT-1:
+    depends_on: [VSFO-1_EXT-1_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.21.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-1001:
+    depends_on: [VSFO-1_EXT-1_TAGGED-1001_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-1001
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-1001_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.10.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:1001']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-1001_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-1001_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_EXT-1_TAGGED-1002:
+    depends_on: [VSFO-1_EXT-1_TAGGED-1002_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-1002
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-1002_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.10.2.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:1002']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-1002_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-1002_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_EXT-1_TAGGED-1003:
+    depends_on: [VSFO-1_EXT-1_TAGGED-1003_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-1003
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-1003_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.10.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:1003']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-1003_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-1003_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-1_EXT-1_TAGGED-2000:
+    depends_on: [VSFO-1_EXT-1_TAGGED-2000_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2000
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2000_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.20.0.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2000']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-2000_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2000_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_EXT-1_TAGGED-2001:
+    depends_on: [VSFO-1_EXT-1_TAGGED-2001_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2001
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2001_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.20.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2001']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-2001_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2001_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_EXT-1_TAGGED-2002:
+    depends_on: [VSFO-1_EXT-1_TAGGED-2002_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2002
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2002_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.20.2.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2002']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-2002_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2002_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_EXT-1_TAGGED-2003:
+    depends_on: [VSFO-1_EXT-1_TAGGED-2003_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2003
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2003_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.20.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2003']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-2003_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2003_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_EXT-1_TAGGED-2004:
+    depends_on: [VSFO-1_EXT-1_TAGGED-2004_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2004
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2004_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.20.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2004']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-2004_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2004_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_EXT-1_TAGGED-2005:
+    depends_on: [VSFO-1_EXT-1_TAGGED-2005_ipam]
+    properties:
+      name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2005
+      network_ipam_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2005_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 11.20.5.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2005']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-1_EXT-1_TAGGED-2005_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_TAGGED-2005_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-1_EXT-1_ipam:
+    properties: {name: EPG-B2B-VSFO-1_EXT-1_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-1_VFAB-1:
+    depends_on: [VFAB-1]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:01:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VFAB-1_InstanceIP:
+    depends_on: [VSFO-1_VFAB-1, VFAB-1]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-1_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VFAB-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VFAB-2:
+    depends_on: [VFAB-2]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-2
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:01:02']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VFAB-2_InstanceIP:
+    depends_on: [VSFO-1_VFAB-2, VFAB-2]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-2_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VFAB-2}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VFAB-3:
+    depends_on: [VFAB-3]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-3
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:01:03']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VFAB-3_InstanceIP:
+    depends_on: [VSFO-1_VFAB-3, VFAB-3]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-3_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VFAB-3}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VFAB-4:
+    depends_on: [VFAB-4]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-4
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:01:04']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VFAB-4_InstanceIP:
+    depends_on: [VSFO-1_VFAB-4, VFAB-4]
+    properties:
+      name: EPG-B2B-VSFO-1_VFAB-4_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VFAB-4}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-1_VSFO-1_EXT-1:
+    depends_on: [VSFO-1_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-1001:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-1001]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-1001
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 1001}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-1001}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-1001_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-1001, VSFO-1_EXT-1_TAGGED-1001]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-1001_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-1001}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-1001, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-1002:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-1002]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-1002
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 1002}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-1002}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-1002_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-1002, VSFO-1_EXT-1_TAGGED-1002]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-1002_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-1002}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-1002, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-1003:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-1003]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-1003
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 1003}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-1003}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-1003_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-1003, VSFO-1_EXT-1_TAGGED-1003]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-1003_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-1003}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-1003, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2000:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-2000]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-2000
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2000}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2000}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2000_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2000, VSFO-1_EXT-1_TAGGED-2000]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-2000_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2000}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-2000, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2001:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-2001]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-2001
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2001}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2001}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2001_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2001, VSFO-1_EXT-1_TAGGED-2001]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-2001_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2001}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-2001, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2002:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-2002]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-2002
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2002}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2002}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2002_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2002, VSFO-1_EXT-1_TAGGED-2002]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-2002_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2002}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-2002, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2003:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-2003]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-2003
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2003}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2003}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2003_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2003, VSFO-1_EXT-1_TAGGED-2003]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-2003_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2003}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-2003, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2004:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-2004]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-2004
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2004}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2004}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2004_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2004, VSFO-1_EXT-1_TAGGED-2004]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-2004_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2004}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-2004, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2005:
+    depends_on: [VSFO-1_VSFO-1_EXT-1, VSFO-1_EXT-1_TAGGED-2005]
+    properties:
+      name: VSFO-1_VSFO-1_EXT-1_TAGGED-2005
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:01:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2005}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-1_EXT-1_TAGGED-2005}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-1_VSFO-1_EXT-1_TAGGED-2005_InstanceIP:
+    depends_on: [VSFO-1_VSFO-1_EXT-1_TAGGED-2005, VSFO-1_EXT-1_TAGGED-2005]
+    properties:
+      name: EPG-B2B-VSFO-1_VSFO-1_EXT-1_TAGGED-2005_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-1_VSFO-1_EXT-1_TAGGED-2005}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-1_EXT-1_TAGGED-2005, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  vmi_vsfo-2_fxp0:
+    depends_on: [fxp0_net]
+    properties:
+      name: vsfo-2_fxp0_int
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      port_security_enabled: false
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  vsfo-2_fxp0_InstanceIP:
+    depends_on: [vmi_vsfo-2_fxp0, fxp0_net]
+    properties:
+      virtual_machine_interface_refs: [{ get_resource: vmi_vsfo-2_fxp0 }]
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      instance_ip_address: 192.168.25.102
+    type: OS::ContrailV2::InstanceIp
+
+  vsfo-2_association:
+    depends_on: [vmi_vsfo-2_fxp0, vsfo-2_fxp0_InstanceIP]
+    properties:
+      floatingip_id: { get_param: vsfo-2_floatip }
+      port_id: {get_resource: vmi_vsfo-2_fxp0}
+    type: OS::Neutron::FloatingIPAssociation
+
+  VSFO-2:
+    depends_on: [delay_vsfo_cp, servgroup_vsfo-b2b, VSFO-2_BP_InstanceIP, vsfo-2_fxp0_InstanceIP,
+      VSFO-2_VFAB-1_InstanceIP,
+      VSFO-2_VFAB-2_InstanceIP,
+      VSFO-2_VFAB-3_InstanceIP,
+      VSFO-2_VFAB-4_InstanceIP,
+      VSFO-2_VSFO-2_EXT-1_InstanceIP]
+    properties:
+      availability_zone: kernel-computes
+      config_drive: 'true'
+      user_data_format: RAW
+      personality: { /config/junos-config/configuration.txt: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo2_config.txt },
+                     /config/junos-config/commit_config.sh: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo2_commit.sh } }
+      flavor: VSFO-CP-NODE
+      image: VSFO-CP-IMAGE
+      name: EPG-B2B-VSFO-2
+      networks:
+      - port: {get_resource: vmi_vsfo-2_fxp0}
+      - port: {get_resource: VSFO-2_BP}
+      - port: {get_resource: VSFO-2_VFAB-1}
+      - port: {get_resource: VSFO-2_VFAB-2}
+      - port: {get_resource: VSFO-2_VFAB-3}
+      - port: {get_resource: VSFO-2_VFAB-4}
+      - port: {get_resource: VSFO-2_VSFO-2_EXT-1}
+      scheduler_hints:
+        group: {get_resource: servgroup_vsfo-b2b}
+    type: OS::Nova::Server
+
+  VSFO-2_BP:
+    depends_on: [BP]
+    properties:
+      name: EPG-B2B-VSFO-2_BP
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:01:02:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_BP_InstanceIP:
+    depends_on: [VSFO-2_BP, BP]
+    properties:
+      name: EPG-B2B-VSFO-2_BP_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_BP}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-2_EXT-1:
+    depends_on: [VSFO-2_EXT-1_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.22.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-1001:
+    depends_on: [VSFO-2_EXT-1_TAGGED-1001_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-1001
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-1001_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.10.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:1001']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-1001_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-1001_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_EXT-1_TAGGED-1002:
+    depends_on: [VSFO-2_EXT-1_TAGGED-1002_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-1002
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-1002_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.10.2.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:1002']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-1002_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-1002_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_EXT-1_TAGGED-1003:
+    depends_on: [VSFO-2_EXT-1_TAGGED-1003_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-1003
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-1003_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.10.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:1003']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-1003_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-1003_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-2_EXT-1_TAGGED-2000:
+    depends_on: [VSFO-2_EXT-1_TAGGED-2000_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2000
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2000_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.20.0.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2000']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-2000_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2000_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_EXT-1_TAGGED-2001:
+    depends_on: [VSFO-2_EXT-1_TAGGED-2001_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2001
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2001_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.20.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2001']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-2001_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2001_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_EXT-1_TAGGED-2002:
+    depends_on: [VSFO-2_EXT-1_TAGGED-2002_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2002
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2002_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.20.2.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2002']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-2002_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2002_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_EXT-1_TAGGED-2003:
+    depends_on: [VSFO-2_EXT-1_TAGGED-2003_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2003
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2003_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.20.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2003']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-2003_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2003_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_EXT-1_TAGGED-2004:
+    depends_on: [VSFO-2_EXT-1_TAGGED-2004_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2004
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2004_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.20.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2004']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-2004_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2004_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_EXT-1_TAGGED-2005:
+    depends_on: [VSFO-2_EXT-1_TAGGED-2005_ipam]
+    properties:
+      name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2005
+      network_ipam_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2005_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 21.20.5.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:2005']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-2_EXT-1_TAGGED-2005_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_TAGGED-2005_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-2_EXT-1_ipam:
+    properties: {name: EPG-B2B-VSFO-2_EXT-1_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-2_VFAB-1:
+    depends_on: [VFAB-1]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:02:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VFAB-1_InstanceIP:
+    depends_on: [VSFO-2_VFAB-1, VFAB-1]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-1_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VFAB-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VFAB-2:
+    depends_on: [VFAB-2]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-2
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:02:02']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VFAB-2_InstanceIP:
+    depends_on: [VSFO-2_VFAB-2, VFAB-2]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-2_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VFAB-2}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VFAB-3:
+    depends_on: [VFAB-3]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-3
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:02:03']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VFAB-3_InstanceIP:
+    depends_on: [VSFO-2_VFAB-3, VFAB-3]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-3_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VFAB-3}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VFAB-4:
+    depends_on: [VFAB-4]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-4
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:02:04']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VFAB-4_InstanceIP:
+    depends_on: [VSFO-2_VFAB-4, VFAB-4]
+    properties:
+      name: EPG-B2B-VSFO-2_VFAB-4_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VFAB-4}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-2_VSFO-2_EXT-1:
+    depends_on: [VSFO-2_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-1001:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-1001]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-1001
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 1001}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-1001}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-1001_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-1001, VSFO-2_EXT-1_TAGGED-1001]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-1001_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-1001}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-1001, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-1002:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-1002]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-1002
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 1002}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-1002}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-1002_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-1002, VSFO-2_EXT-1_TAGGED-1002]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-1002_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-1002}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-1002, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-1003:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-1003]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-1003
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 1003}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-1003}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-1003_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-1003, VSFO-2_EXT-1_TAGGED-1003]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-1003_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-1003}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-1003, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2000:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-2000]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-2000
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2000}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2000}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2000_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2000, VSFO-2_EXT-1_TAGGED-2000]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-2000_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2000}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-2000, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2001:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-2001]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-2001
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2001}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2001}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2001_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2001, VSFO-2_EXT-1_TAGGED-2001]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-2001_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2001}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-2001, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2002:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-2002]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-2002
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2002}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2002}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2002_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2002, VSFO-2_EXT-1_TAGGED-2002]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-2002_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2002}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-2002, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2003:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-2003]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-2003
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2003}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2003}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2003_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2003, VSFO-2_EXT-1_TAGGED-2003]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-2003_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2003}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-2003, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2004:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-2004]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-2004
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2004}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2004}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2004_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2004, VSFO-2_EXT-1_TAGGED-2004]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-2004_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2004}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-2004, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2005:
+    depends_on: [VSFO-2_VSFO-2_EXT-1, VSFO-2_EXT-1_TAGGED-2005]
+    properties:
+      name: VSFO-2_VSFO-2_EXT-1_TAGGED-2005
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:02:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 2005}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-2_EXT-1_TAGGED-2005}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-2_VSFO-2_EXT-1_TAGGED-2005_InstanceIP:
+    depends_on: [VSFO-2_VSFO-2_EXT-1_TAGGED-2005, VSFO-2_EXT-1_TAGGED-2005]
+    properties:
+      name: EPG-B2B-VSFO-2_VSFO-2_EXT-1_TAGGED-2005_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-2_VSFO-2_EXT-1_TAGGED-2005}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-2_EXT-1_TAGGED-2005, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  vmi_vsfo-3_fxp0:
+    depends_on: [fxp0_net]
+    properties:
+      name: vsfo-3_fxp0_int
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      port_security_enabled: false
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  vsfo-3_fxp0_InstanceIP:
+    depends_on: [vmi_vsfo-3_fxp0, fxp0_net]
+    properties:
+      virtual_machine_interface_refs: [{ get_resource: vmi_vsfo-3_fxp0 }]
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      instance_ip_address: 192.168.25.103
+    type: OS::ContrailV2::InstanceIp
+
+  vsfo-3_association:
+    depends_on: [vmi_vsfo-3_fxp0, vsfo-3_fxp0_InstanceIP]
+    properties:
+      floatingip_id: { get_param: vsfo-3_floatip }
+      port_id: {get_resource: vmi_vsfo-3_fxp0}
+    type: OS::Neutron::FloatingIPAssociation
+
+  VSFO-3:
+    depends_on: [delay_vsfo_up, servgroup_vsfo-b2b, VSFO-3_BP_InstanceIP, vsfo-3_fxp0_InstanceIP,
+      VSFO-3_VFAB-1_InstanceIP,
+      VSFO-3_VFAB-2_InstanceIP,
+      VSFO-3_VFAB-3_InstanceIP,
+      VSFO-3_VFAB-4_InstanceIP,
+      VSFO-3_VSFO-3_EXT-1_InstanceIP,
+      VSFO-3_VSFO-3_EXT-2_InstanceIP,
+      VSFO-3_VSFO-3_EXT-3_InstanceIP,
+      VSFO-3_VSFO-3_EXT-4_InstanceIP]
+    properties:
+      availability_zone: dpdk-computes
+      config_drive: 'true'
+      user_data_format: RAW
+      personality: { /config/junos-config/configuration.txt: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo3_config.txt },
+                     /config/junos-config/commit_config.sh: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo3_commit.sh } }
+      flavor: VSFO-UP-NODE
+      image: VSFO-UP-IMAGE
+      name: EPG-B2B-VSFO-3
+      networks:
+      - port: {get_resource: vmi_vsfo-3_fxp0}
+      - port: {get_resource: VSFO-3_BP}
+      - port: {get_resource: VSFO-3_VFAB-1}
+      - port: {get_resource: VSFO-3_VFAB-2}
+      - port: {get_resource: VSFO-3_VFAB-3}
+      - port: {get_resource: VSFO-3_VFAB-4}
+      - port: {get_resource: VSFO-3_VSFO-3_EXT-1}
+      - port: {get_resource: VSFO-3_VSFO-3_EXT-2}
+      - port: {get_resource: VSFO-3_VSFO-3_EXT-3}
+      - port: {get_resource: VSFO-3_VSFO-3_EXT-4}
+      scheduler_hints:
+        group: {get_resource: servgroup_vsfo-b2b}
+    type: OS::Nova::Server
+
+  VSFO-3_BP:
+    properties:
+      name: EPG-B2B-VSFO-3_BP
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:01:03:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_BP_InstanceIP:
+    depends_on: [VSFO-3_BP]
+    properties:
+      name: EPG-B2B-VSFO-3_BP_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_BP}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_EXT-1:
+    depends_on: [VSFO-3_EXT-1_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-1
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-1_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.23.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-1_TAGGED-103:
+    depends_on: [VSFO-3_EXT-1_TAGGED-103_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-1_TAGGED-103
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-1_TAGGED-103_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 31.1.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:103']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-1_TAGGED-103_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-1_TAGGED-103_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-3_EXT-1_TAGGED-104:
+    depends_on: [VSFO-3_EXT-1_TAGGED-104_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-1_TAGGED-104
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-1_TAGGED-104_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 31.1.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:104']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-1_TAGGED-104_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-1_TAGGED-104_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-3_EXT-1_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-1_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-3_EXT-2:
+    depends_on: [VSFO-3_EXT-2_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-2
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-2_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.23.2.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-2_TAGGED-103:
+    depends_on: [VSFO-3_EXT-2_TAGGED-103_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-2_TAGGED-103
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-2_TAGGED-103_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 32.1.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:103']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-2_TAGGED-103_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-2_TAGGED-103_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-3_EXT-2_TAGGED-104:
+    depends_on: [VSFO-3_EXT-2_TAGGED-104_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-2_TAGGED-104
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-2_TAGGED-104_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 32.1.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:104']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-2_TAGGED-104_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-2_TAGGED-104_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-3_EXT-2_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-2_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-3_EXT-3:
+    depends_on: [VSFO-3_EXT-3_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-3
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-3_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.23.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-3_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-3_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-3_EXT-4:
+    depends_on: [VSFO-3_EXT-4_ipam]
+    properties:
+      name: EPG-B2B-VSFO-3_EXT-4
+      network_ipam_refs:
+      - {get_resource: VSFO-3_EXT-4_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.23.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-3_EXT-4_ipam:
+    properties: {name: EPG-B2B-VSFO-3_EXT-4_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-3_VFAB-1:
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:03:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VFAB-1_InstanceIP:
+    depends_on: [VSFO-3_VFAB-1]
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-1_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VFAB-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VFAB-2:
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-2
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:03:02']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VFAB-2_InstanceIP:
+    depends_on: [VSFO-3_VFAB-2]
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-2_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VFAB-2}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VFAB-3:
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-3
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:03:03']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VFAB-3_InstanceIP:
+    depends_on: [VSFO-3_VFAB-3]
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-3_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VFAB-3}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VFAB-4:
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-4
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:03:04']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VFAB-4_InstanceIP:
+    depends_on: [VSFO-3_VFAB-4]
+    properties:
+      name: EPG-B2B-VSFO-3_VFAB-4_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VFAB-4}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-3_VSFO-3_EXT-1:
+    depends_on: [VSFO-3_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:01']
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-1}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-1_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-1, VSFO-3_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-1_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VSFO-3_EXT-1_TAGGED-103:
+    depends_on: [VSFO-3_VSFO-3_EXT-1, VSFO-3_EXT-1_TAGGED-103]
+    properties:
+      name: VSFO-3_VSFO-3_EXT-1_TAGGED-103
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 103}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-1_TAGGED-103}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-1_TAGGED-103_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-1_TAGGED-103, VSFO-3_EXT-1_TAGGED-103]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-1_TAGGED-103_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-1_TAGGED-103}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-1_TAGGED-103, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VSFO-3_EXT-1_TAGGED-104:
+    depends_on: [VSFO-3_VSFO-3_EXT-1, VSFO-3_EXT-1_TAGGED-104]
+    properties:
+      name: VSFO-3_VSFO-3_EXT-1_TAGGED-104
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 104}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-1_TAGGED-104}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-1_TAGGED-104_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-1_TAGGED-104, VSFO-3_EXT-1_TAGGED-104]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-1_TAGGED-104_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-1_TAGGED-104}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-1_TAGGED-104, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VSFO-3_EXT-2:
+    depends_on: [VSFO-3_EXT-2]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-2
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:02']
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-2}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-2_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-1, VSFO-3_EXT-2]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-2_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-2}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-2, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VSFO-3_EXT-2_TAGGED-103:
+    depends_on: [VSFO-3_VSFO-3_EXT-2, VSFO-3_EXT-2_TAGGED-103]
+    properties:
+      name: VSFO-3_VSFO-3_EXT-2_TAGGED-103
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:02']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 103}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-2}
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-2_TAGGED-103}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-2_TAGGED-103_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-2_TAGGED-103, VSFO-3_EXT-2_TAGGED-103]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-2_TAGGED-103_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-2_TAGGED-103}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-2_TAGGED-103, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VSFO-3_EXT-2_TAGGED-104:
+    depends_on: [VSFO-3_VSFO-3_EXT-2, VSFO-3_EXT-2_TAGGED-104]
+    properties:
+      name: VSFO-3_VSFO-3_EXT-2_TAGGED-104
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:02']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 104}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-2}
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-2_TAGGED-104}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-2_TAGGED-104_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-2_TAGGED-104, VSFO-3_EXT-2_TAGGED-104]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-2_TAGGED-104_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-2_TAGGED-104}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-2_TAGGED-104, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-3_VSFO-3_EXT-3:
+    depends_on: [VSFO-3_EXT-3]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-3
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:03']
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-3}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-3_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-3, VSFO-3_EXT-3]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-3_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-3}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-3, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-3_VSFO-3_EXT-4:
+    depends_on: [VSFO-3_EXT-4]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-4
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:03:04']
+      virtual_network_refs:
+      - {get_resource: VSFO-3_EXT-4}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-3_VSFO-3_EXT-4_InstanceIP:
+    depends_on: [VSFO-3_VSFO-3_EXT-4, VSFO-3_EXT-4]
+    properties:
+      name: EPG-B2B-VSFO-3_VSFO-3_EXT-4_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-3_VSFO-3_EXT-4}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-3_EXT-4, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  vmi_vsfo-4_fxp0:
+    depends_on: [fxp0_net]
+    properties:
+      name: vsfo-4_fxp0_int
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      port_security_enabled: false
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  vsfo-4_fxp0_InstanceIP:
+    depends_on: [vmi_vsfo-4_fxp0, fxp0_net]
+    properties:
+      virtual_machine_interface_refs: [{ get_resource: vmi_vsfo-4_fxp0 }]
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ fxp0_net, fq_name ] } ] }]
+      instance_ip_address: 192.168.25.104
+    type: OS::ContrailV2::InstanceIp
+
+  vsfo-4_association:
+    depends_on: [vmi_vsfo-4_fxp0, vsfo-4_fxp0_InstanceIP]
+    properties:
+      floatingip_id: { get_param: vsfo-4_floatip }
+      port_id: {get_resource: vmi_vsfo-4_fxp0}
+    type: OS::Neutron::FloatingIPAssociation
+
+  VSFO-4:
+    depends_on: [delay_vsfo_up, servgroup_vsfo-b2b, VSFO-4_BP_InstanceIP, vsfo-4_fxp0_InstanceIP,
+      VSFO-4_VFAB-1_InstanceIP,
+      VSFO-4_VFAB-2_InstanceIP,
+      VSFO-4_VFAB-3_InstanceIP,
+      VSFO-4_VFAB-4_InstanceIP,
+      VSFO-4_VSFO-4_EXT-1_InstanceIP,
+      VSFO-4_VSFO-4_EXT-2_InstanceIP,
+      VSFO-4_VSFO-4_EXT-3_InstanceIP,
+      VSFO-4_VSFO-4_EXT-4_InstanceIP]
+    properties:
+      availability_zone: dpdk-computes
+      config_drive: 'true'
+      user_data_format: RAW
+      personality: { /config/junos-config/configuration.txt: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo4_config.txt },
+                     /config/junos-config/commit_config.sh: { get_file: /contrail-test/serial_scripts/solution/topology/orange_deployment/vsrx_config/vsfo4_commit.sh } }
+      flavor: VSFO-UP-NODE
+      image: VSFO-UP-IMAGE
+      name: EPG-B2B-VSFO-4
+      networks:
+      - port: {get_resource: vmi_vsfo-4_fxp0}
+      - port: {get_resource: VSFO-4_BP}
+      - port: {get_resource: VSFO-4_VFAB-1}
+      - port: {get_resource: VSFO-4_VFAB-2}
+      - port: {get_resource: VSFO-4_VFAB-3}
+      - port: {get_resource: VSFO-4_VFAB-4}
+      - port: {get_resource: VSFO-4_VSFO-4_EXT-1}
+      - port: {get_resource: VSFO-4_VSFO-4_EXT-2}
+      - port: {get_resource: VSFO-4_VSFO-4_EXT-3}
+      - port: {get_resource: VSFO-4_VSFO-4_EXT-4}
+      scheduler_hints:
+        group: {get_resource: servgroup_vsfo-b2b}
+    type: OS::Nova::Server
+
+  VSFO-4_BP:
+    properties:
+      name: EPG-B2B-VSFO-4_BP
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:01:04:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_BP_InstanceIP:
+    depends_on: [VSFO-4_BP]
+    properties:
+      name: EPG-B2B-VSFO-4_BP_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_BP}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [BP, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_EXT-1:
+    depends_on: [VSFO-4_EXT-1_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-1
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-1_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.24.1.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-1_TAGGED-103:
+    depends_on: [VSFO-4_EXT-1_TAGGED-103_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-1_TAGGED-103
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-1_TAGGED-103_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 41.1.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:103']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-1_TAGGED-103_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-1_TAGGED-103_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-4_EXT-1_TAGGED-104:
+    depends_on: [VSFO-4_EXT-1_TAGGED-104_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-1_TAGGED-104
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-1_TAGGED-104_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 41.1.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:104']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-1_TAGGED-104_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-1_TAGGED-104_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-4_EXT-1_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-1_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-4_EXT-2:
+    depends_on: [VSFO-4_EXT-2_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-2
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-2_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.24.2.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-2_TAGGED-103:
+    depends_on: [VSFO-4_EXT-2_TAGGED-103_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-2_TAGGED-103
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-2_TAGGED-103_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 42.1.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:103']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-2_TAGGED-103_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-2_TAGGED-103_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-4_EXT-2_TAGGED-104:
+    depends_on: [VSFO-4_EXT-2_TAGGED-104_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-2_TAGGED-104
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-2_TAGGED-104_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 42.1.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 29}
+      route_target_list:
+        route_target_list_route_target: ['target:65000:104']
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-2_TAGGED-104_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-2_TAGGED-104_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-4_EXT-2_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-2_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-4_EXT-3:
+    depends_on: [VSFO-4_EXT-3_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-3
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-3_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.24.3.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-3_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-3_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+  VSFO-4_EXT-4:
+    depends_on: [VSFO-4_EXT-4_ipam]
+    properties:
+      name: EPG-B2B-VSFO-4_EXT-4
+      network_ipam_refs:
+      - {get_resource: VSFO-4_EXT-4_ipam}
+      network_ipam_refs_data:
+      - network_ipam_refs_data_ipam_subnets:
+        - network_ipam_refs_data_ipam_subnets_addr_from_start: true
+          network_ipam_refs_data_ipam_subnets_subnet: {network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 172.24.4.0,
+            network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24}
+      virtual_network_properties: {virtual_network_properties_rpf: disable}
+    type: OS::ContrailV2::VirtualNetwork
+
+  VSFO-4_EXT-4_ipam:
+    properties: {name: EPG-B2B-VSFO-4_EXT-4_ipam}
+    type: OS::ContrailV2::NetworkIpam
+
+
+  VSFO-4_VFAB-1:
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:04:01']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VFAB-1_InstanceIP:
+    depends_on: [VSFO-4_VFAB-1]
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-1_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VFAB-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VFAB-2:
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-2
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:04:02']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VFAB-2_InstanceIP:
+    depends_on: [VSFO-4_VFAB-2]
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-2_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VFAB-2}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-2, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VFAB-3:
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-3
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:04:03']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VFAB-3_InstanceIP:
+    depends_on: [VSFO-4_VFAB-3]
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-3_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VFAB-3}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-3, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VFAB-4:
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-4
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['02:00:00:04:04:04']
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VFAB-4_InstanceIP:
+    depends_on: [VSFO-4_VFAB-4]
+    properties:
+      name: EPG-B2B-VSFO-4_VFAB-4_IIP
+
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VFAB-4}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VFAB-4, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-4_VSFO-4_EXT-1:
+    depends_on: [VSFO-4_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-1
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:01']
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-1}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-1_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-1, VSFO-4_EXT-1]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-1_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-1}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-1, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VSFO-4_EXT-1_TAGGED-103:
+    depends_on: [VSFO-4_VSFO-4_EXT-1, VSFO-4_EXT-1_TAGGED-103]
+    properties:
+      name: VSFO-4_VSFO-4_EXT-1_TAGGED-103
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 103}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-1_TAGGED-103}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-1_TAGGED-103_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-1_TAGGED-103, VSFO-4_EXT-1_TAGGED-103]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-1_TAGGED-103_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-1_TAGGED-103}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-1_TAGGED-103, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VSFO-4_EXT-1_TAGGED-104:
+    depends_on: [VSFO-4_VSFO-4_EXT-1, VSFO-4_EXT-1_TAGGED-104]
+    properties:
+      name: VSFO-4_VSFO-4_EXT-1_TAGGED-104
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:01']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 104}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-1}
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-1_TAGGED-104}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-1_TAGGED-104_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-1_TAGGED-104, VSFO-4_EXT-1_TAGGED-104]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-1_TAGGED-104_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-1_TAGGED-104}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-1_TAGGED-104, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VSFO-4_EXT-2:
+    depends_on: [VSFO-4_EXT-2]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-2
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:02']
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-2}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-2_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-1, VSFO-4_EXT-2]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-2_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-2}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-2, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VSFO-4_EXT-2_TAGGED-103:
+    depends_on: [VSFO-4_VSFO-4_EXT-2, VSFO-4_EXT-2_TAGGED-103]
+    properties:
+      name: VSFO-4_VSFO-4_EXT-2_TAGGED-103
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:02']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 103}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-2}
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-2_TAGGED-103}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-2_TAGGED-103_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-2_TAGGED-103, VSFO-4_EXT-2_TAGGED-103]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-2_TAGGED-103_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-2_TAGGED-103}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-2_TAGGED-103, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VSFO-4_EXT-2_TAGGED-104:
+    depends_on: [VSFO-4_VSFO-4_EXT-2, VSFO-4_EXT-2_TAGGED-104]
+    properties:
+      name: VSFO-4_VSFO-4_EXT-2_TAGGED-104
+      service_health_check_refs:
+        - {get_resource: BFD_HEALTH_CHECK}
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:02']
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: 104}
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-2}
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-2_TAGGED-104}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-2_TAGGED-104_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-2_TAGGED-104, VSFO-4_EXT-2_TAGGED-104]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-2_TAGGED-104_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-2_TAGGED-104}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-2_TAGGED-104, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+
+  VSFO-4_VSFO-4_EXT-3:
+    depends_on: [VSFO-4_EXT-3]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-3
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:03']
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-3}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-3_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-3, VSFO-4_EXT-3]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-3_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-3}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-3, fq_name]
+    type: OS::ContrailV2::InstanceIp
+
+  VSFO-4_VSFO-4_EXT-4:
+    depends_on: [VSFO-4_EXT-4]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-4
+      port_security_enabled: false
+      virtual_machine_interface_disable_policy: true
+      virtual_machine_interface_mac_addresses:
+        virtual_machine_interface_mac_addresses_mac_address: ['fa:16:3e:04:04:04']
+      virtual_network_refs:
+      - {get_resource: VSFO-4_EXT-4}
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VSFO-4_VSFO-4_EXT-4_InstanceIP:
+    depends_on: [VSFO-4_VSFO-4_EXT-4, VSFO-4_EXT-4]
+    properties:
+      name: EPG-B2B-VSFO-4_VSFO-4_EXT-4_IIP
+      virtual_machine_interface_refs:
+      - {get_resource: VSFO-4_VSFO-4_EXT-4}
+      virtual_network_refs:
+      - list_join:
+        - ':'
+        - get_attr: [VSFO-4_EXT-4, fq_name]
+    type: OS::ContrailV2::InstanceIp
+  delay_vsfo_cp:
+    depends_on: [VRP-31]
+    properties: {wait_secs: 60}
+    type: OS::Heat::TestResource
+
+  delay_vsfo_up:
+    depends_on: [VRP-31]
+    properties: {wait_secs: 120}
+    type: OS::Heat::TestResource
+
+  servgroup_rp-b2b:
+    properties:
+      name: servgroup_rp-b2b
+      policies: [anti-affinity]
+    type: OS::Nova::ServerGroup
+
+  servgroup_vsfo-b2b:
+    properties:
+      name: servgroup_vsfo-b2b
+      policies: [anti-affinity]
+    type: OS::Nova::ServerGroup
