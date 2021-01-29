@@ -43,6 +43,27 @@ outputs:
     value:
       get_attr: [VSFO-2_VSFO-2_EXT-2, show, uuid]
 
+  vsfo_1_id:
+    description: VSFO-CP handle
+    value:
+      get_attr: [VSFO-1, show, id]
+
+  vsfo_2_id:
+    description: VSFO-UP handle
+    value:
+      get_attr: [VSFO-2, show, id]
+
+  vrp_31_id:
+    description: VRP-31 handle
+    value:
+      get_attr: [VRP-31, show, id]
+
+  vrp_32_id:
+    description: VRP-32 handle
+    value:
+      get_attr: [VRP-32, show, id]
+
+
 
 
 resources:

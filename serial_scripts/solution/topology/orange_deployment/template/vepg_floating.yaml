@@ -1,0 +1,98 @@
+description: vEPG-B2B floating IPs
+heat_template_version: '2015-04-30'
+
+outputs:
+  vrp31_floatip:
+    description: OOB floating IP of VRP 31
+    value:
+      get_attr: [vrp-31_float, show, id]
+
+  vrp32_floatip:
+    description: OOB floating IP of VRP 32
+    value:
+      get_attr: [vrp-32_float, show, id]
+
+  vsfo-1_floatip:
+    description: OOB floating IP of VSFO 1
+    value:
+      get_attr: [vsfo-1_float, show, id]
+
+  vsfo-2_floatip:
+    description: OOB floating IP of VSFO 2
+    value:
+      get_attr: [vsfo-2_float, show, id]
+
+  vsfo-3_floatip:
+    description: OOB floating IP of VSFO 3
+    value:
+      get_attr: [vsfo-3_float, show, id]
+
+  vsfo-4_floatip:
+    description: OOB floating IP of VSFO 4
+    value:
+      get_attr: [vsfo-4_float, show, id]
+
+  vrp31_extip:
+    description: Public OOB IP Address of VRP 31
+    value:
+      get_attr: [vrp-31_float, show, floating_ip_address]
+
+  vrp32_extip:
+    description: Public OOB IP Address of VRP 32
+    value:
+      get_attr: [vrp-32_float, show, floating_ip_address]
+
+  vsfo1_extip:
+    description: Public OOB IP Address of VSFO 1
+    value:
+      get_attr: [vsfo-1_float, show, floating_ip_address]
+
+  vsfo2_extip:
+    description: Public OOB IP Address of VSFO 2
+    value:
+      get_attr: [vsfo-2_float, show, floating_ip_address]
+
+  vsfo3_extip:
+    description: Public OOB IP Address of VSFO 3
+    value:
+      get_attr: [vsfo-3_float, show, floating_ip_address]
+
+  vsfo4_extip:
+    description: Public OOB IP Address of VSFO 4
+    value:
+      get_attr: [vsfo-4_float, show, floating_ip_address]
+
+
+resources:
+
+  vrp-31_float:
+    properties:
+      floating_network: public-net
+    type: OS::Neutron::FloatingIP
+
+  vrp-32_float:
+    properties:
+      floating_network: public-net
+    type: OS::Neutron::FloatingIP
+
+
+  vsfo-1_float:
+    properties:
+      floating_network: public-net
+    type: OS::Neutron::FloatingIP
+
+  vsfo-2_float:
+    properties:
+      floating_network: public-net
+    type: OS::Neutron::FloatingIP
+
+  vsfo-3_float:
+    properties:
+      floating_network: public-net
+    type: OS::Neutron::FloatingIP
+
+  vsfo-4_float:
+    properties:
+      floating_network: public-net
+    type: OS::Neutron::FloatingIP
+

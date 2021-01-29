@@ -1,0 +1,114 @@
+#junos-config - vEPC vRP nodes
+
+system {
+    root-authentication {
+        encrypted-password "$6$sg7yK0wP$XKPfVjffdOp6g38R1UXui4Lxx5QZHARNdNfgkpXofFr7hT5R2sjUyFrdo5AitBujdpGvAOy2ziJG4oS8jOoiu1";
+    }
+    login {
+        user admin {
+            uid 2000;
+            class super-user;
+            authentication {
+                encrypted-password "$6$sg7yK0wP$XKPfVjffdOp6g38R1UXui4Lxx5QZHARNdNfgkpXofFr7hT5R2sjUyFrdo5AitBujdpGvAOy2ziJG4oS8jOoiu1";
+            }
+        }
+    }
+    host-name vrp-31 
+    services {
+        ssh {
+            root-login allow;
+        }
+        web-management {
+            http {
+                interface fxp0.0;
+            }
+        }
+    }
+    syslog {
+        file messages {
+            any any;
+        }
+    }
+}
+
+security {
+    forwarding-options {
+        family {
+            inet6 {
+                mode packet-based;
+            }
+            mpls {
+                mode packet-based;
+            }
+            iso {
+                mode packet-based;
+            }
+        }
+    }
+}
+
+interfaces {
+    fxp0 {
+        unit 0 {
+            description "vSRX OOB Management interface";
+            family inet {
+                address 192.168.25.31/24;
+            }
+        }
+    }
+    ge-0/0/0 {
+        unit 0 {
+            description "vEPC RP MGNT interface";
+            family inet {
+                dhcp;
+            }
+        }
+    }
+    ge-0/0/1 {
+        unit 0 {
+            description "vEPC RP BP interface";
+            family inet {
+                address 192.3.1.31/16;
+            }
+        }
+    }
+    ge-0/0/2 {
+        unit 0 {
+            description "vEPC RP MATE interface";
+            family inet {
+                address 127.4.1.31/16;
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            description "vEPC RP BP - OSPF LoopBack";
+            family inet {
+                address 172.31.2.31/32;
+            }
+        }
+    }
+}
+
+protocols {
+    ospf {
+        area 0.0.0.0 {
+            interface ge-0/0/1.0 {
+                priority 199;
+                hello-interval 1;
+                dead-interval 3;
+            }
+            interface lo0.0 {
+                passive;
+            }
+        }
+    }
+}
+
+routing-options {
+    static {
+        route 0.0.0.0/1 next-hop 192.168.25.1;
+        route 128.0.0.0/1 next-hop 192.168.25.1; 
+    }
+    router-id 172.31.2.31;
+}
