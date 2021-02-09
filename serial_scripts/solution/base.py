@@ -1,4 +1,6 @@
 import test_v1
+import os
+import re
 from common import isolated_creds
 
 
@@ -61,6 +63,7 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
 
         for i in range(1,self.NB_VSFO_CP_NODES+1):
 
+            self.logger.info("BGP and BFD sessions for %s :-" %vsfo_fix[i].vm_name)
             cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -J \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null root@%s  \"cli\" \"show bgp summary\" | grep -c Establ" %(self.inputs.host_data[vsfo_fix[i].vm_node_ip]['username'] ,vsfo_fix[i].vm_node_ip,vsfo_fix[i].local_ip)
             op = os.popen(cmd).read()
             vsfo_cp_session = int(re.match(r'\d+',op).group())
@@ -84,11 +87,13 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
                 self.logger.error("All bfd sessions are not UP")
                 ret = False
             i = i + 1
+            self.logger.info("*******************************************")
 
         # Validate BGP & BFD sessions on vsfo UP nodes
 
         for i in range(self.NB_VSFO_CP_NODES+1 ,self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+1):
 
+            self.logger.info("BGP and BFD sessions for %s :-" %vsfo_fix[i].vm_name)
             cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -J \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null root@%s  \"cli\" \"show bgp summary\" | grep -c Establ" %(self.inputs.host_data[vsfo_fix[i].vm_node_ip]['username'] ,vsfo_fix[i].vm_node_ip,vsfo_fix[i].local_ip)
             op = os.popen(cmd).read()
             vsfo_up_session = int(re.match(r'\d+',op).group())
@@ -111,6 +116,7 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
                 self.logger.error("All bfd sessions are not UP")
                 ret = False
             i = i+1
+            self.logger.info("*******************************************")
 
         return ret
 
@@ -140,7 +146,7 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
 
                 self.logger.info("EXP_RCV %s routes_rec %s."%(EXP_RCV ,routes_rec))
                 self.logger.info("EXP_ADV %s routes_adv %s."%(EXP_ADV,routes_adv))
-                if ((EXP_RCV == routes_rec) & (EXP_ADV == routes_adv)):
+                if ((EXP_RCV <= routes_rec) & (EXP_ADV <= routes_adv)):
                     count = count + 1
                     self.logger.info("Routes received and send are OK for %s."%(peer))
                 else:
@@ -169,7 +175,7 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
             output = os.popen(cmd).read()
             good = self.get_route_count(output,vsfo_fix[i],EXP_ADV,EXP_RCV)
 
-            EXP_GOOD_SESSIONS=(( 2 * self.NB_VSFO_CP_EXT_NIC * (self.NB_APN_RADIUS + 1) * self.NB_VSFO_CP_NODES ))
+            EXP_GOOD_SESSIONS=(( 2 * self.NB_VSFO_CP_EXT_NIC * (self.NB_APN_RADIUS + 1) ))
             if EXP_GOOD_SESSIONS == good:
                 self.logger.info("Routes received and send are OK for RADIUS sessions.")
             else:
@@ -184,7 +190,7 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
             output = os.popen(cmd).read()
             good = self.get_route_count(output,vsfo_fix[i],EXP_ADV,EXP_RCV)
 
-            EXP_GOOD_SESSIONS=(( 2 * self.NB_VSFO_CP_EXT_NIC * self.NB_VSFO_CP_SIGIF * self.NB_VSFO_CP_NODES ))
+            EXP_GOOD_SESSIONS=(( 2 * self.NB_VSFO_CP_EXT_NIC * self.NB_VSFO_CP_SIGIF ))
 
             if EXP_GOOD_SESSIONS == good:
                 self.logger.info("Routes received and send are OK for Sig sessions.")
@@ -205,7 +211,7 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
 
             output = os.popen(cmd).read()
             good = self.get_route_count(output,vsfo_fix[i],EXP_ADV,EXP_RCV)
-            EXP_GOOD_SESSIONS=(( 2 * (self.NB_VSFO_UP_EXT_NIC - self.NB_VSFO_UP_CNNIC) * self.NB_APN * self.NB_VSFO_UP_NODES ))
+            EXP_GOOD_SESSIONS=(( 2 * (self.NB_VSFO_UP_EXT_NIC - self.NB_VSFO_UP_CNNIC) * self.NB_APN ))
             if EXP_GOOD_SESSIONS == good:
                 self.logger.info("Routes received and send are OK for APN sessions.")
             else:
@@ -222,7 +228,7 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
             output = os.popen(cmd).read()
             good = self.get_route_count(output,vsfo_fix[i],EXP_ADV,EXP_RCV)
 
-            EXP_GOOD_SESSIONS=(( 2 * self.NB_VSFO_UP_CNNIC * self.NB_VSFO_UP_CNIF * self.NB_VSFO_UP_NODES ))
+            EXP_GOOD_SESSIONS=(( 2 * self.NB_VSFO_UP_CNNIC * self.NB_VSFO_UP_CNIF ))
             if EXP_GOOD_SESSIONS == good:
                 self.logger.info("Routes received and send are OK for CN sessions.")
             else:
@@ -242,9 +248,10 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
         vsfo_fix = self.vsfo_fix
         self.logger.info("Validate bgpas sessions on control node.")
 
-        EXP_S = (((self.NB_VSFO_CP_SIGIF + self.NB_APN_RADIUS + 1) * self.NB_VSFO_CP_EXT_NIC )
+        EXP_S = (self.NB_VSFO_UP_NODES * ((((self.NB_VSFO_CP_SIGIF + \
+                 self.NB_APN_RADIUS + 1) * self.NB_VSFO_CP_EXT_NIC )
           )  + (( ((self.NB_VSFO_UP_CNNIC * self.NB_VSFO_UP_CNIF) + (
-          self.NB_VSFO_UP_EXT_NIC - self.NB_VSFO_UP_CNNIC) * self.NB_APN) ))
+          self.NB_VSFO_UP_EXT_NIC - self.NB_VSFO_UP_CNNIC) * self.NB_APN) ))))
 
         vsfoupid = self.NB_VSFO_CP_NODES+1
         ctrl_node = vsfo_fix[vsfoupid].get_control_nodes()[0]
@@ -257,10 +264,10 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
                 bgpasUpSession = bgpasUpSession + 1
 
         if EXP_S == bgpasUpSession:
-            self.logger.info("BGPAS sessions are UP as expected. \
+            self.logger.info("BGPaaS sessions are UP as expected. \
                 Expected  %s Actual %s."%(EXP_S,bgpasUpSession))
         else:
-            self.logger.error("BGPAS sessions are not UP as expected. \
+            self.logger.error("BGPaaS sessions are not UP as expected. \
                 Expected  %s Actual %s."%(EXP_S,bgpasUpSession))
             ret = False
         return ret
@@ -272,29 +279,36 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
 
         ret = True
         vsfo_fix = self.vsfo_fix
-        vsfoupid = self.NB_VSFO_CP_NODES+1
+        vsfoupid = int(self.NB_VSFO_CP_NODES+1)
 
         ctrl_node = vsfo_fix[vsfoupid].get_control_nodes()[0]
         EXP_R = self.NB_BGP_PREFIXES_PER_APN + 2
+        if self.NB_VSFO_UP_EXT_NIC == 2:
+            ext_nic_range_s=2
+            ext_nic_range_e=3
+        else:
+            ext_nic_range_s=3
+            ext_nic_range_e=5
         for i in range(self.NB_VSFO_CP_NODES+1 ,self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+1):
             vlan = 3000
-            for vlan in range(vlan, vlan + self.NB_APN_RADIUS):
-                vrf = "EPG-B2B-VSFO-%s_EXT-2_TAGGED-%s" %(i,vlan)
-                proj =  self.project.project_fq_name
-                rt = "%s:%s:%s:%s.inet.0" %(proj[0],proj[1],vrf,vrf)
-                op = self.connections.get_control_node_inspect_handle(ctrl_node).get_cn_route_table(rt_name=rt)
-                routes = op['routes']
-                count = 0
-                for ele in routes:
-                    count = count +1
+            for nic in range(ext_nic_range_s, ext_nic_range_e):
+                for each_vlan in range(vlan, vlan + self.NB_APN):
+                    vrf = "EPG-B2B-VSFO-%s_EXT-%s_TAGGED-%s" %(i,nic,each_vlan)
+                    proj =  self.project.project_fq_name
+                    rt = "%s:%s:%s:%s.inet.0" %(proj[0],proj[1],vrf,vrf)
+                    op = self.connections.get_control_node_inspect_handle(ctrl_node).get_cn_route_table(rt_name=rt)
+                    routes = op['routes']
+                    count = 0
+                    for ele in routes:
+                        count = count +1
 
-                if EXP_R == count:
-                    self.logger.info("Routes are present as expected in %s. \
-                        Expected  %s Actual %s."%(rt,EXP_R,count))
-                else:
-                    self.logger.error("Routes are not present as expected in %s. \
-                        Expected  %s Actual %s."%(rt,EXP_R,count))
-                    ret = False
+                    if EXP_R <= count:
+                        self.logger.info("Routes are present as expected in %s. \
+                            Expected  %s Actual %s."%(rt,EXP_R,count))
+                    else:
+                        self.logger.error("Routes are not present as expected in %s. \
+                            Expected  %s Actual %s."%(rt,EXP_R,count))
+                        ret = False
         return ret
  
 #end BaseSolutionsTest class
