@@ -1,0 +1,62 @@
+description: sub_intf_scale
+heat_template_version: 'rocky'
+
+resources:
+  My_IPAM:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: my-scale-ipam
+  
+{% for i in range(start_index, end_index) %}
+  Sub_VN-{{ i }}:
+    depends_on: [My_IPAM]
+    properties:
+      name: sub-scale-vn
+      network_ipam_refs: [{ get_resource: My_IPAM }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: {{ sub_intf_nets[i] }},
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: {{ sub_intf_masks[i] }},
+                },
+                network_ipam_refs_data_ipam_subnets_addr_from_start: 'true',
+         }]
+         },
+        ]
+    type: OS::ContrailV2::VirtualNetwork
+
+  SubInterface-{{ i }}:
+    depends_on: [Sub_VN-{{ i }}]
+    properties:
+      name: sub-interface-{{ i }}
+      virtual_machine_interface_properties: {virtual_machine_interface_properties_sub_interface_vlan_tag: {{ i }}}
+      virtual_machine_interface_refs: [{{ uuid }}]
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ Sub_VN-{{ i }}, fq_name ] } ] }]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VMI_sub_IP-{{ i }} :
+    type: OS::ContrailV2::InstanceIp
+    depends_on : [ SubInterface-{{ i }}, Sub_VN-{{ i }} ]
+    properties :
+      virtual_machine_interface_refs : [{ get_resource : SubInterface-{{ i }} }]
+      virtual_network_refs : [{ list_join : [':', { get_attr : [ Sub_VN-{{ i }} , fq_name ] } ] }]
+      instance_ip_address: {{ ips[i] }}
+
+  BGP_TAGGED-{{ i }}:
+    depends_on: [{% for j in range(start_index, end_index) %}SubInterface-{{ j }}, {% endfor %}]
+    properties:
+      autonomous_system: 64500
+      bgpaas_ip_address: {{ ips[i] }}
+      bgpaas_session_attributes:
+        bgpaas_session_attributes_address_families:
+          bgpaas_session_attributes_address_families_family: [inet]
+        bgpaas_session_attributes_as_override: true
+      name: BGPAAS-{{ i }}
+      virtual_machine_interface_refs:
+      - {get_resource: SubInterface-{{ i }}}
+    type: OS::ContrailV2::BgpAsAService
+{% endfor %}
+

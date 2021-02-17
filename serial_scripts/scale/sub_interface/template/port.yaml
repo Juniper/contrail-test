@@ -1,0 +1,48 @@
+description: vsrx_scale
+heat_template_version: 'rocky'
+
+outputs:
+  port_id:
+    description: port handle
+    value: 
+      get_attr: [ParentPort, show, uuid]
+
+resources:
+  My_IPAM:
+    type: OS::ContrailV2::NetworkIpam
+    properties:
+      name: my-scale-ipam
+
+  My_VN:
+    depends_on: [My_IPAM]
+    properties:
+      name: sub-scale-vn
+      network_ipam_refs: [{ get_resource: My_IPAM }]
+      network_ipam_refs_data:
+        [{
+          network_ipam_refs_data_ipam_subnets:
+            [{
+              network_ipam_refs_data_ipam_subnets_subnet:
+                {
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix: 37.47.57.0,
+                  network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len: 24,
+                },
+                network_ipam_refs_data_ipam_subnets_addr_from_start: 'true',
+         }]
+         },
+        ]
+    type: OS::ContrailV2::VirtualNetwork
+  
+  ParentPort:
+    depends_on: [My_VN]
+    properties:
+      name: ParentPort
+      virtual_network_refs: [{ list_join: [':', { get_attr: [ My_VN, fq_name ] } ] }]
+    type: OS::ContrailV2::VirtualMachineInterface
+
+  VMI_parent_IP :
+    type: OS::ContrailV2::InstanceIp
+    depends_on : [ ParentPort, My_VN ]
+    properties :
+      virtual_machine_interface_refs : [{ get_resource : ParentPort }]
+      virtual_network_refs : [{ list_join : [':', { get_attr : [ My_VN , fq_name ] } ] }]

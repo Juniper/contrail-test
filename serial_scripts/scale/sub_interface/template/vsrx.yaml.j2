@@ -1,0 +1,21 @@
+description: vsrx_scale
+heat_template_version: 'rocky'
+
+outputs:
+  vsrx_id:
+    description: vsrx handle
+    value:
+      get_attr: [vsrx_scale, show, id]
+
+resources:
+  vsrx_scale:
+    properties:
+      config_drive: 'true'
+      user_data_format: RAW
+      # personality: { /config/junos-config/configuration.txt: { get_file: /contrail-test/serial_scripts/solution/topology/mini_deployment/vsrx_config/bgpaas_config.txt } }
+      flavor: contrail_flavor_2cpu
+      image: vsrx
+      name: vsrx_scale
+      networks:
+      - port: {{ uuid }}
+    type: OS::Nova::Server
