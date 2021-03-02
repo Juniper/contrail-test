@@ -438,4 +438,51 @@ class OrangeSolutionTest(BaseSolutionsTest):
         return True
     # end test_orange_deploy
 
+    @preposttest_wrapper
+    def test_02_interface_check(self):
+        ''' CEM-16881
+            Check virtual instances are properly started with network connectivity.
+        '''
+
+        ips_list=[]
+        vm_fix_list=[self.vrp_31, self.vrp_32]
+
+        #get list of all vm fixtures
+        for i in range(1, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+1):
+            vm_fix_list.append(self.vsfo_fix[i])
+
+        #get ge-0/0/0.0 i/f ip of each vm
+        for i in range(0, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
+            cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
+                   UserKnownHostsFile=/dev/null -J \
+                   \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null root@%s \
+                   \"ifconfig | grep 192.3.1 | cut -d ' ' -f 4 | cut -d = -f 2\""\
+                   %(self.inputs.host_data[vm_fix_list[i].vm_node_ip]['username'] ,
+                     vm_fix_list[i].vm_node_ip,vm_fix_list[i].local_ip)
+            output = os.popen(cmd).read()
+            output1=output.replace("\n","")
+            ips_list.append(output1)
+
+        #each vm should ping every other adjacent vm (ex: 4 vms, 6 ping sessions)
+        for i in range(0, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
+            #loop to perform ping
+            for j in range(i+1, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
+                cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
+                       UserKnownHostsFile=/dev/null -J \
+                       \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null \
+                       root@%s  \"ping -c 3 %s\""\
+                       %(self.inputs.host_data[vm_fix_list[i].vm_node_ip]['username'] ,
+                         vm_fix_list[i].vm_node_ip,vm_fix_list[i].local_ip,ips_list[j])
+                output = os.popen(cmd).read()
+                print(output)
+                if '0% packet loss' not in output:
+                    self.logger.error(" Ping from %s to %s FAILED!!",
+                     vm_fix_list[i].vm_name,vm_fix_list[j].vm_name)
+                else:
+                    self.logger.info(" Ping from %s to %s PASSED!!",
+                     vm_fix_list[i].vm_name,vm_fix_list[j].vm_name)
+
+        return True
+    # end test_02_interface_check
+
 #end class OrangeSolutionTest
