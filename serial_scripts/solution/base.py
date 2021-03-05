@@ -297,7 +297,9 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
                     proj =  self.project.project_fq_name
                     rt = "%s:%s:%s:%s.inet.0" %(proj[0],proj[1],vrf,vrf)
                     op = self.connections.get_control_node_inspect_handle(ctrl_node).get_cn_route_table(rt_name=rt)
-                    routes = op['routes']
+                    routes=[]
+                    if op:
+                        routes = op['routes']
                     count = 0
                     for ele in routes:
                         count = count +1
