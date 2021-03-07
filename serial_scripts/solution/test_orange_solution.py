@@ -21,6 +21,7 @@ import os
 import yaml
 import time
 import glob
+from scripts.analytics.test_analytics import AnalyticsTestSanity
 
 af_test = 'dual'
 
@@ -474,6 +475,88 @@ class OrangeSolutionTest(BaseSolutionsTest):
             This test is required to check traffic with high Ethernet size are able
             to be carried accross the Contrail RedHat OpenStack platform.
         '''
+        if 'orange' in cls.deploy_path:
+            #copy set_mtu file and commit mtu config on up-vsfo
+            for i in range (3, 5):
+                self.vsfo_fix[i].vm_password='contrail123'
+                file_name=self.deploy_path+'vsrx_config/'+\
+                          'set_mtu.sh'
+                cmd='sshpass -p \'%s\'' %(self.vsfo_fix[i].vm_password)
+                cmd=cmd+' scp -o StrictHostKeyChecking=no %s heat-admin@%s:/tmp/'\
+                    %(file_name, self.vsfo_fix[i].vm_node_ip)
+                op=os.system(cmd)
+                if op is not 0:
+                   self.logger.error("Failed to copy file %s to %s"\
+                       %(file_name, self.vsfo_fix[i].vm_node_ip))
+                file_name='/tmp/'+'set_mtu.sh'
+                cmd='sshpass -p \'%s\' ssh -o StrictHostKeyChecking=no heat-admin@%s \
+                     sshpass -p \'%s\' scp -o StrictHostKeyChecking=no -o \
+                     UserKnownHostsFile=/dev/null %s root@%s:/tmp/'\
+                     %(self.vsfo_fix[i].vm_password, self.vsfo_fix[i].vm_node_ip,
+                     self.vsfo_fix[i].vm_password, file_name,
+                     self.vsfo_fix[i].local_ip)
+                op=os.system(cmd)
+                if op is not 0:
+                   self.logger.error("Failed to copy file %s to %s"\
+                        %(file_name, self.vsfo_fix[i].local_ip))
+                cmd='sshpass -p \'%s\' ssh -o StrictHostKeyChecking=no heat-admin@%s \
+                     sshpass -p \'%s\' ssh -o StrictHostKeyChecking=no -o \
+                     UserKnownHostsFile=/dev/null \
+                     root@%s \'sh /tmp/set_mtu.sh\' '\
+                     %(self.vsfo_fix[i].vm_password, self.vsfo_fix[i].vm_node_ip,
+                     self.vsfo_fix[i].vm_password, self.vsfo_fix[i].local_ip)
+                op=os.popen(cmd).read()
+                if 'commit complete' not in op:
+                    self.logger.error("Failed to commit config on %s"\
+                         %(self.vsfo_fix[i].vm_name))
+
+            #set mtu on vhost0 of computes hosting vsfo
+            for i in range(3, 5):
+                cmd='ssh -o StrictHostKeyChecking=no -o \
+                     UserKnownHostsFile=/dev/null \
+                     heat-admin@%s \
+                     \'sudo ifconfig vhost0 mtu 9000 up\' '\
+                     %(self.vsfo_fix[i].vm_node_ip)
+                os.system(cmd)
+
+            #check if correct mtu set on vhost0
+            for i in range(3, 5):
+                cmd='ssh -o StrictHostKeyChecking=no -o \
+                     UserKnownHostsFile=/dev/null \
+                     heat-admin@%s \
+                     \'ip ad | grep vhost0| grep mtu | cut -d ' ' -f 5\' '\
+                     %(self.vsfo_fix[i].vm_node_ip)
+                output = os.popen(cmd).read()
+                if '9000' not in output:
+                    self.logger.error("Failed to set mtu on vhost0")
+                else:
+                    self.logger.info(" mtu set on vhost0!")
+
+            #get the vsfo-4 ge-0/0/0 ip
+            cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
+                   UserKnownHostsFile=/dev/null -J \
+                   \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null root@%s \
+                   \"ifconfig | grep 192.3.1 | cut -d ' ' -f 4 | cut -d = -f 2\""\
+                   %(self.inputs.host_data[self.vsfo_fix[4].vm_node_ip]['username'] ,
+                   self.vsfo_fix[4].vm_node_ip,self.vsfo_fix[4].local_ip)
+            output = os.popen(cmd).read()
+            ping_ip=output.replace("\n","")
+
+            #send jumbo frames across up-vsfo
+            cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
+                   UserKnownHostsFile=/dev/null -J \
+                   \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null \
+                   root@%s  \"ping -c 3 -s 8910 -d %s\""\
+                   %(self.inputs.host_data[self.vsfo_fix[3].vm_node_ip]['username'] ,
+                   self.vsfo_fix[3].vm_node_ip,self.vsfo_fix[3].local_ip,ping_ip)
+            output = os.popen(cmd).read()
+            print(output)
+            if '0% packet loss' not in output:
+                self.logger.error(" Ping from %s to %s FAILED!!",
+                     self.vsfo_fix[3].vm_name,self.vsfo_fix[4].vm_name)
+            else:
+                self.logger.info(" Ping from %s to %s PASSED!!",
+                     self.vsfo_fix[3].vm_name,self.vsfo_fix[4].vm_name)
         return True
     # end test_03_giant_frame_test
 
@@ -482,6 +565,7 @@ class OrangeSolutionTest(BaseSolutionsTest):
         ''' CEM-16894
             Check TLS feature is enabled.
         '''
+         AnalyticsTestSanity.test_redis_stunnel_provision(self)
         return True
     # end test_04_check_tls
 
