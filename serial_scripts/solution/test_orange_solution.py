@@ -22,11 +22,11 @@ import yaml
 import time
 import glob
 from scripts.analytics.test_analytics import AnalyticsTestSanity
+import pdb
+CONVERGENCE_TIME=int(90)
 
-af_test = 'dual'
 
 class OrangeSolutionTest(BaseSolutionsTest):
-    _interface = 'json'
 
     @classmethod
     def setUpClass(cls):
@@ -208,9 +208,9 @@ class OrangeSolutionTest(BaseSolutionsTest):
                     cls.vepg_template['resources'][each_resource]['properties']\
                         ['personality'][inject_file]=data
                     fp1.close()
-                    if 'commit_config' in cls.vepg_template['resources']\
+                    if 'commit_config' in "".join(cls.vepg_template['resources']\
                                               [each_resource]['properties']\
-                                              ['personality'].keys()[0]:
+                                              ['personality'].keys()):
                         inject_file='/config/junos-config/commit_config.sh'
                         fp2=open(cls.vepg_template['resources'][each_resource]\
                                  ['properties']['personality'][inject_file]\
@@ -395,7 +395,16 @@ class OrangeSolutionTest(BaseSolutionsTest):
                                                     env=cls.bgpaas_env[each_bef],
                                                     timeout_mins=10)
                 cls.bgpaas_stacks[stack_name].setUp()
-        time.sleep(120)
+        time.sleep(CONVERGENCE_TIME)
+        for i in range(10):
+            try:
+                assert self.verify_bgp_session_state()
+            except:
+                time.sleep(3)
+                continue
+            else:
+                break
+
     #end setup_vepg
 
     @classmethod
@@ -466,7 +475,48 @@ class OrangeSolutionTest(BaseSolutionsTest):
         ''' CEM-16881
             Check virtual instances are properly started with network connectivity.
         '''
-        return True
+
+        ret=True
+        ips_list=[]
+        vm_fix_list=[self.vrp_31, self.vrp_32]
+
+        #get list of all vm fixtures
+        for i in range(1, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+1):
+            vm_fix_list.append(self.vsfo_fix[i])
+
+        #get ge-0/0/0.0 i/f ip of each vm
+        for i in range(0, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
+            cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
+                   UserKnownHostsFile=/dev/null -J \
+                   \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null root@%s \
+                   \"ifconfig | grep 192.3.1 | cut -d ' ' -f 4 | cut -d = -f 2\""\
+                   %(self.inputs.host_data[vm_fix_list[i].vm_node_ip]['username'] ,
+                     vm_fix_list[i].vm_node_ip,vm_fix_list[i].local_ip)
+            output = os.popen(cmd).read()
+            output1=output.replace("\n","")
+            ips_list.append(output1)
+
+        #each vm should ping every other adjacent vm (ex: 4 vms, 6 ping sessions)
+        for i in range(0, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
+            #loop to perform ping
+            for j in range(i+1, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
+                cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
+                       UserKnownHostsFile=/dev/null -J \
+                       \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null \
+                       root@%s  \"ping -c 3 %s\""\
+                       %(self.inputs.host_data[vm_fix_list[i].vm_node_ip]['username'] ,
+                         vm_fix_list[i].vm_node_ip,vm_fix_list[i].local_ip,ips_list[j])
+                output = os.popen(cmd).read()
+                print(output)
+                if ' 0% packet loss' not in output:
+                    self.logger.error(" Ping from %s to %s FAILED!!",
+                     vm_fix_list[i].vm_name,vm_fix_list[j].vm_name)
+                    ret=ret and False
+                else:
+                    self.logger.info(" Ping from %s to %s PASSED!!",
+                     vm_fix_list[i].vm_name,vm_fix_list[j].vm_name)
+
+        return ret
     # end test_02_interface_check
 
     @preposttest_wrapper
@@ -475,7 +525,6 @@ class OrangeSolutionTest(BaseSolutionsTest):
             This test is required to check traffic with high Ethernet size are able
             to be carried accross the Contrail RedHat OpenStack platform.
         '''
-        
         ret=True
         #copy set_mtu file and commit mtu config on up-vsfo
         for i in range (self.NB_VSFO_CP_NODES+1 ,self.NB_VSFO_CP_NODES +\
@@ -488,9 +537,9 @@ class OrangeSolutionTest(BaseSolutionsTest):
                 %(file_name, self.vsfo_fix[i].vm_node_ip)
             op=os.system(cmd)
             if op is not 0:
-               self.logger.error("Failed to copy file %s to %s"\
-                   %(file_name, self.vsfo_fix[i].vm_node_ip))
-               ret=False 
+                self.logger.error("Failed to copy file %s to %s"\
+                    %(file_name, self.vsfo_fix[i].vm_node_ip))
+                ret=False
             file_name='/tmp/'+'set_mtu.sh'
             cmd='sshpass -p \'%s\' ssh -o StrictHostKeyChecking=no heat-admin@%s \
                  sshpass -p \'%s\' scp -o StrictHostKeyChecking=no -o \
@@ -500,8 +549,9 @@ class OrangeSolutionTest(BaseSolutionsTest):
                  self.vsfo_fix[i].local_ip)
             op=os.system(cmd)
             if op is not 0:
-               self.logger.error("Failed to copy file %s to %s"\
+                self.logger.error("Failed to copy file %s to %s"\
                     %(file_name, self.vsfo_fix[i].local_ip))
+                ret=False
             cmd='sshpass -p \'%s\' ssh -o StrictHostKeyChecking=no heat-admin@%s \
                  sshpass -p \'%s\' ssh -o StrictHostKeyChecking=no -o \
                  UserKnownHostsFile=/dev/null \
@@ -511,7 +561,7 @@ class OrangeSolutionTest(BaseSolutionsTest):
             op=os.popen(cmd).read()
             if 'commit complete' not in op:
                 self.logger.error("Failed to commit config on %s"\
-                     %(self.vsfo_fix[i].vm_name))
+                    %(self.vsfo_fix[i].vm_name))
                 ret=False
 
         #set mtu on vhost0 of computes hosting vsfo
@@ -526,8 +576,8 @@ class OrangeSolutionTest(BaseSolutionsTest):
             #check if correct mtu set on vhost0
             cmd='ssh -o StrictHostKeyChecking=no -o \
                  UserKnownHostsFile=/dev/null \
-                 heat-admin@%s \
-                 \'sudo ip ad | grep vhost0| grep mtu | cut -d " " -f 5\' '\
+                 heat-admin@%s \'sudo ip ad | grep vhost0| grep mtu |\
+                 cut -d " " -f 5\' '\
                  %(self.vsfo_fix[i].vm_node_ip)
             output = os.popen(cmd).read()
             if '9000' not in output:
@@ -563,6 +613,7 @@ class OrangeSolutionTest(BaseSolutionsTest):
                    self.vsfo_fix[j].vm_node_ip,self.vsfo_fix[j].local_ip,ips_list[k])
             output = os.popen(cmd).read()
             print(output)
+            k=k+1
             if ' 0% packet loss' not in output:
                 self.logger.error(" Ping from %s to %s FAILED!!",
                      self.vsfo_fix[j].vm_name,self.vsfo_fix[i].vm_name)
@@ -639,7 +690,7 @@ class OrangeSolutionTest(BaseSolutionsTest):
 
         #Check bgp and bfd sessions.
         for trial in range(3):
-            time.sleep(90)
+            time.sleep(CONVERGENCE_TIME)
             try:
                 self.assertFalse(self.verify_bgpaas_session_ctrlnode())
                 self.assertFalse(self.verify_bgpaas_routes_ctrlnode())
@@ -683,7 +734,7 @@ class OrangeSolutionTest(BaseSolutionsTest):
 
         #Check bgp and bfd sessions.
         for trial in range(3):
-            time.sleep(90)
+            time.sleep(CONVERGENCE_TIME)
             try:
                 assert self.verify_bgpaas_session_ctrlnode()
                 assert self.verify_bgpaas_routes_ctrlnode()
@@ -711,7 +762,7 @@ class OrangeSolutionTest(BaseSolutionsTest):
                                             container='control')
             self.inputs.restart_service('contrail-analytics-api', [active_control_ip],
                                             container='analytics-api')
-            time.sleep(90)
+            time.sleep(CONVERGENCE_TIME)
             assert self.verify_bgpaas_routes_ctrlnode()
             assert self.verify_bgpaas_session_ctrlnode()
             assert self.verify_route_count()
@@ -728,6 +779,9 @@ class OrangeSolutionTest(BaseSolutionsTest):
             Coredump is not generated.
         '''
         self.vr_restart=int(os.getenv('VROUTER_RESTART','1'))
+        assert self.verify_ospf_session_state()
+        assert self.verify_bgp_session_state()
+        assert self.verify_route_count()
         for i in range(0, self.vr_restart):
             for node in self.inputs.compute_ips:
                 self.inputs.restart_service('contrail-vrouter-agent', [node],
@@ -736,7 +790,7 @@ class OrangeSolutionTest(BaseSolutionsTest):
                 ).wait_till_contrail_cluster_stable(nodes=[node])
                 assert cluster_status, 'Hash of error nodes and services : %s' % (
                     error_nodes)
-            time.sleep(180)
+            time.sleep(2*CONVERGENCE_TIME)
             assert self.verify_ospf_session_state()
             assert self.verify_bgp_session_state()
             assert self.verify_route_count()
@@ -745,50 +799,18 @@ class OrangeSolutionTest(BaseSolutionsTest):
     # end test_07_vrouter_restart
 
     @preposttest_wrapper
-    def test_02_interface_check(self):
-        ''' CEM-16881
-            Check virtual instances are properly started with network connectivity.
+    def test_run_all_tests(self):
         '''
+            Run all the tests after deployment of the solution.
+        '''
+        self.test_01_verify_post_deploy()
+        self.test_02_interface_check()
+        self.test_03_giant_frame_test()
+        self.test_04_check_tls()
+        self.test_05_bfd_bgpaas_feature()
+        self.test_06_ha_resiliency()
+        self.test_07_vrouter_restart()
 
-        ips_list=[]
-        vm_fix_list=[self.vrp_31, self.vrp_32]
-
-        #get list of all vm fixtures
-        for i in range(1, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+1):
-            vm_fix_list.append(self.vsfo_fix[i])
-
-        #get ge-0/0/0.0 i/f ip of each vm
-        for i in range(0, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
-            cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
-                   UserKnownHostsFile=/dev/null -J \
-                   \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null root@%s \
-                   \"ifconfig | grep 192.3.1 | cut -d ' ' -f 4 | cut -d = -f 2\""\
-                   %(self.inputs.host_data[vm_fix_list[i].vm_node_ip]['username'] ,
-                     vm_fix_list[i].vm_node_ip,vm_fix_list[i].local_ip)
-            output = os.popen(cmd).read()
-            output1=output.replace("\n","")
-            ips_list.append(output1)
-
-        #each vm should ping every other adjacent vm (ex: 4 vms, 6 ping sessions)
-        for i in range(0, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
-            #loop to perform ping
-            for j in range(i+1, self.NB_VSFO_CP_NODES + self.NB_VSFO_UP_NODES+2):
-                cmd = "sshpass -p contrail123 ssh -o StrictHostKeyChecking=no -o \
-                       UserKnownHostsFile=/dev/null -J \
-                       \"%s@%s\"  -o GlobalKnownHostsFile=/dev/null \
-                       root@%s  \"ping -c 3 %s\""\
-                       %(self.inputs.host_data[vm_fix_list[i].vm_node_ip]['username'] ,
-                         vm_fix_list[i].vm_node_ip,vm_fix_list[i].local_ip,ips_list[j])
-                output = os.popen(cmd).read()
-                print(output)
-                if '0% packet loss' not in output:
-                    self.logger.error(" Ping from %s to %s FAILED!!",
-                     vm_fix_list[i].vm_name,vm_fix_list[j].vm_name)
-                else:
-                    self.logger.info(" Ping from %s to %s PASSED!!",
-                     vm_fix_list[i].vm_name,vm_fix_list[j].vm_name)
-
-        return True
-    # end test_02_interface_check
+    # end run_all_tests
 
 #end class OrangeSolutionTest

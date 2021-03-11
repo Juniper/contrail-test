@@ -253,17 +253,20 @@ class BaseSolutionsTest(test_v1.BaseTestCase_v1):
           )  + (( ((self.NB_VSFO_UP_CNNIC * self.NB_VSFO_UP_CNIF) + (
           self.NB_VSFO_UP_EXT_NIC - self.NB_VSFO_UP_CNNIC) * self.NB_APN) ))))
 
-        vsfoupid = self.NB_VSFO_CP_NODES+1
-        ctrl_node = vsfo_fix[vsfoupid].get_control_nodes()[0]
-        cn_bgp_entry = self.connections.get_control_node_inspect_handle(
-            ctrl_node).get_cn_bgp_neigh_entry(encoding='BGP')
+        bgpasUpSession=0
+        for user_planes in range(self.NB_VSFO_CP_NODES+1,\
+                self.NB_VSFO_CP_NODES+self.NB_VSFO_UP_NODES+1):
+            ctrl_node = vsfo_fix[user_planes].get_control_nodes()[0]
+            cn_bgp_entry = self.connections.get_control_node_inspect_handle(
+                ctrl_node).get_cn_bgp_neigh_entry(encoding='BGP')
+            bgpasUpSessiontemp = 0
+            for entry in cn_bgp_entry:
+                if entry['router_type'] == 'bgpaas-client' and entry['state'] \
+                                               == 'Established':
+                    bgpasUpSessiontemp = bgpasUpSessiontemp + 1
+            bgpasUpSession = max(bgpasUpSession, bgpasUpSessiontemp)
 
-        bgpasUpSession = 0
-        for entry in cn_bgp_entry:
-            if entry['router_type'] == 'bgpaas-client' and entry['state'] == 'Established':
-                bgpasUpSession = bgpasUpSession + 1
-
-        if EXP_S == bgpasUpSession:
+        if EXP_S <= bgpasUpSession:
             self.logger.info("BGPaaS sessions are UP as expected. \
                 Expected  %s Actual %s."%(EXP_S,bgpasUpSession))
         else:
