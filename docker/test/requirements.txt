@@ -4,4 +4,5 @@ backports.ssl-match-hostname==3.5.0.1
 #  ImportError: No module named namespaces
 ruamel.yaml!=0.16.1
 python-string-utils<1.0.0
+pyjwt==1.7.1
 openshift==0.7.2
