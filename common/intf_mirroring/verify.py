@@ -21,7 +21,10 @@ class VerifyIntfMirror(VerifySvcMirror):
         compute_nodes = []
 
         for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['fqname'])
+            if self.inputs.domainsuffix == 'englab.juniper.net':
+                host_list.append(self.inputs.host_data[host]['name'])
+            else:
+                host_list.append(self.inputs.host_data[host]['fqname'])
 
         no_of_computes = len(host_list)
 
