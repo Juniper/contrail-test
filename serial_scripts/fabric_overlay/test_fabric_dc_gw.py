@@ -62,6 +62,7 @@ class TestFabricDcGw(BaseFabricTest):
                                                self.inputs.public_host)
             assert fixture.ping_with_certainty(self.inputs.public_host)
 
+    @test.attr(type=['fabric_sanity'])
     @preposttest_wrapper
     def test_instance_on_public_network(self):
         bms_fixtures = list()
