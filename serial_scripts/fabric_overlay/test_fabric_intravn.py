@@ -12,6 +12,8 @@ from vnc_api.vnc_api import *
 
 class TestSPStyleFabric(BaseFabricTest):
     enterprise_style = False
+    
+    @test.attr(type=['fabric_sanity'])
     @preposttest_wrapper
     def test_fabric_intravn_basic(self):
         self.inputs.set_af('dual')
@@ -24,7 +26,8 @@ class TestSPStyleFabric(BaseFabricTest):
                 vn_fixture=vn, tor_port_vlan_tag=10))
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1])
-
+        
+    @test.attr(type=['fabric_sanity'])
     @preposttest_wrapper
     def test_fabric_intravn_tagged(self):
         '''Validate ping between a KVM VM and a tagged BMS
@@ -177,6 +180,7 @@ class TestSPStyleFabric(BaseFabricTest):
         except BadRequest as e:
             assert self.enterprise_style == True, msg + ' passed'
 
+    @test.attr(type=['fabric_sanity'])        
     @preposttest_wrapper
     def test_restart_device_manager(self):
         bms_nodes = self.get_bms_nodes()
@@ -350,6 +354,7 @@ class TestFabricOverlay(TestSPStyleFabric):
     # end test_remove_add_instance
 
     @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
+    @test.attr(type=['fabric_sanity'])
     @preposttest_wrapper
     def test_lag_add_remove_interface(self):
         nodes = self.get_bms_nodes(bms_type='link_aggregation')
@@ -1014,7 +1019,8 @@ class TestFabricOverlay(TestSPStyleFabric):
             assert False, 'cannot have multiple multicast options specified'
         except:
             pass
-
+    
+    @test.attr(type=['fabric_sanity'])
     @preposttest_wrapper
     def test_hw_inventory(self):
         for device in self.devices:
