@@ -179,9 +179,12 @@ class TestNHLimit(GenericTestBase):
         nhLS_netconf.connect()
         for i in range(len(cmds)):
             nhLS_netconf.config(stmts=cmds[i], timeout=120)
+            self.logger.debug('routes are removed')
         nhLS_netconf.disconnect()
 
     def create_vmvn_for_nhlimittest(self, compute, vn_count):
+        self.vn_fixtures = []
+        self.vm_fixtures = []
         for i in range(vn_count):
             vn_fixture = self.create_vn()
             for i in range(0,20):
@@ -204,7 +207,7 @@ class TestNHLimit(GenericTestBase):
             for j in range(0,60):
                 try:
                     self.logger.debug("Route target add Retry %s" % (j))
-                    self.vn_fixtures[i].add_route_target(router_asn=64512, route_target_number=190)
+                    self.vn_fixtures[i].add_route_target(router_asn=64512, route_target_number=189)
                 except Exception as e:
                     time.sleep(3)
                     self.logger.exception("Got exception as %s" % (e))

@@ -1609,6 +1609,11 @@ class VMFixture(fixtures.Fixture):
             for rt in rt_list:
                 rt_group_entry = self.cn_inspect[
                     ctrl_node].get_cn_rtarget_group(rt)
+                if type(rt_group_entry) is list:
+                    for rt_group in rt_group_entry:
+                        if rt_group['rtarget'] == rt:
+                            rt_group_entry=rt_group
+                            break
                 if rt_group_entry['peers_interested'] is not None:
                     for peer in rt_group_entry['peers_interested']:
                         if peer in self.inputs.host_names:
