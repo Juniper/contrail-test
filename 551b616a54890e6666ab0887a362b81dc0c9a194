@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "93a438b6_c0e6809a",
+        "filename": "scripts/securitygroup/test_regression.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1443,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2021-07-02T14:48:28Z",
+      "side": 1,
+      "message": "please cleanup unwanted code from 1443 and 1444.",
+      "revId": "551b616a54890e6666ab0887a362b81dc0c9a194",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
