@@ -1436,9 +1436,10 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if self.inputs.pcap_on_vm:
             assert verify_tcpdump_count(self, session1, pcap1)
         else:
+            session, pcap = start_tcpdump_for_vm_intf(
+                self, src_vm_fix, src_vn_fq_name, filters=filters)
             assert verify_tcpdump_count(
-                self, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, exp_count=exp_count)
-        # stop traffic
+                self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
         sent, recv = self.stop_traffic_scapy(sender1, receiver1, recvr=False)
         return True
         # end test_icmp_error_payload_matching
