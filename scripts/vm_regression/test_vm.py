@@ -2720,10 +2720,10 @@ class TestBasicVMVN9(BaseVnVmTest):
             if service == "build_server":
                 # verify wget from vim.org 
                 sleep(20) #wait before attempting download
-                image_name = 'vim-6.4.tar.bz2'
+                image_name = 'vim-7.3.tar.bz2'
                 cmd = 'wget ' + \
-                    'http://%s/pub/vim/unix/' % service + image_name
-                vm_fixture.run_cmd_on_vm(cmds=[cmd], timeout=60)
+                    'http://%s/pub/vim/unix/' % service_info[service][2] + image_name
+                vm_fixture.run_cmd_on_vm(cmds=[cmd], timeout=250)
                 result = vm_fixture.return_output_cmd_dict[cmd]
                 result = self.trim_command_output_from_vm(result)
                 cmd = 'ls -l ' + image_name
@@ -2755,7 +2755,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                                     link local service: %s" % result
             elif service == 'web_server':
                 # verify curl on openstack.org
-                cmd = 'curl ' + 'http://%s:80/' % service
+                cmd = 'curl ' + 'http://%s:80/' % service_info[service][2] 
                 vm_fixture.run_cmd_on_vm(cmds=[cmd])
                 result = vm_fixture.return_output_cmd_dict[cmd]
                 result = self.trim_command_output_from_vm(result)
