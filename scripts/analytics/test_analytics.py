@@ -117,10 +117,7 @@ class AnalyticsTestSanity1(base.AnalyticsBaseTest):
         '''Test object tables.
         '''
         start_time=self.analytics_obj.get_time_since_uptime(self.inputs.cfgm_ip)
-        assert self.analytics_obj.verify_stats_tables(start_time= start_time , skip_tables = [u'StatTable.ConfigCpuState.\
-                                    cpu_info', u'StatTable.AnalyticsCpuState.cpu_info', u'StatTable.ControlCpuState.cpu_info',\
-                                     u'StatTable.QueryPerfInfo.query_stats', u'StatTable.UveVirtualNetworkAgent.vn_stats', \
-                                    u'StatTable.SandeshMessageStat.msg_info'])
+        assert self.analytics_obj.verify_stats_tables(start_time= start_time)
         return True
     
     @preposttest_wrapper
