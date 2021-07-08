@@ -668,8 +668,6 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         self.vnc_lib.floating_ip_update(self.fip_obj)
 
         self.verify_flow_records(self.fvn_vm1, self.stream_list)
-        self.stop_traffic(
-            self.sender, self.receiver, vm_list, self.stream_list)
 
         return True
     # end test_ecmp_bw_three_vms_add_del_same_fip
@@ -1104,6 +1102,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_src_ip
 
+    @preposttest_wrapper
     def test_ecmp_hash_dest_ip(self):
         """
             Validates ecmp hash when only destination ip is configured
@@ -1153,6 +1152,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_dest_ip
 
+    @preposttest_wrapper
     def test_ecmp_hash_src_port(self):
         """
             Validates ecmp hash when only source port is configured
@@ -1202,6 +1202,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_src_port
 
+    @preposttest_wrapper
     def test_ecmp_hash_dest_port(self):
         """
             Validates ecmp hash when only destination port is configured
@@ -1250,6 +1251,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_dest_port
 
+    @preposttest_wrapper
     def test_ecmp_hash_protocol(self):
         """
             Validates ecmp hash when only ip protocol is configured
@@ -1298,6 +1300,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_protocol
 
+    @preposttest_wrapper
     def test_ecmp_hash_precedence(self):
         """
             Validates ecmp hash config precedence levels
@@ -1373,6 +1376,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_precedence
 
+    @preposttest_wrapper
     def test_ecmp_hash_deletion(self):
         """
             Validates deletion of ecmp hash configuration. When explicit ecmp hash
@@ -1429,6 +1433,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         return True
     # end test_ecmp_hash_deletion
 
+    @preposttest_wrapper
     def test_ecmp_hash_vm_suspend_restart(self):
         """
             Validates deletion and addition of VMs with ecmp hash configuration.
