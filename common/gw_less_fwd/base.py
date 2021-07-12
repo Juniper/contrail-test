@@ -222,7 +222,10 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
             launch_mode can be distribute or non-distribute
         '''
         vm_count = vm['count'] if vm else 0
-        image_name = kwargs.get('image_name','cirros')
+        if self.inputs.is_dpdk_cluster:
+            image_name = kwargs.get('image_name','ubuntu-traffic')
+        else:
+            image_name = kwargs.get('image_name','cirros')
         launch_mode = vm.get('launch_mode','default')
         vm_fixtures = {} # Hash to store VM fixtures
 
@@ -263,9 +266,6 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                     node_name = self.inputs.compute_names[index]
                 elif launch_mode == 'default':
                     node_name=None
-                image_name='cirros'
-                if self.inputs.ns_agilio_vrouter_data:
-                    image_name = 'ubuntu-traffic'
                 vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
                                             port_ids=vmi_fix_uuid_list,
                                             node_name=node_name, image_name=image_name)
