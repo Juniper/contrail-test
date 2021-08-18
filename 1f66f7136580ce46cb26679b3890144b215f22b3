@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "92aaa5a1_0e8eb049",
+        "filename": "scripts/vrouter/test_routes.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 137,
+      "author": {
+        "id": 99
+      },
+      "writtenOn": "2021-08-18T06:14:06Z",
+      "side": 1,
+      "message": "Add verify_on_setup() for VM3 and remove the extra empty line in this commit.",
+      "revId": "1f66f7136580ce46cb26679b3890144b215f22b3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
