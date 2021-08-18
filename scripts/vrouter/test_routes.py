@@ -130,8 +130,12 @@ class TestRoutes(BaseVrouterTest):
                                 prefixes=[smaller_prefix])
         self.add_interface_route_table(port2_fixture, intf_rtb_fixture.obj)
         self.add_interface_route_table(port3_fixture, intf1_rtb_fixture.obj)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        vm3_fixture.wait_till_vm_is_up()
         vm1_fixture.verify_on_setup()
         vm2_fixture.verify_on_setup()
+
 
         inspect_h = self.agent_inspect_h[vm1_fixture.vm_node_ip]
         lookup_prefix = '%s/32' % (unknown_ip.split('/')[0])
@@ -142,6 +146,8 @@ class TestRoutes(BaseVrouterTest):
         assert self.validate_prefix_is_of_vm_in_vrouter(
             inspect_h, lookup_prefix, vm2_fixture), (''
             'Vrouter NH validation failed, Check logs')
+        self.logger.info('NH of covering route is removed in vrouter '
+                         'after the route is deleted')
 
         # Remove the static route and check if nh is not in route table
         self.del_interface_route_table(port2_fixture, intf_rtb_fixture.uuid)
