@@ -108,9 +108,7 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
     @preposttest_wrapper
     def test_policy_delete_add_in_network_mode(self):
         """Test policy update in in network mode service chaining."""
-        mode = None
-        if self.inputs.get_af() == 'v6':
-            mode = 'in-network'
+        mode = 'in-network'
         ret_dict = self.verify_svc_in_network_datapath(svc_mode=mode)
         return self.verify_policy_delete_add(ret_dict)
 
@@ -123,9 +121,7 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
     @preposttest_wrapper
     def test_policy_to_more_vns_in_network_mode(self):
         """Add more VM's to VN's of in network mode service chaining."""
-        mode = None
-        if self.inputs.get_af() == 'v6':
-            mode = 'in-network'
+        mode = 'in-network'
         ret_dict = self.verify_svc_in_network_datapath(svc_mode=mode)
         return self.verify_add_new_vms(ret_dict)
 
@@ -138,9 +134,7 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
     @preposttest_wrapper
     def test_policy_port_protocol_change_in_network_mode(self):
         """Change the port and protocol of policy in network mode service chaining."""
-        mode = None
-        if self.inputs.get_af() == 'v6':
-            mode = 'in-network'
+        mode = 'in-network'
         ret_dict = self.verify_svc_in_network_datapath(svc_mode=mode)
         return self.verify_protocol_port_change(ret_dict, mode='in-network')
 
