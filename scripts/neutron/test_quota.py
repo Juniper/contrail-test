@@ -104,7 +104,6 @@ class TestQuota(BaseNeutronTest):
                 result = False
         assert result, 'Failed to update quota for admin tenant'
 
-
     @preposttest_wrapper
     def test_quota_update_of_new_project_by_admin(self):
         '''Launch two custom tenants, quota update by admin tenant should be successful
@@ -170,8 +169,9 @@ class TestQuota(BaseNeutronTest):
              quota_dict,
              proj_inputs.project_name))
         result1 = proj_connection.quantum_h.update_quota(
-            project_obj1.uuid,
-            quota_dict)
+            project_obj.uuid,
+            #quota_dict) 
+            quota_show_dict) 
         assert not result1, 'Quota update of %s by %s successful not expected' % (
             project_name1, project_name)
         self.logger.info(

@@ -85,7 +85,8 @@ class TestCRUD(BaseNeutronTest):
             # Do read tests
             self.read_network_tests(response['network'])
             # Do update tests
-            self.update_network_tests(response['network'])
+            #self.update_network_tests(response['network'])
+            self._test_subnets(response['network'])
             # Do Subnet tests
             self._test_subnets(response['network'])
             self._delete_network(response['network']['id'])
