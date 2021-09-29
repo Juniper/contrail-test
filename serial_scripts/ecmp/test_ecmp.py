@@ -9,6 +9,7 @@ from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from vm_test import *
+from tcutils.contrail_status_check import ContrailStatusChecker
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from common.servicechain.firewall.verify import VerifySvcFirewall
@@ -16,6 +17,7 @@ from common.base import GenericTestBase
 from common.ecmp.base import ECMPTestBase
 from common.ecmp.ecmp_traffic import ECMPTraffic
 from common.ecmp.ecmp_verify import ECMPVerify
+from common.policy.config import ConfigPolicy
 from fabric.state import connections as fab_connections
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
 from common import isolated_creds
@@ -93,7 +95,7 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         if len(self.inputs.compute_ips) <= 1:
             raise self.skipTest(''
                 'Scaling test. Will run only on multiple node setup')
-        for i in range(4, 17, 4):
+        for i in range(4, 9, 4):
             self.logger.info(
                 '%%%%%%%%%% Will launch %s instances in the Service Chain %%%%%%%%%%' % i)
             ret_dict = self.verify_svc_in_network_datapath(
@@ -120,6 +122,9 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                              st_fixture.st_name)
             st_fixture.cleanUp()
             self.remove_from_cleanups(st_fixture.cleanUp)
+            self.detach_policy(ret_dict['left_vn_policy_fix'])
+            self.detach_policy(ret_dict['right_vn_policy_fix'])
+            self.unconfig_policy(policy_fixture)
         # end for
     # end test_ecmp_svc_in_network_nat_scale_max_instances
 
@@ -144,11 +149,11 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         si_fixtures = ret_dict['si_fixtures']
         svm_ids = si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
-            self.left_vm_fixture, self.left_vm_fixture, self.right_vm_fixture,
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
             svm_ids, si_fixtures)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-            si_fixtures[0], self.left_vm_fixture)
+            si_fixtures[0], self.left_vn_fixture)
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
 
@@ -203,6 +208,8 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            om vm1 and vice-versa even after the restarts.
         Maintainer : ganeshahv@juniper.net
         """
+        class Conflict(Exception):
+            pass
         cmd = 'reboot'
         ret_dict = self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3,
