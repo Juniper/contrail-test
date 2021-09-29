@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "431df16f_4b626179",
+        "filename": "scripts/neutron/test_crud.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-09-29T06:41:45Z",
+      "side": 1,
+      "message": "why update_network_tests not required?",
+      "revId": "07d1dd2eb09be3bef59bdd13821a7f6b28f6e3fe",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b00140e7_1615e3c0",
+        "filename": "scripts/neutron/test_crud.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-09-29T06:41:45Z",
+      "side": 1,
+      "message": "are two calls to self._test_subnets() required?",
+      "revId": "07d1dd2eb09be3bef59bdd13821a7f6b28f6e3fe",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "35b60c44_1dbce136",
+        "filename": "scripts/neutron/test_quota.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 171,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-09-29T06:41:45Z",
+      "side": 1,
+      "message": "before the change, test seems to check that \u0027project1\u0027 user shouldn\u0027t allowed CRUD on \u0027project2\u0027. doesn\u0027t this change remove this check?",
+      "revId": "07d1dd2eb09be3bef59bdd13821a7f6b28f6e3fe",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
