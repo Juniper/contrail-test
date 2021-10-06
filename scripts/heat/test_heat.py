@@ -400,6 +400,7 @@ try:
         # end test_public_access_thru_svc_w_fip
 
         @preposttest_wrapper
+	@skip_because(address_family='v6')
         def test_ecmp_svc_creation_with_heat(self):
             '''
             Validate creation of a in-network-nat ECMP service chain using port-tuple
@@ -409,6 +410,7 @@ try:
         # end test_ecmp_v2_creation_with_heat
 
         @preposttest_wrapper
+	@skip_because(address_family='v6')
         def test_pt_multi_inline_v2_svc_creation_with_heat(self):
             '''
             Validate creation of a multi-inline SVC using port-tuple
