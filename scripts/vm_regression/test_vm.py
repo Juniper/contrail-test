@@ -1670,6 +1670,15 @@ class TestBasicVMVN5(BaseVnVmTest):
         intf_vm_dct['eth0'] = vm2_fixture
         intf_vm_dct['eth1'] = vm3_fixture
         list_of_ips = vm1_fixture.vm_ips
+        
+        if (self.inputs.address_family == 'v6'):
+            cmd = 'ifmetric eth1 200'
+            vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+            cmd = 'ifconfig eth0 inet6 add %s/64'%list_of_ips[0]
+            vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+            cmd = 'ifconfig eth1 inet6 add %s/64'%list_of_ips[1]
+            vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+            time.sleep(30)                 
 
         j = 'ifconfig -a'
         cmd_to_output1 = [j]
@@ -1718,7 +1727,8 @@ class TestBasicVMVN5(BaseVnVmTest):
         cmd = 'ifdown %s'%other_interface
 
         vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-
+        vm1_fixture.clear_local_ips()
+        vm1_fixture.get_local_ip()
         if vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
             assert result, "Ping to %s should have failed"%intf_vm_dct[other_interface].vm_name
@@ -1740,7 +1750,15 @@ class TestBasicVMVN5(BaseVnVmTest):
         self.logger.info('-' * 80)
 
         cmd = 'ifup %s'%other_interface
-        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=90)
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+
+        if (self.inputs.address_family == 'v6'):
+            cmd = 'ifconfig eth0 inet6 add %s/64'%list_of_ips[0]
+            vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+            cmd = 'ifconfig eth1 inet6 add %s/64'%list_of_ips[1]
+            vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+            time.sleep(30)
+
         if not vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
             assert result, "Ping to %s Fail"%intf_vm_dct[other_interface].vm_name

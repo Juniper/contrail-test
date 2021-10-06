@@ -117,6 +117,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         self.logger.info('Waiting for 120 sec for cleanup to begin')
         sleep(120)
+
         # Check agent should not have any VN info
         for entry in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[entry]
@@ -192,11 +193,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
         assert cluster_status, 'Cluster is not stable after restart'
         self.logger.info('Will check if the ipam persists and ping b/w VMs is still successful')
+        for compute_ip in self.inputs.compute_ips:
+            pass
+            self.inputs.restart_service('contrail-vrouter-agent',[compute_ip])
         assert ipam_obj.verify_on_setup()
-        msg = 'VM verification failed after process restarts'
-        assert vm1_fixture.verify_on_setup(), msg
-        assert vm2_fixture.verify_on_setup(), msg
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         return True
     
     @preposttest_wrapper
