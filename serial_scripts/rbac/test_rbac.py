@@ -1,4 +1,5 @@
 import test
+import time
 from base import BaseRbac
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name, get_random_ip
@@ -57,6 +58,56 @@ class TestRbac(BaseRbac):
         assert self.read_vn(connections=u1_p2_conn, uuid=vn.uuid)
         vm = self.create_vm(connections=u1_p2_conn, vn_fixture=vn)
         assert vm, 'VM creation failed on shared VN'
+
+    @preposttest_wrapper
+    def test_perms2_share_basic(self):
+        '''
+        Test perms2 shared property of an object
+        steps:
+            1. Add user1 as role1 in project1 and project2
+            2. Create VN as admin in isloated tenant
+            3. Make the VN sharable with project1 (access: 7)
+            4. List VN with Project1 creds should display VN
+            5. List VN with Project2 creds shouldnt display VN
+            6. Share the VN with Project2 (access: 4)
+            7. user should be able to read VN but
+               not update the VN using Project2 creds
+            8. List VN with both Projects creds should display VN
+        '''
+        project1 = self.create_project()
+        project2 = self.create_project()
+        self.add_user_to_project(self.user1, self.role1, project1.project_name)
+        self.add_user_to_project(self.user1, self.role1, project2.project_name)
+        u1_p1_conn = self.get_connections(self.user1, self.pass1, project1)
+        u1_p2_conn = self.get_connections(self.user1, self.pass1, project2)
+        rules = [{'rule_object': '*',
+                  'rule_field': None,
+                  'perms': [{'role': self.role1, 'crud': 'CRUD'}]
+                }]
+        domain_rbac = self.create_rbac_acl(rules=rules, parent_type='domain')
+        vn = self.create_vn(option='quantum')
+        self.share_obj(obj=vn.api_vn_obj, project=project1)
+        vns = self.list_vn(u1_p1_conn)
+        assert vn.uuid in vns
+        vns = self.list_vn(u1_p2_conn)
+        assert vn.uuid not in vns
+        assert not self.read_vn(connections=u1_p2_conn, uuid=vn.uuid), "Able to read non-shared FIP Pool object"
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(u1_p1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p1_conn)
+            assert not self.get_vn_from_analytics(u1_p2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(u1_p2_conn)
+        self.share_obj(obj=vn.api_vn_obj, project=project2, perms=4)
+        assert self.read_vn(connections=u1_p2_conn, uuid=vn.uuid), "Unable to read non-shared FIP Pool object"
+        vns = self.list_vn(u1_p1_conn)
+        assert vn.uuid in vns
+        vns = self.list_vn(u1_p2_conn)
+        assert vn.uuid in vns
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(u1_p1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p1_conn)
+            assert self.get_vn_from_analytics(u1_p2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p2_conn)
 
     @preposttest_wrapper
     def test_perms2_share(self):
@@ -121,6 +172,8 @@ class TestRbac(BaseRbac):
         self.global_acl.delete()
         # Restart one contrail-api service alone
         self.inputs.restart_service('contrail-api', [self.inputs.cfgm_ip])
+        #Waiting few seconds after restarting service since rules creation fails immediately
+        time.sleep(10)
         self.populate_default_rules_in_global_acl()
         assert not self.global_acl.created, "Global ACL didnt get auto created upon restart"
 
@@ -271,7 +324,8 @@ class TestRbac(BaseRbac):
         assert self.update_vn(connections=self.connections, uuid=vn.uuid,
                prop_kv={'virtual_network_properties.forwarding_mode': 'l2_l3'})
 
-    def test_subfield_match(self):
+    # Specifying subfields in ACL is no longer supported disabling the test
+    def disabled_test_subfield_match(self):
         '''
         Validate rules hierarchy and longest acl rule match
         steps:
@@ -360,9 +414,10 @@ class RbacMode(BaseRbac):
     def setUpClass(cls):
         super(RbacMode, cls).setUpClass()
         cls.inputs.api_server_port = '9100'
-
+    
+    # test is disabled, since we don't want to support changing aaa-mode using API
     @preposttest_wrapper
-    def test_update_aaa_mode(self):
+    def disabled_test_update_aaa_mode(self):
         '''
         Validate the aaa_mode rest api
         steps:
