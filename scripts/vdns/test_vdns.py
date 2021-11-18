@@ -161,6 +161,7 @@ class TestvDNS0(BasevDNSTest):
         ttl_list = [100, 2000, 0, 86400, 2147483647, -1, 2147483648]
         i = 1
         # modify the record TTL and address values and verify
+        '''
         for ttl_mod in ttl_list:
             ip_add = '1.1.1.' + str(i)
             # Already configured TTL as a 100, so not configuring TTL value for
@@ -189,6 +190,50 @@ class TestvDNS0(BasevDNSTest):
                     False, 'record search is failed,please check syntax of regular expression')
             print ("\nTTL VALUE is %s ", m_obj.group(1))
             print ("\nrecord ip address is %s", m_obj.group(2))
+            self.assertEqual(int(m_obj.group(1)), ttl_mod,
+                             'TTL value is not matching for static record after record modification')
+            self.assertEqual(m_obj.group(2), ip_add,
+                             'IP Address is not matching for static record after record modification')
+            i = i + 1
+        '''
+        for ttl_mod in ttl_list:
+            ip_add = '1.1.1.' + str(i)
+            # Already configured TTL as a 100, so not configuring TTL value for
+            # first time
+            if ttl_mod != 100:
+                vdns_rec_data = VirtualDnsRecordType(
+                    'rec1', 'A', 'IN', ip_add, ttl_mod)
+                vdns_record_obj.set_virtual_DNS_record_data(vdns_rec_data)
+                try:
+                    self.vnc_lib.virtual_DNS_record_update(vdns_record_obj)
+                except Exception as e:
+                    if (ttl_mod == -1 or ttl_mod == 2147483648):
+                        self.logger.info(
+                            'Failed to configure invalid TTL values as expected')
+                        continue
+                    else:
+                        self.assertTrue(False, 'Failed to Modify TTL values')
+            vm_updated = False
+            for i in range(0,4):
+                vm_fixture['vm1-test'].run_cmd_on_vm(cmds=[cmd])
+                result = vm_fixture['vm1-test'].return_output_cmd_dict[cmd]
+                if result:
+                    result = result.replace("\t", " ")
+                    m_obj = re.search(r"rec1.juniper.net\.*\s*([0-9.]*)\s*IN\s*A\s*([0-9.]*)",
+                                      result)
+                    if not m_obj:
+                        self.assertTrue(False,
+                        'record search is failed,please check syntax of regular expression')
+                    if int(m_obj.group(1)) != ttl_mod:
+                        sleep(1)
+                    else:
+                        vm_updated = True
+                        break
+                else:
+                    sleep(1)
+            assert vm_updated, "Record not updated on VM "
+            print(("\nTTL VALUE is %s ", m_obj.group(1)))
+            print(("\nrecord ip address is %s", m_obj.group(2)))
             self.assertEqual(int(m_obj.group(1)), ttl_mod,
                              'TTL value is not matching for static record after record modification')
             self.assertEqual(m_obj.group(2), ip_add,
@@ -1036,10 +1081,14 @@ class TestvDNS2(BasevDNSTest):
             self.logger.info(
                 'VM Name is ---> %s\t cmd is---> %s', vm_name, cmd)
             vm_fixture[vdns].run_cmd_on_vm(cmds=[cmd])
+           
             result = vm_fixture[vdns].return_output_cmd_dict[cmd]
             result = result.replace("\r", "")
+            self.logger.info(result)
             result = result.replace("\t", "")
+            self.logger.info(result)
             result = result.replace("\n", " ")
+            self.logger.info(result)
             m_obj = re.search(
                 r"Address:[0-9.]*#[0-9]*\s*.*Name:(.*\.vdns[0-9]*\.net)\s*Address:\s*([0-9.]*)", result)
             if not m_obj:
