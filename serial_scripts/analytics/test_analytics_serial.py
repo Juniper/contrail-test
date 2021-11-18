@@ -435,22 +435,6 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 if not result5:
                     self.logger.warn("Established log NOT sent")
 
-            if self.res2:
-                self.logger.info(
-                    "Verifying logs from ObjectXmppConnection table")
-                result7 = False
-                result8 = False
-                for elem in self.res2:
-                    if re.search('EvXmppOpen', str(elem['ObjectLog'])):
-                        self.logger.info("EvXmppOpen log sent")
-                        result7 = True
-                    if re.search('EvTcpConnected', str(elem['ObjectLog'])):
-                        self.logger.info("EvTcpConnected log sent")
-                        result8 = True
-                if not result7:
-                    self.logger.warn("EvXmppOpen log NOT sent")
-                if not result8:
-                    self.logger.warn("EvTcpConnected log NOT sent")
         except Exception as e:
             self.logger.exception("%s" % str(e))
             result = result and False
@@ -458,8 +442,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             self.inputs.start_service(
                 'contrail-control', [self.inputs.bgp_ips[0]])
             time.sleep(4)
-            result = result and result1 and result2 and result3 and result4\
-                and result5 and result6 and result7 and result8
+            result = result1 and result2 and result3 and result4\
+                and result5 
             assert result
             return True
 
