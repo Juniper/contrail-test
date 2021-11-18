@@ -287,32 +287,6 @@ class AnalyticsTestSanityWithResource(
                 else:
                     self.logger.warn("SI object logs NOT received ")
                     result = result and False
-
-            for elem in obj_id1_lst:
-                query = '(' + 'ObjectId=' + elem + ')'
-                self.logger.info(
-                    "Verifying ServiceChain Table through opserver %s.." %
-                    (self.inputs.collector_ips[0]))
-                res2 = self.analytics_obj.ops_inspect[
-                    self.inputs.collector_ips[0]].post_query(
-                    'ServiceChain',
-                    start_time=start_time,
-                    end_time='now',
-                    select_fields=[
-                        'ObjectId',
-                        'Source',
-                        'ObjectLog',
-                        'SystemLog',
-                        'Messagetype',
-                        'ModuleId',
-                        'MessageTS'],
-                    where_clause=query)
-                if res2:
-                    self.logger.info("ST object logs received %s" % (res2))
-                    result = result and True
-                else:
-                    self.logger.warn("ST object logs NOT received ")
-                    result = result and False
         except Exception as e:
             self.logger.warn("Got exception as %s" % (e))
             result = result and False
