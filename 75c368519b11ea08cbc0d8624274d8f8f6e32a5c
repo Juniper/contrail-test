@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "c250f0f5_d740534c",
+        "filename": "serial_scripts/vm_regression/test_vm_serial.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 197,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-11-24T11:45:22Z",
+      "side": 1,
+      "message": "line 197-198 not required, right?",
+      "revId": "75c368519b11ea08cbc0d8624274d8f8f6e32a5c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
