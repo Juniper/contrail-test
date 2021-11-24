@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6ac43620_3a2d7998",
+        "filename": "serial_scripts/vm_regression/test_vm_serial.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 196,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-11-24T08:14:53Z",
+      "side": 1,
+      "message": "could this be re-written as\nself.inputs.restart_service(\u0027contrail-vrouter-agent\u0027, self.inputs.compute_ips)",
+      "revId": "2affea5742b8fa209206519719b0407fcb2c5b9f",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2bd768d4_1b6da3ef",
+        "filename": "serial_scripts/vm_regression/test_vm_serial.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 199,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-11-24T08:14:53Z",
+      "side": 1,
+      "message": "please remove commented out code",
+      "revId": "2affea5742b8fa209206519719b0407fcb2c5b9f",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
