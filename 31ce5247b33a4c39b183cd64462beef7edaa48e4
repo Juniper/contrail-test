@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "232bdc0a_265185c1",
+        "filename": "scripts/vdns/test_vdns.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 164,
+      "author": {
+        "id": 1101
+      },
+      "writtenOn": "2021-11-24T09:33:35Z",
+      "side": 1,
+      "message": "removed the commented lines",
+      "parentUuid": "33ed743d_1136721f",
+      "revId": "31ce5247b33a4c39b183cd64462beef7edaa48e4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "ead36f4f_97608539",
         "filename": "scripts/vdns/test_vdns.py",
         "patchSetId": 1
@@ -33,6 +51,24 @@
       "revId": "31ce5247b33a4c39b183cd64462beef7edaa48e4",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f132fb56_840ae1e3",
+        "filename": "scripts/vdns/test_vdns.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1087,
+      "author": {
+        "id": 1101
+      },
+      "writtenOn": "2021-11-24T09:33:35Z",
+      "side": 1,
+      "message": "log messages removed",
+      "parentUuid": "ead36f4f_97608539",
+      "revId": "31ce5247b33a4c39b183cd64462beef7edaa48e4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
