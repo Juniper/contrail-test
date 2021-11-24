@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "33ed743d_1136721f",
+        "filename": "scripts/vdns/test_vdns.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 164,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-11-24T07:46:46Z",
+      "side": 1,
+      "message": "please remove commented out code",
+      "revId": "31ce5247b33a4c39b183cd64462beef7edaa48e4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ead36f4f_97608539",
+        "filename": "scripts/vdns/test_vdns.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1087,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-11-24T07:46:46Z",
+      "side": 1,
+      "message": "these logging statements seem to be redundant, log only once",
+      "revId": "31ce5247b33a4c39b183cd64462beef7edaa48e4",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
