@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b63efc77_36d39329",
+        "filename": "serial_scripts/vm_regression/test_vm_serial.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 197,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-12-03T10:20:48Z",
+      "side": 0,
+      "message": "according to pass criteria in the test description, these verification are required, no?",
+      "revId": "7171810bd4e493c73ad4da7e5bf0014747c36152",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "42bbb1ab_07e210b5",
+        "filename": "serial_scripts/vm_regression/test_vm_serial.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 196,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2021-12-03T10:20:48Z",
+      "side": 1,
+      "message": "does agent container need to be restarted again? it was restarted in line 188",
+      "revId": "db42376e6e24289c878f8a9c6403df489570860f",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
