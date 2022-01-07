@@ -159,8 +159,9 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
         sleep(10)
-        assert fvn1_vm1_fixture.verify_on_setup()
-        assert fvn2_vm1_fixture.verify_on_setup()
+        assert fvn1_vm1_fixture.wait_till_vm_is_up()
+        assert fvn2_vm1_fixture.wait_till_vm_is_up()
+
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
             result = result and False
         if not fvn1_vm1_fixture.ping_with_certainty(fip_fixture1.fip[fip_id1]):
@@ -170,8 +171,8 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
         sleep(10)
-        assert fvn1_vm1_fixture.verify_on_setup()
-        assert fvn2_vm1_fixture.verify_on_setup()
+        assert fvn1_vm1_fixture.wait_till_vm_is_up()
+        assert fvn2_vm1_fixture.wait_till_vm_is_up()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
             result = result and False
         if not fvn1_vm1_fixture.ping_with_certainty(fip_fixture1.fip[fip_id1]):
@@ -343,8 +344,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         for proto in traffic_proto_l:
             traffic_stats = traffic_obj[proto].getLiveTrafficStats()
             err_msg = "Traffic disruption is seen: details: "
-        #self.assertEqual(traffic_stats['status'], True, err_msg)
-        assert(traffic_stats['status']), err_msg
+        self.assertEqual(traffic_stats['status'], True, err_msg)
         self.logger.info("-" * 80)
 
         # Stop on Active node
@@ -468,7 +468,6 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         for proto in traffic_proto_l:
             stopStatus[proto] = {}
             stopStatus[proto] = traffic_obj[proto].stopTraffic()
-            #if stopStatus[proto] != []: msg.append(stopStatus[proto]); result= False
             if stopStatus[proto] != []:
                 result = False
             self.logger.info("Status of stop traffic for proto %s is %s" %
