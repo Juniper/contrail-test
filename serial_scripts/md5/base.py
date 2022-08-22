@@ -48,8 +48,10 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         #this check is present in is_test_applicable
         if check_dm:   
             if self.inputs.use_devicemanager_for_md5:
-                for i in range(len(self.inputs.dm_mx.values())):
-                    router_params = self.inputs.dm_mx.values()[i]
+                #for i in range(len(self.inputs.dm_mx.values())):
+                    #router_params = self.inputs.dm_mx.values()[i]
+                for i in range(len(self.inputs.inputs.physical_routers_data.values())):
+                    router_params = self.inputs.inputs.physical_routers_data.values()[i]
                     if router_params['model'] == 'mx':
                         self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
                             router_params['name'], router_params['control_ip'],
