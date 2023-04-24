@@ -1,0 +1,7 @@
+---
+  - name: restart ipsec
+    shell: |
+      "{{ swan_command }}" stop
+      ip xfrm policy flush
+      ip xfrm state flush
+      "{{ swan_command }}" start

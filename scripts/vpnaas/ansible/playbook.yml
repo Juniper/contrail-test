@@ -1,0 +1,13 @@
+---
+- hosts: vrouters
+  remote_user: root
+  roles:
+    - setup
+    - common
+    - swan
+    - gre_tunnel
+    - contrail_tunnels
+    - psk_tunnels
+  tasks:
+    - debug:
+        msg: "Done!"

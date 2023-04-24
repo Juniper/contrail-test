@@ -1,0 +1,5 @@
+---
+  - name: Disable RP filter
+    shell: "sysctl -w net.ipv4.conf.{{ interface_name }}.rp_filter=0"
+  - name: Enable forwarding
+    shell: "sysctl -w net.ipv4.conf.{{ interface_name }}.forwarding=1"

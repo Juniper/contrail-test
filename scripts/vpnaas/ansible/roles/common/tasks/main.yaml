@@ -1,0 +1,31 @@
+---
+  - name: Reload dependencies
+    shell: depmod -a
+  - name: Load vRouter module
+    modprobe:
+      name: vrouter
+  - set_fact:
+      mac_address: "{{ ansible_default_ipv4.macaddress }}"
+      ip_address: "{{ ansible_default_ipv4.address }}"
+      mask: "{{ ansible_default_ipv4.netmask }}"
+      interface: "{{ ansible_default_ipv4.interface }}"
+  - file:
+      path: /opt/contrail/vpnaas/
+      state: directory
+      mode: 0755
+  - template:
+      src: resources/vhost.sh
+      dest: /opt/contrail/vpnaas/vhost.sh
+      mode: 0700
+  - name: Checking if vhost0 is already configured
+    shell: ip link show dev vhost0
+    register: vhost0
+    ignore_errors: yes
+  - name: Set up vhost
+    shell: /opt/contrail/vpnaas/vhost.sh
+    when: vhost0.rc != 0
+  - name: Interface settings
+    import_tasks: tasks/settings.yaml
+    vars:
+      interface_name: vhost0
+    when: vhost0.rc != 0

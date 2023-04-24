@@ -1,0 +1,22 @@
+---
+  - debug:
+      msg: "nh --create {{ 300 + idx|int }} --type 3 --vrf 0 --root --oif {{ interface_id.stdout }} --sip {{ host1 }} --dip {{ host2 }} --smac {{ host1_mac }} --dmac {{ host2_mac }} --udp"
+  - include_tasks: tasks/get_id.yaml
+    vars:
+      interface: gw0
+  - debug:
+      msg: "nh --create {{ 300 + idx|int }} --type 3 --vrf 0 --root --oif {{ interface_id.stdout }} --sip {{ host1 }} --dip {{ host2 }} --smac {{ host1_mac }} --dmac {{ host2_mac }} --udp"
+  - shell: nh --create {{ 300 + idx|int }} --type 3 --vrf 0 --root --oif {{ interface_id.stdout }} --sip {{ host1 }} --dip {{ host2 }} --smac {{ host1_mac }} --dmac {{ host2_mac }} --udp
+  - shell: rt -c -n {{ 300 + idx|int }} -t 32 -f 1 -v 1 -e {{ mac }} -x 0x7
+  - name: "Checking if vti{{ idx }} is already configured"
+    shell: "ip link show dev vti{{ idx }}"
+    register: vti
+    ignore_errors: yes
+  - shell: "ip t a vti{{ idx }} local {{ real_host1 }} remote {{ real_host2 }} mode vti key 42"
+    when: vti.rc != 0
+  - include_tasks: tasks/settings.yaml
+    vars:
+      interface_name: "vti{{ idx }}"
+  - shell: "ip link set vti{{ idx }} up"
+    when: "vti.rc != 0"
+  - shell: "ip r a {{ host2 }}/32 dev vti{{ idx }}"

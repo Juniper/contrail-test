@@ -1,0 +1,15 @@
+---
+  - name: Checking if gw0 is already configured
+    shell: ip link show dev gw0
+    register: gw0
+    ignore_errors: yes
+  - import_tasks: tasks/create_gateway.yaml
+    vars:
+      nh: 200
+      interface_name: "gw0"
+    when: gw0.rc != 0
+  - include_tasks: tasks/loop_hosts_regular.yaml task=tasks/create_tunnel.yaml
+    when: gw0.rc != 0
+  - include_role:
+      name: psk_tunnels
+    when: gw0.rc != 0

@@ -1,0 +1,9 @@
+---
+  - shell: vif --create {{ interface_name }} --mac {{ mac }}
+  - shell: sysctl -w net.ipv4.conf.vhost0.rp_filter=0
+  - shell: sysctl -w net.ipv4.conf.vhost0.forwarding=1
+  - shell: vif --add {{ interface_name }} --mac {{ mac }} --vrf {{ vrf }} --type {{ type }}
+    when: transport is undefined
+  - shell: vif --add {{ interface_name }} --mac {{ mac }} --vrf {{ vrf }} --type {{ type }} --transport {{ transport }}
+    when: transport is defined
+  - shell: ip link set {{ interface_name }} up

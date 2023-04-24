@@ -1,0 +1,6 @@
+---
+  - template:
+      src: ipsec.conf
+      dest: "{{ swan_path }}/ipsec.d/conns/tunnel{{ idx }}.conf"
+    notify:
+      - restart ipsec

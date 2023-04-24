@@ -1,0 +1,5 @@
+---
+- hosts: vrouters
+  remote_user: root
+  roles:
+    - strongswan

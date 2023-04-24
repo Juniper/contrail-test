@@ -1,0 +1,24 @@
+---
+  - name: Install StrongSWAN
+    apt:
+      name: strongswan
+      state: present
+    when: ansible_distribution == 'Ubuntu'
+  - name: Install EPEL Repository
+    yum:
+      name: epel-release
+      state: present
+    when: ansible_distribution == 'CentOS'
+  - name: Install StrongSWAN
+    yum:
+      name: strongswan
+      state: present
+    when: ansible_distribution == 'CentOS'
+  - copy:
+      src: strongswan.conf
+      dest: "{{ swan_path }}/strongswan.conf"
+  - template:
+      src: ipsec.conf
+      dest: "{{ swan_path }}/ipsec.conf"
+    notify:
+      - restart ipsec

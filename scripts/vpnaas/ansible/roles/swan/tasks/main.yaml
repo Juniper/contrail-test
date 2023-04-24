@@ -1,0 +1,37 @@
+---
+  - set_fact:
+      swan_path: /etc
+      swan_command: ipsec
+    when: ansible_distribution == 'Ubuntu'
+  - set_fact:
+      swan_path: /etc/strongswan
+      swan_command: strongswan
+    when: ansible_distribution == 'CentOS' and swan == 'strongswan'
+  - set_fact:
+      swan_path: /etc
+      swan_command: ipsec
+    when: ansible_distribution == 'CentOS' and swan == 'libreswan'
+  - import_role:
+      name: strongswan
+    when: swan == 'strongswan'
+  - import_role:
+      name: libreswan
+    when: swan == 'libreswan'
+  - file:
+      path: "{{ swan_path }}/ipsec.d/conns"
+      state: absent
+  - file:
+      path: "{{ swan_path }}/ipsec.d/conns"
+      state: directory
+    notify:
+      - restart ipsec
+  - name: Add APT repository for IProute2
+    apt_repository:
+      repo: ppa:hyperair/iproute2-backports
+      state: present
+      update_cache: yes
+    when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'trusty'
+  - apt:
+      name: iproute2
+      state: latest
+    when: ansible_distribution == 'Ubuntu'

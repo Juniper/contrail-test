@@ -1,0 +1,5 @@
+---
+  - include_tasks: "{{ task }}"
+    vars:
+      ip_addr: "10.0.{{ 100 + ((item|int) // 100) }}.{{ 100 + ((item|int) % 100) }}"
+    with_sequence: start=0 end={{ ip_count }}

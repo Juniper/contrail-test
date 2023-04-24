@@ -1,0 +1,85 @@
+---
+  - name: Install dependencies for LibreSWAN
+    apt:
+      name: "{{ item }}"
+      state: present
+    when: ansible_distribution == 'Ubuntu'
+    with_items:
+      - libnss3-dev
+      - libnspr4-dev
+      - pkg-config
+      - libpam-dev
+      - libcap-ng-dev
+      - libcap-ng-utils
+      - libselinux-dev
+      - libcurl3-nss-dev
+      - flex
+      - bison
+      - gcc
+      - make
+      - libldns-dev
+      - libunbound-dev
+      - libnss3-tools
+      - libevent-dev
+      - xmlto
+      - git
+  - apt:
+      name: libsystemd-dev
+      state: present
+    when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'xenial'
+  - name: Install EPEL Repository
+    yum:
+      name: epel-release
+      state: present
+    when: ansible_distribution == 'CentOS'
+  - name: Install dependencies for LibreSWAN
+    yum:
+      name: "{{ item }}"
+      state: present
+    when: ansible_distribution == 'CentOS'
+    with_items:
+      - audit-libs-devel
+      - bison
+      - curl-devel
+      - fipscheck-devel
+      - flex
+      - gcc
+      - ldns-devel
+      - libcap-ng-devel
+      - libevent-devel
+      - libseccomp-devel
+      - libselinux-devel
+      - make
+      - nspr-devel
+      - nss-devel
+      - pam-devel
+      - pkgconfig
+      - systemd-devel
+      - unbound-devel
+      - xmlto
+      - git
+  - name: Download LibreSWAN
+    git:
+      repo: 'https://github.com/libreswan/libreswan.git'
+      dest: /tmp/libreswan/
+    when: ansible_distribution == 'Ubuntu'
+  - name: Install LibreSWAN
+    make:
+      chdir: /tmp/libreswan/
+      target: "{{ item }}"
+    with_items:
+      - all
+      - install
+    environment:
+      USE_DNSSEC: false
+  #   when: ansible_distribution == 'Ubuntu'
+  # - name: Install LibreSWAN
+  #   yum:
+  #     name: libreswan
+  #     state: present
+  #   when: ansible_distribution == 'CentOS'
+  - template:
+      src: ipsec.conf
+      dest: "{{ swan_path }}/ipsec.conf"
+    notify:
+      - restart ipsec
