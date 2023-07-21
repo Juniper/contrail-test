@@ -17,7 +17,7 @@ RUN yum install -y yum-plugin-priorities && \
       python-linecache2 python-xmltodict python-eventlet python-ncclient \
       python-Fabric python-tabulate python-netifaces python-scp python-yaml \
       python-crypto python-urllib3 python-requests python-jinja2 subunit-filters \
-      ant-junit libXpm libXrender gtk2 nss GConf2 google-chrome-stable firefox openssl \
+      ant-junit libXpm libXrender gtk2 nss GConf2 google-chrome-stable-114.0.5735.90-1.x86_64 firefox openssl \
       python3 python3-devel && \
     yum clean all -y && \
     rm -rf /var/cache/yum && \
